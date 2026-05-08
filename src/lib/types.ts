@@ -1,5 +1,11 @@
-export type SportType = 'Cricket' | 'Football';
-export type CourtType = 'Half Court' | 'Full Court';
+
+export type SportType = 'Cricket' | 'Football' | 'Pickleball';
+export type CourtType = 
+  | 'Cricket Half Court' 
+  | 'Cricket Full Court' 
+  | 'Football Half Court' 
+  | 'Football Full Court'
+  | 'Pickleball Court';
 
 export interface Turf {
   id: string;
@@ -7,16 +13,19 @@ export interface Turf {
   location: string;
   area: string;
   sportTypes: SportType[];
-  courtTypes: CourtType[];
+  courtTypes: string[];
   pricePerHour: number;
   rating: number;
   reviewCount: number;
   images: string[];
   description: string;
   amenities: string[];
+  coachingServices?: string[];
   openingHours: string;
   contactNumber: string;
   whatsappNumber: string;
   mapUrl: string;
   isPopular?: boolean;
+  views?: number;
+  whatsappClicks?: number;
 }

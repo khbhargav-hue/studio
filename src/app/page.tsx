@@ -1,8 +1,8 @@
-
 "use client"
 
 import { useState, useMemo } from "react"
 import { Navbar } from "@/components/navbar"
+import { Footer } from "@/components/footer"
 import { TurfCard } from "@/components/turf-card"
 import { Input } from "@/components/ui/input"
 import { Search, Trophy, Loader2 } from "lucide-react"
@@ -199,34 +199,7 @@ export default function Home() {
         </div>
       </section>
 
-      <footer className="mt-auto border-t border-white/5 py-24 px-4 bg-black/40 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-20">
-          <div className="space-y-8">
-            <div className="flex items-center gap-3">
-              <div className="bg-primary/20 p-2.5 rounded-2xl">
-                <Trophy className="h-8 w-8 text-primary" />
-              </div>
-              <span className="font-headline font-black text-4xl tracking-tighter text-neon">TURFISTA</span>
-            </div>
-            <p className="text-muted-foreground max-w-md text-lg leading-relaxed">
-              Experience the pinnacle of sports discovery in Mysuru. Our platform connects dedicated athletes with the finest arenas in the city.
-            </p>
-          </div>
-          <div className="flex flex-col md:items-end justify-between py-2">
-            <div className="space-y-6 md:text-right">
-              <h4 className="font-black text-xs uppercase tracking-[0.3em] text-primary">Quick Navigation</h4>
-              <div className="flex flex-wrap gap-8 text-lg font-bold">
-                <Link href="/" className="hover:text-primary transition-colors">Home</Link>
-                <Link href="/about" className="hover:text-primary transition-colors">Partner Program</Link>
-                <Link href="/admin" className="hover:text-primary transition-colors">Arena Portal</Link>
-              </div>
-            </div>
-            <div className="pt-20 md:text-right">
-              <p className="text-muted-foreground text-sm font-medium">© 2024 Turfista Pro. Digital sports infrastructure for Mysuru.</p>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   )
 }

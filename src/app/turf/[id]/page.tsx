@@ -3,6 +3,7 @@
 import { useParams, useRouter } from "next/navigation"
 import Image from "next/image"
 import { Navbar } from "@/components/navbar"
+import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { TurfCard } from "@/components/turf-card"
@@ -365,6 +366,8 @@ export default function TurfDetail() {
           </a>
         </Button>
       </div>
+
+      <Footer />
     </div>
   )
 }

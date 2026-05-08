@@ -24,7 +24,7 @@ import {
   Users,
   Star,
   BarChart3,
-  LineChart
+  Trophy
 } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
@@ -37,10 +37,7 @@ import {
   CartesianGrid,
   XAxis,
   YAxis,
-  Tooltip,
   ResponsiveContainer,
-  AreaChart,
-  Area
 } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 
@@ -61,7 +58,6 @@ export default function AdminDashboard() {
   const { data: turfs, loading: turfsLoading } = useCollection(turfsQuery);
   const { data: stats } = useDoc(statsRef);
 
-  // Derive dynamic analytics
   const processedAnalytics = useMemo(() => {
     if (!turfs) return { areaStats: [], mostViewed: null, topArea: 'N/A' };
 
@@ -70,10 +66,8 @@ export default function AdminDashboard() {
     let mostViewed = null;
 
     turfs.forEach(turf => {
-      // Area distribution
       areaCounts[turf.area] = (areaCounts[turf.area] || 0) + (turf.views || 0);
       
-      // Most viewed
       if ((turf.views || 0) > maxViews) {
         maxViews = turf.views;
         mostViewed = turf;
@@ -137,7 +131,6 @@ export default function AdminDashboard() {
         </Button>
       </div>
 
-      {/* Analytics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="glass-card border-white/5 overflow-hidden group">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -184,7 +177,6 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
-      {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <Card className="glass-card border-white/5 rounded-[2rem] overflow-hidden">
           <CardHeader>
@@ -238,11 +230,17 @@ export default function AdminDashboard() {
             {processedAnalytics.mostViewed ? (
               <div className="space-y-4">
                 <div className="relative w-32 h-32 mx-auto rounded-full overflow-hidden border-4 border-primary/20 p-1">
-                  <img 
-                    src={processedAnalytics.mostViewed.images[0]} 
-                    alt={processedAnalytics.mostViewed.name}
-                    className="w-full h-full object-cover rounded-full"
-                  />
+                  {processedAnalytics.mostViewed.images?.[0] ? (
+                    <img 
+                      src={processedAnalytics.mostViewed.images[0]} 
+                      alt={processedAnalytics.mostViewed.name}
+                      className="w-full h-full object-cover rounded-full"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-primary/10 flex items-center justify-center rounded-full">
+                      <Trophy className="h-10 w-10 text-primary opacity-20" />
+                    </div>
+                  )}
                 </div>
                 <div>
                   <h3 className="text-2xl font-black text-primary uppercase tracking-tighter">
@@ -268,7 +266,6 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
-      {/* Turf Management Table */}
       <div className="glass-card rounded-[2rem] overflow-hidden border-white/5 shadow-2xl">
         <div className="p-6 border-b border-white/5 bg-white/5 flex items-center justify-between">
           <h2 className="font-headline text-xl font-bold">Venue Listings</h2>

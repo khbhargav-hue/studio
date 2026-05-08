@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { Star, MapPin, MessageCircle, Clock, Maximize } from "lucide-react"
+import { Star, MapPin, MessageCircle, Clock, Maximize, Trophy } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
@@ -24,13 +24,19 @@ export function TurfCard({ turf }: TurfCardProps) {
 
       <Link href={`/turf/${turf.id}`} className="block">
         <div className="relative aspect-[16/11] overflow-hidden rounded-t-[2rem]">
-          <Image
-            src={turf.images[0]}
-            alt={turf.name}
-            fill
-            className="object-cover transition-transform duration-700 group-hover:scale-110"
-            data-ai-hint="sports field"
-          />
+          {turf.images?.[0] ? (
+            <Image
+              src={turf.images[0]}
+              alt={turf.name}
+              fill
+              className="object-cover transition-transform duration-700 group-hover:scale-110"
+              data-ai-hint="sports field"
+            />
+          ) : (
+            <div className="absolute inset-0 bg-primary/5 flex items-center justify-center">
+              <Trophy className="h-12 w-12 text-primary opacity-10" />
+            </div>
+          )}
           <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-80" />
           
           <div className="absolute left-4 top-4 flex flex-col gap-2">
@@ -75,7 +81,7 @@ export function TurfCard({ turf }: TurfCardProps) {
           ))}
           <Badge variant="outline" className="border-white/5 text-muted-foreground text-[10px] py-0 px-2 flex items-center gap-1">
             <Clock className="h-2.5 w-2.5" />
-            {turf.openingHours.includes('24') ? 'Open 24/7' : turf.openingHours.split('-')[1].trim()}
+            {turf.openingHours.includes('24') ? 'Open 24/7' : turf.openingHours.split('-')[1]?.trim() || turf.openingHours}
           </Badge>
         </div>
       </CardContent>

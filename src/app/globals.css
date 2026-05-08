@@ -1,29 +1,30 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 120 8% 8%;
+    --background: 120 8% 2%;
     --foreground: 0 0% 100%;
-    --card: 120 8% 10%;
+    --card: 120 8% 5%;
     --card-foreground: 0 0% 100%;
-    --popover: 120 8% 10%;
+    --popover: 120 8% 5%;
     --popover-foreground: 0 0% 100%;
     --primary: 142 100% 54%;
-    --primary-foreground: 120 8% 8%;
-    --secondary: 120 8% 15%;
+    --primary-foreground: 120 8% 2%;
+    --secondary: 120 8% 10%;
     --secondary-foreground: 0 0% 100%;
-    --muted: 120 8% 15%;
-    --muted-foreground: 120 5% 70%;
+    --muted: 120 8% 10%;
+    --muted-foreground: 120 5% 60%;
     --accent: 78 68% 67%;
-    --accent-foreground: 120 8% 8%;
+    --accent-foreground: 120 8% 2%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 120 8% 18%;
-    --input: 120 8% 18%;
+    --border: 120 8% 12%;
+    --input: 120 8% 12%;
     --ring: 142 100% 54%;
-    --radius: 1rem;
+    --radius: 1.5rem;
   }
 }
 
@@ -37,11 +38,28 @@
 }
 
 .text-neon {
-  text-shadow: 0 0 10px rgba(26, 255, 115, 0.5);
+  text-shadow: 0 0 15px rgba(26, 255, 115, 0.6);
 }
 
 .glass-card {
-  background: rgba(20, 23, 20, 0.8);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(10, 12, 10, 0.7);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #050505;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1AFF7333;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #1AFF7366;
 }

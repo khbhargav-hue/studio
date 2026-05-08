@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "Turf": {
@@ -11,7 +12,12 @@
         "area": { "type": "string" },
         "sportTypes": { "type": "array", "items": { "type": "string", "enum": ["Cricket", "Football", "Pickleball"] } },
         "courtTypes": { "type": "array", "items": { "type": "string" } },
-        "pricePerHour": { "type": "number" },
+        "pricePerHour": { "type": "number", "description": "Base or starting price per hour" },
+        "courtPricing": { 
+          "type": "object", 
+          "additionalProperties": { "type": "number" },
+          "description": "Mapping of court type names to their specific hourly rates"
+        },
         "rating": { "type": "number" },
         "reviewCount": { "type": "number" },
         "images": { "type": "array", "items": { "type": "string" } },

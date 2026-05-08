@@ -9,6 +9,7 @@ export interface Turf {
   sportTypes: SportType[];
   courtTypes: string[];
   pricePerHour: number;
+  courtPricing?: Record<string, number>;
   rating: number;
   reviewCount: number;
   images: string[];

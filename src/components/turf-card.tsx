@@ -10,6 +10,7 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Turf } from "@/lib/types"
 import { useFirestore } from "@/firebase"
 import { doc, updateDoc, increment } from "firebase/firestore"
+import { useMemo } from "react"
 
 interface TurfCardProps {
   turf: Turf
@@ -19,7 +20,6 @@ export function TurfCard({ turf }: TurfCardProps) {
   const db = useFirestore()
 
   const handleWhatsAppClick = (e: React.MouseEvent) => {
-    // Analytics tracking
     if (db && turf.id) {
       const turfRef = doc(db, "turfs", turf.id)
       const statsRef = doc(db, "analytics", "stats")
@@ -29,12 +29,18 @@ export function TurfCard({ turf }: TurfCardProps) {
     }
   }
 
+  const minPrice = useMemo(() => {
+    if (turf.courtPricing && Object.keys(turf.courtPricing).length > 0) {
+      return Math.min(...Object.values(turf.courtPricing));
+    }
+    return turf.pricePerHour;
+  }, [turf.courtPricing, turf.pricePerHour]);
+
   const message = `Hi, I found ${turf.name} in ${turf.area} on Turfista and would like to inquire about booking a slot for ${turf.sportTypes?.[0] || 'a game'}.`
   const whatsappUrl = `https://wa.me/${turf.whatsappNumber}?text=${encodeURIComponent(message)}`
 
   return (
     <Card className="group relative overflow-hidden border-none bg-card/30 backdrop-blur-md transition-all duration-500 hover:bg-card/50 hover:shadow-[0_0_40px_rgba(26,255,115,0.15)] hover:-translate-y-2 rounded-[2rem]">
-      {/* Glow Effect Layer */}
       <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
         <div className="absolute -inset-[2px] bg-gradient-to-br from-primary/20 via-transparent to-accent/20 rounded-[2rem]" />
       </div>
@@ -47,7 +53,6 @@ export function TurfCard({ turf }: TurfCardProps) {
               alt={turf.name}
               fill
               className="object-cover transition-transform duration-700 group-hover:scale-110"
-              data-ai-hint="sports field"
             />
           ) : (
             <div className="absolute inset-0 bg-primary/5 flex items-center justify-center">
@@ -84,8 +89,11 @@ export function TurfCard({ turf }: TurfCardProps) {
             </div>
           </Link>
           <div className="text-right">
-            <span className="text-primary font-black text-xl leading-none">₹{turf.pricePerHour}</span>
-            <p className="text-[10px] text-muted-foreground font-medium uppercase">per hour</p>
+            <div className="flex flex-col items-end">
+              <p className="text-[10px] text-muted-foreground font-black uppercase tracking-tighter opacity-70">Starting From</p>
+              <span className="text-primary font-black text-xl leading-none">₹{minPrice}</span>
+              <p className="text-[10px] text-muted-foreground font-medium uppercase mt-0.5">per hour</p>
+            </div>
           </div>
         </div>
 

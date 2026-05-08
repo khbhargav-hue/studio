@@ -16,7 +16,7 @@ import {
   CardHeader, 
   CardTitle,
 } from "@/components/ui/card";
-import { ArrowLeft, Sparkles, Loader2, Save, Image as ImageIcon, Zap, Trophy, MapPin, Settings2, Globe } from "lucide-react";
+import { ArrowLeft, Sparkles, Loader2, Save, Image as ImageIcon, Zap, Trophy, MapPin, Settings2, Globe, IndianRupee } from "lucide-react";
 import { generateTurfDescriptionForAdmin } from "@/ai/flows/generate-turf-description-for-admin";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/firebase";
@@ -72,7 +72,6 @@ function SelectionGroup({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {options.map((opt) => {
           const isSelected = selected.includes(opt);
-          const checkboxId = `opt-${title.toLowerCase().replace(/\s+/g, '-')}-${opt.toLowerCase().replace(/\s+/g, '-')}`;
           return (
             <div 
               key={opt}
@@ -85,14 +84,14 @@ function SelectionGroup({
               onClick={() => onToggle(opt)}
             >
               <Checkbox 
-                id={checkboxId}
+                id={`opt-${opt}`}
                 checked={isSelected}
                 onCheckedChange={() => onToggle(opt)}
                 className={cn(isSelected && "border-primary")}
                 onClick={(e) => e.stopPropagation()}
               />
               <Label 
-                htmlFor={checkboxId}
+                htmlFor={`opt-${opt}`}
                 className={cn(
                   "flex-1 text-xs font-semibold cursor-pointer z-10", 
                   isSelected ? "text-primary" : "text-muted-foreground"
@@ -131,6 +130,7 @@ function NewTurfForm() {
     area: "",
     location: "",
     pricePerHour: 1000,
+    courtPricing: {} as Record<string, number>,
     description: "",
     amenities: [] as string[],
     sportTypes: [] as string[],
@@ -148,32 +148,13 @@ function NewTurfForm() {
 
   useEffect(() => {
     if (existingTurf) {
-      setFormData(prev => {
-        if (prev.id === existingTurf.id && prev.name === existingTurf.name) {
-          return prev;
-        }
-        return {
-          ...existingTurf,
-          id: existingTurf.id || "",
-          name: existingTurf.name || "",
-          area: existingTurf.area || "",
-          location: existingTurf.location || "",
-          pricePerHour: existingTurf.pricePerHour || 1000,
-          description: existingTurf.description || "",
-          amenities: existingTurf.amenities || [],
-          sportTypes: existingTurf.sportTypes || [],
-          courtTypes: existingTurf.courtTypes || [],
-          coachingServices: existingTurf.coachingServices || [],
-          rating: existingTurf.rating || 4.5,
-          reviewCount: existingTurf.reviewCount || 0,
-          openingHours: existingTurf.openingHours || "06:00 AM - 11:00 PM",
-          contactNumber: existingTurf.contactNumber || "",
-          whatsappNumber: existingTurf.whatsappNumber || "",
-          images: existingTurf.images?.length ? existingTurf.images : [""],
-          mapUrl: existingTurf.mapUrl || "",
-          isPopular: !!existingTurf.isPopular
-        };
-      });
+      setFormData(prev => ({
+        ...prev,
+        ...existingTurf,
+        id: existingTurf.id || "",
+        courtPricing: existingTurf.courtPricing || {},
+        images: existingTurf.images?.length ? existingTurf.images : [""]
+      }));
     }
   }, [existingTurf]);
 
@@ -181,12 +162,26 @@ function NewTurfForm() {
     setFormData(prev => {
       const current = prev[field] as string[];
       if (current.includes(value)) {
-        return { ...prev, [field]: current.filter(v => v !== value) };
+        const next = current.filter(v => v !== value);
+        // Clean up pricing if removed
+        const nextPricing = { ...prev.courtPricing };
+        if (field === 'courtTypes') delete nextPricing[value];
+        return { ...prev, [field]: next, courtPricing: nextPricing };
       } else {
         return { ...prev, [field]: [...current, value] };
       }
     });
   }, []);
+
+  const handlePriceChange = (courtType: string, price: string) => {
+    setFormData(prev => ({
+      ...prev,
+      courtPricing: {
+        ...prev.courtPricing,
+        [courtType]: Number(price)
+      }
+    }));
+  };
 
   const handleGenerateDescription = async () => {
     if (!formData.name || !formData.area) {
@@ -230,12 +225,17 @@ function NewTurfForm() {
     e.preventDefault();
     if (!db) return;
 
+    // Calculate starting price based on breakdown if available
+    const prices = Object.values(formData.courtPricing);
+    const minPrice = prices.length > 0 ? Math.min(...prices) : formData.pricePerHour;
+
     const id = editId || formData.name.toLowerCase().replace(/\s+/g, '-');
     const turfRef = doc(db, "turfs", id);
     
     setDoc(turfRef, {
       ...formData,
       id,
+      pricePerHour: minPrice,
       updatedAt: serverTimestamp()
     }, { merge: true })
     .catch(async (err) => {
@@ -329,7 +329,7 @@ function NewTurfForm() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="price">Price Per Hour (₹)</Label>
+                    <Label htmlFor="price">Base/Fallback Price (₹)</Label>
                     <Input 
                       id="price" 
                       type="number"
@@ -350,6 +350,31 @@ function NewTurfForm() {
                     />
                   </div>
                 </div>
+
+                {formData.courtTypes.length > 0 && (
+                  <div className="pt-4 border-t border-white/5">
+                    <h4 className="text-sm font-bold uppercase tracking-widest text-primary mb-4 flex items-center gap-2">
+                      <IndianRupee className="h-4 w-4" /> Specific Court Pricing
+                    </h4>
+                    <div className="space-y-4">
+                      {formData.courtTypes.map(type => (
+                        <div key={type} className="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/5">
+                          <Label className="flex-1 text-xs font-bold">{type}</Label>
+                          <div className="relative w-32">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-primary font-bold">₹</span>
+                            <Input 
+                              type="number"
+                              className="pl-7 h-10 bg-background/50 border-white/5 rounded-xl font-bold"
+                              value={formData.courtPricing[type] || ""}
+                              onChange={(e) => handlePriceChange(type, e.target.value)}
+                              placeholder="0"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">

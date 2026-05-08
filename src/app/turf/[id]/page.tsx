@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useParams, useRouter } from "next/navigation"
@@ -21,7 +22,8 @@ import {
   ShieldCheck,
   Zap,
   TrendingUp,
-  Trophy
+  Trophy,
+  IndianRupee
 } from "lucide-react"
 import { 
   Carousel, 
@@ -48,7 +50,6 @@ export default function TurfDetail() {
 
   const { data: turf, loading } = useDoc(turfDocRef)
 
-  // Fetch related venues in the same area or same sports
   const relatedQuery = useMemoFirebase(() => {
     if (!db) return null
     return query(collection(db, "turfs"), limit(10))
@@ -63,14 +64,11 @@ export default function TurfDetail() {
       .slice(0, 4)
   }, [allTurfs, turf])
 
-  // View Counter logic: Run once per mount/id change
   useEffect(() => {
     if (db && id && !hasIncremented.current) {
       hasIncremented.current = true;
-      const turfRef = doc(db, "turfs", id as string)
       const statsRef = doc(db, "analytics", "stats")
-      
-      // Atomic increment for views
+      const turfRef = doc(db, "turfs", id as string)
       updateDoc(turfRef, { views: increment(1) }).catch(() => {});
       updateDoc(statsRef, { totalViews: increment(1) }).catch(() => {});
     }
@@ -84,6 +82,13 @@ export default function TurfDetail() {
       updateDoc(statsRef, { totalWhatsAppClicks: increment(1) }).catch(() => {});
     }
   }
+
+  const minPrice = useMemo(() => {
+    if (turf?.courtPricing && Object.keys(turf.courtPricing).length > 0) {
+      return Math.min(...Object.values(turf.courtPricing));
+    }
+    return turf?.pricePerHour || 0;
+  }, [turf?.courtPricing, turf?.pricePerHour]);
 
   if (loading) {
     return (
@@ -127,7 +132,6 @@ export default function TurfDetail() {
           </Button>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-            {/* Left Column: Media & Info */}
             <div className="lg:col-span-2 space-y-12">
               <section className="relative rounded-[2.5rem] overflow-hidden glass-card p-3 border-white/10 shadow-2xl">
                 <Carousel className="w-full">
@@ -264,7 +268,6 @@ export default function TurfDetail() {
                 </div>
               </section>
 
-              {/* Related Venues Section */}
               {relatedTurfs.length > 0 && (
                 <section className="space-y-10">
                   <div className="flex items-center justify-between">
@@ -282,16 +285,31 @@ export default function TurfDetail() {
               )}
             </div>
 
-            {/* Right Column: Booking Card */}
             <div className="space-y-8">
               <aside className="sticky top-32 glass-card rounded-[3rem] p-10 border-primary/20 shadow-[0_30px_100px_rgba(26,255,115,0.1)]">
                 <div className="mb-12 text-center">
-                  <p className="text-muted-foreground text-[10px] font-black uppercase tracking-[0.4em] mb-4 opacity-50">Base Session Rate</p>
+                  <p className="text-muted-foreground text-[10px] font-black uppercase tracking-[0.4em] mb-4 opacity-50">Starting Session Rate</p>
                   <div className="flex items-center justify-center gap-2">
-                    <span className="text-6xl font-black text-primary italic leading-none">₹{turf.pricePerHour}</span>
+                    <span className="text-6xl font-black text-primary italic leading-none">₹{minPrice}</span>
                     <span className="text-muted-foreground font-black mt-6 uppercase text-sm tracking-widest">/ hr</span>
                   </div>
                 </div>
+
+                {turf.courtPricing && Object.keys(turf.courtPricing).length > 0 && (
+                  <div className="space-y-4 mb-10">
+                    <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary mb-4 flex items-center gap-2">
+                      <IndianRupee className="h-3 w-3" /> PRICING BREAKDOWN
+                    </h4>
+                    <div className="grid gap-3">
+                      {Object.entries(turf.courtPricing).map(([type, price]) => (
+                        <div key={type} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5 group hover:border-primary/30 transition-all">
+                          <span className="text-xs font-bold text-muted-foreground group-hover:text-foreground">{type}</span>
+                          <span className="font-black text-primary">₹{price}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <div className="space-y-5 mb-10">
                   <Button 
@@ -353,7 +371,6 @@ export default function TurfDetail() {
         </div>
       </div>
 
-      {/* Mobile Sticky Booking Bar */}
       <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-background/80 backdrop-blur-xl border-t border-white/5 lg:hidden animate-in slide-in-from-bottom duration-500">
         <Button 
           asChild 
@@ -362,7 +379,7 @@ export default function TurfDetail() {
         >
           <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
             <MessageCircle className="mr-2 h-6 w-6" />
-            BOOK NOW (₹{turf.pricePerHour}/hr)
+            BOOK NOW (Starting ₹{minPrice})
           </a>
         </Button>
       </div>

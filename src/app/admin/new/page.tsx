@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -72,24 +72,32 @@ function SelectionGroup({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {options.map((opt) => {
           const isSelected = selected.includes(opt);
+          const checkboxId = `opt-${title.toLowerCase().replace(/\s+/g, '-')}-${opt.toLowerCase().replace(/\s+/g, '-')}`;
           return (
             <div 
               key={opt}
-              onClick={() => onToggle(opt)}
               className={cn(
-                "group relative flex items-center space-x-3 p-3 rounded-xl border transition-all cursor-pointer",
+                "group relative flex items-center space-x-3 p-3 rounded-xl border transition-all",
                 isSelected 
                   ? "bg-primary/10 border-primary shadow-[0_0_15px_rgba(26,255,115,0.1)]" 
                   : "bg-white/5 border-white/5 hover:border-white/20"
               )}
             >
               <Checkbox 
+                id={checkboxId}
                 checked={isSelected}
-                className={cn("pointer-events-none", isSelected && "border-primary")}
+                onCheckedChange={() => onToggle(opt)}
+                className={cn(isSelected && "border-primary")}
               />
-              <span className={cn("text-xs font-semibold", isSelected ? "text-primary" : "text-muted-foreground")}>
+              <Label 
+                htmlFor={checkboxId}
+                className={cn(
+                  "flex-1 text-xs font-semibold cursor-pointer z-10", 
+                  isSelected ? "text-primary" : "text-muted-foreground"
+                )}
+              >
                 {opt}
-              </span>
+              </Label>
               {isSelected && <div className="absolute inset-0 bg-primary/5 rounded-xl animate-pulse pointer-events-none" />}
             </div>
           );
@@ -115,6 +123,7 @@ function NewTurfForm() {
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [formData, setFormData] = useState({
+    id: "",
     name: "",
     area: "",
     location: "",
@@ -133,21 +142,29 @@ function NewTurfForm() {
     isPopular: false
   });
 
+  // Sync existing turf data to state
   useEffect(() => {
     if (existingTurf) {
-      setFormData({
-        ...existingTurf,
-        pricePerHour: existingTurf.pricePerHour || 1000,
-        amenities: existingTurf.amenities || [],
-        sportTypes: existingTurf.sportTypes || [],
-        courtTypes: existingTurf.courtTypes || [],
-        coachingServices: existingTurf.coachingServices || [],
-        images: existingTurf.images?.length ? existingTurf.images : [""]
+      setFormData(prev => {
+        // Prevent unnecessary state updates if data is same
+        if (prev.id === existingTurf.id && prev.name === existingTurf.name && prev.updatedAt === existingTurf.updatedAt) {
+          return prev;
+        }
+        return {
+          ...existingTurf,
+          id: existingTurf.id || "",
+          pricePerHour: existingTurf.pricePerHour || 1000,
+          amenities: existingTurf.amenities || [],
+          sportTypes: existingTurf.sportTypes || [],
+          courtTypes: existingTurf.courtTypes || [],
+          coachingServices: existingTurf.coachingServices || [],
+          images: existingTurf.images?.length ? existingTurf.images : [""]
+        };
       });
     }
   }, [existingTurf]);
 
-  const toggleSelection = (field: keyof typeof formData, value: string) => {
+  const toggleSelection = useCallback((field: keyof typeof formData, value: string) => {
     setFormData(prev => {
       const current = prev[field] as string[];
       if (current.includes(value)) {
@@ -156,7 +173,7 @@ function NewTurfForm() {
         return { ...prev, [field]: [...current, value] };
       }
     });
-  };
+  }, []);
 
   const handleGenerateDescription = async () => {
     if (!formData.name || !formData.area) {

@@ -1,3 +1,4 @@
+
 {
   "placeholderImages": [
     {
@@ -25,10 +26,10 @@
       "imageHint": "night turf"
     },
     {
-      "id": "hero",
-      "description": "Hero background showing sports action",
-      "imageUrl": "https://picsum.photos/seed/hero/1920/1080",
-      "imageHint": "sports action"
+      "id": "turf-hero",
+      "description": "Cinematic night-time sports turf with stadium floodlights",
+      "imageUrl": "https://picsum.photos/seed/turf-hero/1920/1080",
+      "imageHint": "stadium floodlight night"
     }
   ]
 }

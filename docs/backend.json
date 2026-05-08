@@ -1,9 +1,8 @@
-
 {
   "entities": {
     "Turf": {
       "title": "Turf",
-      "description": "A sports turf venue listing",
+      "description": "A sports turf venue listing with facilities and coaching services",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
@@ -25,13 +24,14 @@
         "mapUrl": { "type": "string" },
         "isPopular": { "type": "boolean" },
         "views": { "type": "number" },
-        "whatsappClicks": { "type": "number" }
+        "whatsappClicks": { "type": "number" },
+        "updatedAt": { "type": "object" }
       },
       "required": ["name", "area", "pricePerHour"]
     },
     "Analytics": {
       "title": "Analytics",
-      "description": "Global application stats",
+      "description": "Global application usage statistics",
       "type": "object",
       "properties": {
         "totalUsers": { "type": "number" },

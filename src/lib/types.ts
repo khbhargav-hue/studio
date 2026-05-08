@@ -1,11 +1,5 @@
 
 export type SportType = 'Cricket' | 'Football' | 'Pickleball';
-export type CourtType = 
-  | 'Cricket Half Court' 
-  | 'Cricket Full Court' 
-  | 'Football Half Court' 
-  | 'Football Full Court'
-  | 'Pickleball Court';
 
 export interface Turf {
   id: string;
@@ -20,7 +14,7 @@ export interface Turf {
   images: string[];
   description: string;
   amenities: string[];
-  coachingServices?: string[];
+  coachingServices: string[];
   openingHours: string;
   contactNumber: string;
   whatsappNumber: string;

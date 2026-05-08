@@ -5,7 +5,7 @@ import { useState, useMemo } from "react"
 import { Navbar } from "@/components/navbar"
 import { TurfCard } from "@/components/turf-card"
 import { Input } from "@/components/ui/input"
-import { Search, Trophy, Loader2, Settings2 } from "lucide-react"
+import { Search, Trophy, Loader2, Settings2, Filter } from "lucide-react"
 import { 
   Select, 
   SelectContent, 
@@ -35,15 +35,16 @@ export default function Home() {
 
   const areas = useMemo(() => {
     if (!turfs) return []
-    const uniqueAreas = Array.from(new Set(turfs.map(t => t.area)))
+    const uniqueAreas = Array.from(new Set(turfs.map(t => t.area))).filter(Boolean)
     return uniqueAreas.sort()
   }, [turfs])
 
   const filteredTurfs = useMemo(() => {
     if (!turfs) return []
     return turfs.filter(turf => {
-      const matchesSearch = turf.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          turf.area.toLowerCase().includes(searchQuery.toLowerCase())
+      const matchesSearch = 
+        turf.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        turf.area?.toLowerCase().includes(searchQuery.toLowerCase())
       
       const matchesSport = sportFilter === "all" || 
                           turf.sportTypes?.some((s: string) => s.toLowerCase() === sportFilter.toLowerCase())
@@ -151,8 +152,16 @@ export default function Home() {
               <p className="text-muted-foreground mt-2 text-lg">Hand-picked premium facilities for professional play.</p>
             </div>
             <div className="hidden md:flex gap-2">
+               <Badge variant="outline" className="border-white/5 text-[10px] uppercase font-bold px-4 py-1.5 opacity-50 hover:opacity-100 hover:border-primary cursor-pointer transition-all" onClick={() => setSportFilter("all")}>
+                 Reset
+               </Badge>
                {["Football", "Cricket", "Pickleball"].map(s => (
-                 <Badge key={s} variant="outline" className="border-white/5 text-[10px] uppercase font-bold px-4 py-1.5 opacity-50 hover:opacity-100 hover:border-primary cursor-pointer transition-all">
+                 <Badge 
+                  key={s} 
+                  variant={sportFilter === s.toLowerCase() ? "default" : "outline"}
+                  onClick={() => setSportFilter(s.toLowerCase())}
+                  className="border-white/5 text-[10px] uppercase font-bold px-4 py-1.5 cursor-pointer transition-all"
+                >
                    {s}
                  </Badge>
                ))}
@@ -191,14 +200,6 @@ export default function Home() {
             <p className="text-muted-foreground max-w-md text-lg leading-relaxed">
               Experience the pinnacle of sports discovery in Mysuru. Our platform connects dedicated athletes with the finest arenas in the city.
             </p>
-            <div className="flex gap-4">
-               <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center hover:bg-primary/10 transition-colors cursor-pointer border border-white/5">
-                 <Trophy className="h-5 w-5" />
-               </div>
-               <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center hover:bg-primary/10 transition-colors cursor-pointer border border-white/5">
-                 <Settings2 className="h-5 w-5" />
-               </div>
-            </div>
           </div>
           <div className="flex flex-col md:items-end justify-between py-2">
             <div className="space-y-6 md:text-right">

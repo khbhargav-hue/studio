@@ -32,12 +32,13 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { useDoc, useFirestore, useMemoFirebase, useCollection } from "@/firebase"
 import { doc, increment, updateDoc, query, collection, limit } from "firebase/firestore"
-import { useEffect, useMemo } from "react"
+import { useEffect, useMemo, useRef } from "react"
 
 export default function TurfDetail() {
   const { id } = useParams()
   const router = useRouter()
   const db = useFirestore()
+  const hasIncremented = useRef(false)
 
   const turfDocRef = useMemoFirebase(() => {
     if (!db || !id) return null
@@ -61,8 +62,10 @@ export default function TurfDetail() {
       .slice(0, 4)
   }, [allTurfs, turf])
 
+  // View Counter logic: Run once per mount/id change
   useEffect(() => {
-    if (turf && db && id) {
+    if (db && id && !hasIncremented.current) {
+      hasIncremented.current = true;
       const turfRef = doc(db, "turfs", id as string)
       const statsRef = doc(db, "analytics", "stats")
       
@@ -70,7 +73,7 @@ export default function TurfDetail() {
       updateDoc(turfRef, { views: increment(1) }).catch(() => {});
       updateDoc(statsRef, { totalViews: increment(1) }).catch(() => {});
     }
-  }, [turf, db, id])
+  }, [db, id])
 
   const handleWhatsAppClick = () => {
     if (db && id) {

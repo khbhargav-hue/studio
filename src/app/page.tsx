@@ -14,8 +14,8 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select"
-import { useCollection, useFirestore, useMemoFirebase } from "@/firebase"
-import { collection, query, orderBy } from "firebase/firestore"
+import { useCollection, useFirestore, useMemoFirebase, useDoc } from "@/firebase"
+import { collection, query, orderBy, doc } from "firebase/firestore"
 
 export default function Home() {
   const db = useFirestore()
@@ -25,7 +25,13 @@ export default function Home() {
     return query(collection(db, "turfs"), orderBy("name", "asc"))
   }, [db])
 
+  const brandingRef = useMemoFirebase(() => {
+    if (!db) return null
+    return doc(db, "settings", "branding")
+  }, [db])
+
   const { data: turfs, loading } = useCollection(turfsQuery)
+  const { data: branding } = useDoc(brandingRef)
 
   const [searchQuery, setSearchQuery] = useState("")
   const [sportFilter, setSportFilter] = useState("all")
@@ -57,6 +63,15 @@ export default function Home() {
     })
   }, [turfs, searchQuery, sportFilter, areaFilter, courtFilter])
 
+  // Dynamic branding defaults
+  const heroContent = {
+    badge: branding?.heroBadgeText || "WE CONNECT YOU TO THE BEST TURFS",
+    h1: branding?.heroHeading1 || "PLAY MORE.",
+    h2: branding?.heroHeading2 || "BOOK EASY.",
+    desc: branding?.heroDescription || "Discover and book Mysuru’s best sports turfs in one place. Football, Cricket, Pickleball and more — all in one platform.",
+    image: branding?.heroImageUrl || "https://picsum.photos/seed/turf-hero/1920/1080"
+  }
+
   return (
     <div className="flex min-h-screen flex-col bg-[#050505]">
       <Navbar />
@@ -65,7 +80,7 @@ export default function Home() {
       <section className="relative h-screen min-h-[850px] flex items-center justify-center overflow-hidden">
         <div 
           className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-[10000ms]"
-          style={{ backgroundImage: `url('https://picsum.photos/seed/turf-hero/1920/1080')` }}
+          style={{ backgroundImage: `url('${heroContent.image}')` }}
           data-ai-hint="football stadium night floodlights"
         />
         {/* Cinematic Overlay */}
@@ -75,17 +90,16 @@ export default function Home() {
           {/* Top Badge */}
           <div className="inline-flex items-center gap-2 mb-10 bg-[#1AFF73]/10 backdrop-blur-md border border-[#1AFF73]/30 py-2.5 px-6 rounded-full animate-in fade-in slide-in-from-top-4 duration-1000">
             <LinkIcon className="h-3 w-3 text-[#1AFF73]" />
-            <span className="text-[11px] font-black text-[#1AFF73] uppercase tracking-[0.2em]">WE CONNECT YOU TO THE BEST TURFS</span>
+            <span className="text-[11px] font-black text-[#1AFF73] uppercase tracking-[0.2em]">{heroContent.badge}</span>
           </div>
           
           <h1 className="font-headline text-7xl md:text-[8.5rem] font-black tracking-tighter mb-8 leading-[0.85] uppercase italic animate-in fade-in zoom-in-95 duration-1000">
-            <span className="text-white block">PLAY MORE.</span>
-            <span className="text-[#1AFF73] block drop-shadow-[0_0_30px_rgba(26,255,115,0.6)]">BOOK EASY.</span>
+            <span className="text-white block">{heroContent.h1}</span>
+            <span className="text-[#1AFF73] block drop-shadow-[0_0_30px_rgba(26,255,115,0.6)]">{heroContent.h2}</span>
           </h1>
           
           <p className="text-xl md:text-2xl text-white/70 mb-20 max-w-3xl mx-auto font-medium leading-relaxed animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-200">
-            Discover and book Mysuru’s best sports turfs in one place.<br />
-            Football, Cricket, Pickleball and more — all in one platform.
+            {heroContent.desc}
           </p>
           
           {/* Floating Search Bar */}

@@ -44,6 +44,20 @@
         "totalViews": { "type": "number" },
         "totalWhatsAppClicks": { "type": "number" }
       }
+    },
+    "Branding": {
+      "title": "Branding",
+      "description": "Global application branding and hero configuration",
+      "type": "object",
+      "properties": {
+        "heroBadgeText": { "type": "string" },
+        "heroHeading1": { "type": "string" },
+        "heroHeading2": { "type": "string" },
+        "heroDescription": { "type": "string" },
+        "heroImageUrl": { "type": "string" },
+        "logoUrl": { "type": "string" },
+        "updatedAt": { "type": "object" }
+      }
     }
   },
   "auth": {
@@ -57,6 +71,10 @@
     "/analytics/stats": {
       "schema": "Analytics",
       "description": "Global usage statistics"
+    },
+    "/settings/branding": {
+      "schema": "Branding",
+      "description": "Global branding configuration"
     }
   }
 }

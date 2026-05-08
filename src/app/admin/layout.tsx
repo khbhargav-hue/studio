@@ -5,7 +5,7 @@ import { ReactNode, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@/firebase';
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from '@/components/ui/sidebar';
-import { LayoutDashboard, PlusCircle, LogOut, Loader2 } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, LogOut, Loader2, Palette } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
@@ -65,6 +65,14 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                   <Link href="/admin/new">
                     <PlusCircle className="h-5 w-5" />
                     <span>Add New Turf</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild tooltip="Branding" className="h-12 rounded-xl font-bold uppercase tracking-widest text-[10px]">
+                  <Link href="/admin/branding">
+                    <Palette className="h-5 w-5" />
+                    <span>Branding</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

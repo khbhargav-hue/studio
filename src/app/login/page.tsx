@@ -1,146 +1,173 @@
+'use client';
 
-"use client"
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Navbar } from "@/components/navbar";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Trophy, Loader2, LogIn, AlertCircle } from "lucide-react";
+import { useAuth, useUser } from "@/firebase";
+import { signInWithEmailAndPassword, signOut } from "firebase/auth";
+import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { Navbar } from "@/components/navbar"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-import { Trophy, Loader2, LogIn, AlertCircle } from "lucide-react"
-import { useAuth, useUser } from "@/firebase"
-import { signInWithEmailAndPassword, signOut } from "firebase/auth"
-import { useToast } from "@/hooks/use-toast"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-
-const ADMIN_EMAIL = "admin@turfista.com"
+const ADMIN_EMAIL = "admin@turfista.com";
 
 export default function LoginPage() {
-  const router = useRouter()
-  const { toast } = useToast()
-  const auth = useAuth()
-  const { user, loading } = useUser()
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [isLoggingIn, setIsLoggingIn] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const router = useRouter();
+  const { toast } = useToast();
+  const auth = useAuth();
+  const { user, loading } = useUser();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
+  // If user is already logged in as admin, redirect to dashboard
   useEffect(() => {
     if (!loading && user) {
       if (user.email === ADMIN_EMAIL) {
-        router.push("/admin")
+        router.push("/admin");
       } else {
-        // Log out unauthorized users
-        if (auth) signOut(auth)
-        setError("Unauthorized access. Admin only.")
+        // Log out unauthorized users if they somehow got here
+        if (auth) signOut(auth);
+        setError("Access denied. This portal is for administrators only.");
       }
     }
-  }, [user, loading, router, auth])
+  }, [user, loading, router, auth]);
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!auth) return
+    e.preventDefault();
+    if (!auth) return;
 
-    setIsLoggingIn(true)
-    setError(null)
+    setIsLoggingIn(true);
+    setError(null);
 
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password)
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      
       if (userCredential.user.email !== ADMIN_EMAIL) {
-        await signOut(auth)
-        setError("Unauthorized access. Admin only.")
-        setIsLoggingIn(false)
-        return
+        // Immediately sign out if the email doesn't match the admin email
+        await signOut(auth);
+        setError("Unauthorized access. Admin credentials required.");
+        setIsLoggingIn(false);
+        return;
       }
+
       toast({
-        title: "Login Successful",
-        description: "Welcome back to the command center.",
-      })
-      router.push("/admin")
+        title: "Access Granted",
+        description: "Welcome to the Turfista command center.",
+      });
+      router.push("/admin");
     } catch (err: any) {
-      setError(err.message || "Failed to login. Please check your credentials.")
-      setIsLoggingIn(false)
+      let message = "Failed to login. Please check your credentials.";
+      if (err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {
+        message = "Invalid email or password.";
+      } else if (err.code === 'auth/invalid-email') {
+        message = "Please enter a valid email address.";
+      }
+      setError(message);
+      setIsLoggingIn(false);
     }
-  }
+  };
 
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
       </div>
-    )
+    );
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="flex flex-col min-h-screen bg-background selection:bg-primary selection:text-primary-foreground">
       <Navbar />
       
       <div className="flex-1 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md glass-card border-white/10 overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-accent to-primary" />
-          <CardHeader className="space-y-1 text-center pt-8">
-            <div className="mx-auto bg-primary/20 p-3 rounded-2xl w-fit mb-4">
-              <Trophy className="h-10 w-10 text-primary" />
-            </div>
-            <CardTitle className="font-headline text-3xl font-bold tracking-tighter">ADMIN LOGIN</CardTitle>
-            <CardDescription className="text-muted-foreground">
-              Turfista Command Center
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleLogin} className="space-y-4">
-              {error && (
-                <Alert variant="destructive" className="bg-destructive/10 border-destructive/20 text-destructive-foreground">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Error</AlertTitle>
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input 
-                  id="email" 
-                  type="email" 
-                  placeholder="admin@turfista.com" 
-                  className="bg-background/50 border-white/10 h-12 rounded-xl"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
+        <div className="relative w-full max-w-md">
+          {/* Decorative Glow */}
+          <div className="absolute -inset-1 bg-gradient-to-r from-primary to-accent rounded-3xl blur opacity-20 animate-pulse" />
+          
+          <Card className="relative w-full glass-card border-white/10 overflow-hidden rounded-3xl shadow-2xl">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-accent to-primary" />
+            
+            <CardHeader className="space-y-1 text-center pt-10">
+              <div className="mx-auto bg-primary/10 p-4 rounded-2xl w-fit mb-6 border border-primary/20">
+                <Trophy className="h-12 w-12 text-primary" />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input 
-                  id="password" 
-                  type="password" 
-                  className="bg-background/50 border-white/10 h-12 rounded-xl"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
-              <Button 
-                type="submit" 
-                className="w-full h-12 bg-primary text-primary-foreground font-bold text-lg rounded-xl shadow-[0_0_20px_rgba(26,255,115,0.3)] hover:shadow-[0_0_30px_rgba(26,255,115,0.5)] transition-all"
-                disabled={isLoggingIn}
-              >
-                {isLoggingIn ? (
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                ) : (
-                  <LogIn className="mr-2 h-5 w-5" />
+              <CardTitle className="font-headline text-3xl font-bold tracking-tighter uppercase italic">
+                Admin <span className="text-primary">Control</span>
+              </CardTitle>
+              <CardDescription className="text-muted-foreground font-medium">
+                Identify yourself to manage the pitch
+              </CardDescription>
+            </CardHeader>
+            
+            <CardContent className="pt-4">
+              <form onSubmit={handleLogin} className="space-y-5">
+                {error && (
+                  <Alert variant="destructive" className="bg-destructive/10 border-destructive/20 text-destructive rounded-2xl animate-in fade-in zoom-in duration-300">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle className="font-bold">Entry Denied</AlertTitle>
+                    <AlertDescription className="text-xs">{error}</AlertDescription>
+                  </Alert>
                 )}
-                Access Dashboard
-              </Button>
-            </form>
-          </CardContent>
-          <CardFooter className="flex flex-col gap-2 pb-8">
-            <p className="text-xs text-center text-muted-foreground">
-              Secure access restricted to Turfista administrators only.
-            </p>
-          </CardFooter>
-        </Card>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Admin Email</Label>
+                  <Input 
+                    id="email" 
+                    type="email" 
+                    placeholder="admin@turfista.com" 
+                    className="bg-background/40 border-white/5 h-14 rounded-2xl focus:border-primary/50 transition-all text-base"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="password" title="Enter Password" className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Password</Label>
+                  <Input 
+                    id="password" 
+                    type="password" 
+                    className="bg-background/40 border-white/5 h-14 rounded-2xl focus:border-primary/50 transition-all"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                
+                <Button 
+                  type="submit" 
+                  className="w-full h-14 bg-primary text-primary-foreground font-black text-xl rounded-2xl shadow-[0_10px_30px_-5px_rgba(26,255,115,0.4)] hover:shadow-[0_15px_35px_-5px_rgba(26,255,115,0.5)] transition-all hover:scale-[1.01] active:scale-[0.98]"
+                  disabled={isLoggingIn}
+                >
+                  {isLoggingIn ? (
+                    <Loader2 className="mr-2 h-6 w-6 animate-spin" />
+                  ) : (
+                    <LogIn className="mr-2 h-6 w-6" />
+                  )}
+                  ENTER ARENA
+                </Button>
+              </form>
+            </CardContent>
+            
+            <CardFooter className="flex flex-col gap-4 pb-10 pt-4">
+              <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-tighter">
+                <div className="h-[1px] w-8 bg-white/10" />
+                Security Layer Active
+                <div className="h-[1px] w-8 bg-white/10" />
+              </div>
+              <p className="text-[10px] text-center text-muted-foreground/50 max-w-[200px] mx-auto leading-tight">
+                This area is monitored. Unauthorized login attempts are logged for security.
+              </p>
+            </CardFooter>
+          </Card>
+        </div>
       </div>
     </div>
-  )
+  );
 }

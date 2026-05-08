@@ -16,7 +16,7 @@ import {
   CardHeader, 
   CardTitle,
 } from "@/components/ui/card";
-import { ArrowLeft, Sparkles, Loader2, Save, Image as ImageIcon, Zap, Trophy, MapPin, Settings2 } from "lucide-react";
+import { ArrowLeft, Sparkles, Loader2, Save, Image as ImageIcon, Zap, Trophy, MapPin, Settings2, Globe } from "lucide-react";
 import { generateTurfDescriptionForAdmin } from "@/ai/flows/generate-turf-description-for-admin";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/firebase";
@@ -77,17 +77,19 @@ function SelectionGroup({
             <div 
               key={opt}
               className={cn(
-                "group relative flex items-center space-x-3 p-3 rounded-xl border transition-all",
+                "group relative flex items-center space-x-3 p-3 rounded-xl border transition-all cursor-pointer",
                 isSelected 
                   ? "bg-primary/10 border-primary shadow-[0_0_15px_rgba(26,255,115,0.1)]" 
                   : "bg-white/5 border-white/5 hover:border-white/20"
               )}
+              onClick={() => onToggle(opt)}
             >
               <Checkbox 
                 id={checkboxId}
                 checked={isSelected}
                 onCheckedChange={() => onToggle(opt)}
                 className={cn(isSelected && "border-primary")}
+                onClick={(e) => e.stopPropagation()}
               />
               <Label 
                 htmlFor={checkboxId}
@@ -95,6 +97,7 @@ function SelectionGroup({
                   "flex-1 text-xs font-semibold cursor-pointer z-10", 
                   isSelected ? "text-primary" : "text-muted-foreground"
                 )}
+                onClick={(e) => e.stopPropagation()}
               >
                 {opt}
               </Label>
@@ -139,26 +142,36 @@ function NewTurfForm() {
     contactNumber: "",
     whatsappNumber: "",
     images: [""],
+    mapUrl: "",
     isPopular: false
   });
 
-  // Sync existing turf data to state
   useEffect(() => {
     if (existingTurf) {
       setFormData(prev => {
-        // Prevent unnecessary state updates if data is same
-        if (prev.id === existingTurf.id && prev.name === existingTurf.name && prev.updatedAt === existingTurf.updatedAt) {
+        if (prev.id === existingTurf.id && prev.name === existingTurf.name) {
           return prev;
         }
         return {
           ...existingTurf,
           id: existingTurf.id || "",
+          name: existingTurf.name || "",
+          area: existingTurf.area || "",
+          location: existingTurf.location || "",
           pricePerHour: existingTurf.pricePerHour || 1000,
+          description: existingTurf.description || "",
           amenities: existingTurf.amenities || [],
           sportTypes: existingTurf.sportTypes || [],
           courtTypes: existingTurf.courtTypes || [],
           coachingServices: existingTurf.coachingServices || [],
-          images: existingTurf.images?.length ? existingTurf.images : [""]
+          rating: existingTurf.rating || 4.5,
+          reviewCount: existingTurf.reviewCount || 0,
+          openingHours: existingTurf.openingHours || "06:00 AM - 11:00 PM",
+          contactNumber: existingTurf.contactNumber || "",
+          whatsappNumber: existingTurf.whatsappNumber || "",
+          images: existingTurf.images?.length ? existingTurf.images : [""],
+          mapUrl: existingTurf.mapUrl || "",
+          isPopular: !!existingTurf.isPopular
         };
       });
     }
@@ -261,22 +274,21 @@ function NewTurfForm() {
         </Button>
         <div className="flex items-center gap-2 px-4 py-2 bg-accent/10 border border-accent/20 rounded-2xl">
           <Zap className="h-4 w-4 text-accent" />
-          <span className="text-xs font-bold text-accent uppercase tracking-widest">Advanced Setup</span>
+          <span className="text-xs font-bold text-accent uppercase tracking-widest">Live Sync Enabled</span>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
-          {/* Main Info Column */}
           <div className="lg:col-span-7 space-y-8">
             <Card className="glass-card border-white/5 rounded-[2rem] overflow-hidden">
               <CardHeader className="p-8 pb-4">
                 <CardTitle className="font-headline text-2xl font-bold flex items-center gap-3">
                   <Settings2 className="h-6 w-6 text-primary" />
-                  Core Details
+                  Venue Identity
                 </CardTitle>
-                <CardDescription>Primary information about the sports facility.</CardDescription>
+                <CardDescription>All fields are synchronized in real-time to the public directory.</CardDescription>
               </CardHeader>
               <CardContent className="p-8 pt-4 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -338,6 +350,42 @@ function NewTurfForm() {
                     />
                   </div>
                 </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="contact">Contact Number</Label>
+                    <Input 
+                      id="contact" 
+                      placeholder="+91..."
+                      className="h-12 bg-background/50 border-white/5 rounded-xl"
+                      value={formData.contactNumber}
+                      onChange={(e) => setFormData({...formData, contactNumber: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="whatsapp">WhatsApp Number</Label>
+                    <Input 
+                      id="whatsapp" 
+                      placeholder="91..."
+                      className="h-12 bg-background/50 border-white/5 rounded-xl"
+                      value={formData.whatsappNumber}
+                      onChange={(e) => setFormData({...formData, whatsappNumber: e.target.value})}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="mapUrl" className="flex items-center gap-2">
+                    <Globe className="h-3 w-3" /> Google Maps URL
+                  </Label>
+                  <Input 
+                    id="mapUrl" 
+                    placeholder="https://maps.google.com/..."
+                    className="h-12 bg-background/50 border-white/5 rounded-xl"
+                    value={formData.mapUrl}
+                    onChange={(e) => setFormData({...formData, mapUrl: e.target.value})}
+                  />
+                </div>
               </CardContent>
             </Card>
 
@@ -346,7 +394,7 @@ function NewTurfForm() {
                 <div>
                   <CardTitle className="font-headline text-2xl font-bold flex items-center gap-3">
                     <Sparkles className="h-6 w-6 text-accent" />
-                    Listing Copy
+                    Market Copy
                   </CardTitle>
                 </div>
                 <Button 
@@ -358,12 +406,12 @@ function NewTurfForm() {
                   disabled={isGenerating}
                 >
                   {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
-                  AI WRITE
+                  AI ASSIST
                 </Button>
               </CardHeader>
               <CardContent className="p-8 pt-4">
                 <Textarea 
-                  placeholder="The AI will help write this based on your selected features..." 
+                  placeholder="AI will help generate this based on your selected sports and amenities..." 
                   className="min-h-[220px] bg-background/50 border-white/5 rounded-2xl p-4 leading-relaxed resize-none focus:border-accent/40"
                   value={formData.description}
                   onChange={(e) => setFormData({...formData, description: e.target.value})}
@@ -372,13 +420,12 @@ function NewTurfForm() {
             </Card>
           </div>
 
-          {/* Configuration Column */}
           <div className="lg:col-span-5 space-y-8">
             <Card className="glass-card border-white/5 rounded-[2rem] overflow-hidden">
               <CardHeader className="p-6">
                 <CardTitle className="font-headline text-xl font-bold flex items-center gap-3">
                   <Zap className="h-5 w-5 text-primary" />
-                  Facility Options
+                  Configuration
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-6 space-y-8">
@@ -392,7 +439,7 @@ function NewTurfForm() {
                 />
 
                 <SelectionGroup 
-                  title="Court Sizes"
+                  title="Court Formats"
                   options={COURT_OPTIONS}
                   selected={formData.courtTypes}
                   onToggle={(v) => toggleSelection('courtTypes', v)}
@@ -400,14 +447,14 @@ function NewTurfForm() {
                 />
 
                 <SelectionGroup 
-                  title="Extra Facilities"
+                  title="Standard Amenities"
                   options={FACILITY_OPTIONS}
                   selected={formData.amenities}
                   onToggle={(v) => toggleSelection('amenities', v)}
                 />
 
                 <SelectionGroup 
-                  title="Coaching Services"
+                  title="Training Programs"
                   options={COACHING_OPTIONS}
                   selected={formData.coachingServices}
                   onToggle={(v) => toggleSelection('coachingServices', v)}
@@ -416,8 +463,8 @@ function NewTurfForm() {
                 <div className="pt-6 border-t border-white/5">
                   <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
                     <div className="space-y-0.5">
-                      <Label className="text-sm font-bold">Featured Venue</Label>
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Boost to homepage spotlight</p>
+                      <Label className="text-sm font-bold">Featured Spotlight</Label>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Pin to homepage highlights</p>
                     </div>
                     <Switch 
                       checked={formData.isPopular}
@@ -433,16 +480,16 @@ function NewTurfForm() {
               <CardHeader className="p-6">
                 <CardTitle className="font-headline text-lg font-bold flex items-center gap-3">
                   <ImageIcon className="h-5 w-5 text-muted-foreground" />
-                  Media Assets
+                  Gallery
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-6 space-y-4">
                 <div className="space-y-2">
-                  <Label className="text-xs">Main Cover Image URL</Label>
+                  <Label className="text-xs">Cover Image URL</Label>
                   <Input 
                     placeholder="https://images.unsplash.com/..." 
                     className="bg-background/50 border-white/5 rounded-xl h-10"
-                    value={formData.images[0]}
+                    value={formData.images[0] || ""}
                     onChange={(e) => setFormData({...formData, images: [e.target.value]})}
                   />
                 </div>
@@ -452,7 +499,7 @@ function NewTurfForm() {
                   ) : (
                     <div className="text-muted-foreground text-center p-4">
                       <ImageIcon className="h-8 w-8 mx-auto mb-2 opacity-20" />
-                      <p className="text-[10px] font-bold">PREVIEW AREA</p>
+                      <p className="text-[10px] font-bold">IMAGE PREVIEW</p>
                     </div>
                   )}
                 </div>
@@ -463,7 +510,7 @@ function NewTurfForm() {
 
         <div className="flex gap-4 pt-8">
           <Button type="submit" className="flex-1 h-16 bg-primary text-primary-foreground font-black text-xl rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.01] transition-transform active:scale-[0.98]">
-            <Save className="mr-3 h-6 w-6" /> {editId ? "SAVE CHANGES" : "PUBLISH ARENA"}
+            <Save className="mr-3 h-6 w-6" /> {editId ? "SAVE CHANGES" : "PUBLISH VENUE"}
           </Button>
           <Button type="button" variant="ghost" onClick={() => router.back()} className="h-16 px-8 border border-white/5 rounded-2xl font-bold">
             CANCEL

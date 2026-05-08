@@ -28,7 +28,7 @@ import {
   CarouselPrevious 
 } from "@/components/ui/carousel"
 import { Separator } from "@/components/ui/separator"
-import { useDoc, useFirestore } from "@/firebase"
+import { useDoc, useFirestore, useMemoFirebase } from "@/firebase"
 import { doc, increment, updateDoc } from "firebase/firestore"
 import { useEffect } from "react"
 
@@ -36,7 +36,13 @@ export default function TurfDetail() {
   const { id } = useParams()
   const router = useRouter()
   const db = useFirestore()
-  const { data: turf, loading } = useDoc(id ? doc(db!, "turfs", id as string) : null)
+
+  const turfDocRef = useMemoFirebase(() => {
+    if (!db || !id) return null
+    return doc(db, "turfs", id as string)
+  }, [db, id])
+
+  const { data: turf, loading } = useDoc(turfDocRef)
 
   useEffect(() => {
     if (turf && db && id) {
@@ -99,25 +105,33 @@ export default function TurfDetail() {
               <section className="relative rounded-3xl overflow-hidden glass-card p-2">
                 <Carousel className="w-full">
                   <CarouselContent>
-                    {(turf.images || []).map((img: string, idx: number) => (
-                      <CarouselItem key={idx}>
-                        <div className="relative aspect-video w-full rounded-2xl overflow-hidden">
-                          {img ? (
-                            <Image 
-                              src={img} 
-                              alt={turf.name} 
-                              fill 
-                              className="object-cover"
-                              data-ai-hint="sports arena"
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-black/40 flex items-center justify-center">
-                              <Zap className="h-20 w-20 text-primary opacity-20" />
-                            </div>
-                          )}
+                    {(turf.images || []).length > 0 ? (
+                      turf.images.map((img: string, idx: number) => (
+                        <CarouselItem key={idx}>
+                          <div className="relative aspect-video w-full rounded-2xl overflow-hidden">
+                            {img ? (
+                              <Image 
+                                src={img} 
+                                alt={turf.name} 
+                                fill 
+                                className="object-cover"
+                                data-ai-hint="sports arena"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-black/40 flex items-center justify-center">
+                                <Zap className="h-20 w-20 text-primary opacity-20" />
+                              </div>
+                            )}
+                          </div>
+                        </CarouselItem>
+                      ))
+                    ) : (
+                      <CarouselItem>
+                        <div className="relative aspect-video w-full rounded-2xl overflow-hidden bg-black/40 flex items-center justify-center">
+                          <Zap className="h-20 w-20 text-primary opacity-20" />
                         </div>
                       </CarouselItem>
-                    ))}
+                    )}
                   </CarouselContent>
                   <CarouselPrevious className="left-4 bg-background/80" />
                   <CarouselNext className="right-4 bg-background/80" />

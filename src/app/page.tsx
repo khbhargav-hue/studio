@@ -14,13 +14,18 @@ import {
   SelectValue 
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { useCollection, useFirestore } from "@/firebase"
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase"
 import { collection, query, orderBy } from "firebase/firestore"
 import Link from "next/link"
 
 export default function Home() {
   const db = useFirestore()
-  const turfsQuery = query(collection(db!, "turfs"), orderBy("name", "asc"))
+  
+  const turfsQuery = useMemoFirebase(() => {
+    if (!db) return null
+    return query(collection(db, "turfs"), orderBy("name", "asc"))
+  }, [db])
+
   const { data: turfs, loading } = useCollection(turfsQuery)
 
   const [searchQuery, setSearchQuery] = useState("")

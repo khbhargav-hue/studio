@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useMemo } from "react"
@@ -16,6 +15,8 @@ import {
 } from "@/components/ui/select"
 import { useCollection, useFirestore, useMemoFirebase, useDoc } from "@/firebase"
 import { collection, query, orderBy, doc } from "firebase/firestore"
+
+const PREDEFINED_AREAS = ["Bogadi", "Vijaynagar", "Kuvempunagar", "Srirampura", "Bannimantap"];
 
 export default function Home() {
   const db = useFirestore()
@@ -39,9 +40,11 @@ export default function Home() {
   const [courtFilter, setCourtFilter] = useState("all")
 
   const areas = useMemo(() => {
-    if (!turfs) return []
-    const uniqueAreas = Array.from(new Set(turfs.map(t => t.area))).filter(Boolean)
-    return uniqueAreas.sort()
+    if (!turfs) return PREDEFINED_AREAS;
+    const uniqueAreas = Array.from(new Set([...PREDEFINED_AREAS, ...turfs.map(t => t.area)]))
+      .filter(Boolean)
+      .sort();
+    return uniqueAreas;
   }, [turfs])
 
   const filteredTurfs = useMemo(() => {
@@ -126,6 +129,7 @@ export default function Home() {
                     <SelectItem value="football">Football</SelectItem>
                     <SelectItem value="cricket">Cricket</SelectItem>
                     <SelectItem value="pickleball">Pickleball</SelectItem>
+                    <SelectItem value="badminton">Badminton</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -140,6 +144,8 @@ export default function Home() {
                     <SelectItem value="all">All Sizes</SelectItem>
                     <SelectItem value="half">Half Court</SelectItem>
                     <SelectItem value="full">Full Court</SelectItem>
+                    <SelectItem value="5A">5A Side</SelectItem>
+                    <SelectItem value="7A">7A Side</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

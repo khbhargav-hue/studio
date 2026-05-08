@@ -1,7 +1,7 @@
 'use client';
 
 import { useCollection, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, doc, deleteDoc } from 'firebase/firestore';
+import { collection, query, orderBy, doc, deleteDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,13 +24,15 @@ import {
   Users,
   Star,
   BarChart3,
-  Trophy
+  Trophy,
+  Database,
+  CheckCircle
 } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Bar,
   BarChart,
@@ -40,10 +42,12 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { MOCK_TURFS } from '@/lib/data';
 
 export default function AdminDashboard() {
   const db = useFirestore();
   const { toast } = useToast();
+  const [isSeeding, setIsSeeding] = useState(false);
 
   const turfsQuery = useMemoFirebase(() => {
     if (!db) return null;
@@ -102,6 +106,37 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleSeedData = async () => {
+    if (!db) return;
+    setIsSeeding(true);
+    
+    try {
+      const promises = MOCK_TURFS.map(turf => {
+        const turfRef = doc(db, 'turfs', turf.id);
+        return setDoc(turfRef, {
+          ...turf,
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+      });
+
+      await Promise.all(promises);
+      
+      toast({
+        title: "Database Synced",
+        description: "Real-world Mysuru venues have been added to your collection.",
+      });
+    } catch (error) {
+      console.error(error);
+      toast({
+        variant: "destructive",
+        title: "Sync Failed",
+        description: "Check your permissions and try again.",
+      });
+    } finally {
+      setIsSeeding(false);
+    }
+  };
+
   if (turfsLoading) {
     return (
       <div className="flex h-[50vh] items-center justify-center">
@@ -124,11 +159,22 @@ export default function AdminDashboard() {
           <h1 className="font-headline text-4xl font-bold tracking-tight">Admin Console</h1>
           <p className="text-muted-foreground mt-1 text-lg">Real-time performance metrics and venue management.</p>
         </div>
-        <Button asChild className="bg-primary text-primary-foreground font-bold rounded-2xl h-12 px-6 shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all">
-          <Link href="/admin/new">
-            <Plus className="mr-2 h-5 w-5" /> Add New Venue
-          </Link>
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button 
+            variant="outline" 
+            onClick={handleSeedData} 
+            disabled={isSeeding}
+            className="border-white/5 hover:bg-white/5 h-12 rounded-2xl font-bold"
+          >
+            {isSeeding ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Database className="h-5 w-5 mr-2" />}
+            Sync Real Data
+          </Button>
+          <Button asChild className="bg-primary text-primary-foreground font-bold rounded-2xl h-12 px-6 shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all">
+            <Link href="/admin/new">
+              <Plus className="mr-2 h-5 w-5" /> Add New Venue
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useParams, useRouter } from "next/navigation"
@@ -20,7 +19,8 @@ import {
   GraduationCap,
   ShieldCheck,
   Zap,
-  TrendingUp
+  TrendingUp,
+  Trophy
 } from "lucide-react"
 import { 
   Carousel, 

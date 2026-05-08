@@ -31,41 +31,39 @@ export function Navbar() {
   const isAdmin = user?.email === "khbhargav@gmail.com"
 
   return (
-    <nav className="sticky top-0 z-50 w-full glass-card border-b border-white/10 px-4 py-4 md:px-8">
+    <nav className="absolute top-0 z-50 w-full px-4 py-6 md:px-12">
       <div className="mx-auto flex max-w-7xl items-center justify-between">
         <Link href="/">
           <TurfistaLogo />
         </Link>
 
-        <div className="hidden md:flex items-center gap-10">
-          <Link href="/" className="text-xs font-black uppercase tracking-[0.2em] hover:text-primary transition-colors">Find Turfs</Link>
-          <Link href="/about" className="text-xs font-black uppercase tracking-[0.2em] hover:text-primary transition-colors">Partner Program</Link>
+        <div className="hidden md:flex items-center gap-8">
+          <Link href="/" className="text-[13px] font-bold text-white/80 hover:text-white transition-colors">Find Turfs</Link>
+          <Link href="/about" className="text-[13px] font-bold text-white/80 hover:text-white transition-colors">About</Link>
           
           {isAdmin && (
-            <Link href="/admin" className="text-xs font-black uppercase tracking-[0.2em] text-accent hover:opacity-80 transition-opacity">Admin Portal</Link>
+            <Link href="/admin" className="text-[13px] font-bold text-[#1AFF73] hover:opacity-80 transition-opacity">Admin Portal</Link>
           )}
-
-          <div className="h-6 w-px bg-white/10 mx-2" />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-2xl hover:bg-primary/10 hover:text-primary h-12 w-12 border border-transparent hover:border-primary/20">
-                <User className="h-6 w-6" />
+              <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 h-10 w-10">
+                <User className="h-5 w-5" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-card border-white/10 w-56 rounded-2xl p-2 shadow-2xl">
+            <DropdownMenuContent align="end" className="bg-black/90 border-white/10 w-56 rounded-2xl p-2 backdrop-blur-xl">
               {!user ? (
-                <DropdownMenuItem asChild className="rounded-xl h-12 focus:bg-primary focus:text-background font-bold cursor-pointer">
+                <DropdownMenuItem asChild className="rounded-xl h-12 focus:bg-[#1AFF73] focus:text-black font-bold cursor-pointer">
                   <Link href="/login">Admin Login</Link>
                 </DropdownMenuItem>
               ) : (
                 <>
                   <div className="px-3 py-4">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Authenticated As</p>
-                    <p className="text-sm font-bold truncate text-primary">{user.email}</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-1">Authenticated As</p>
+                    <p className="text-sm font-bold truncate text-[#1AFF73]">{user.email}</p>
                   </div>
                   <DropdownMenuSeparator className="bg-white/10 mx-1" />
-                  <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:bg-destructive/10 focus:text-destructive h-12 rounded-xl font-bold cursor-pointer mt-1">
+                  <DropdownMenuItem onClick={handleLogout} className="text-red-500 focus:bg-red-500/10 focus:text-red-500 h-12 rounded-xl font-bold cursor-pointer mt-1">
                     <LogOut className="mr-3 h-4 w-4" /> Logout
                   </DropdownMenuItem>
                 </>
@@ -77,11 +75,11 @@ export function Navbar() {
         <div className="md:hidden">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-12 w-12 rounded-2xl bg-white/5">
+              <Button variant="ghost" size="icon" className="h-10 w-10 text-white">
                 <Menu className="h-6 w-6" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 bg-card border-white/10 rounded-2xl p-2 mt-2">
+            <DropdownMenuContent align="end" className="w-56 bg-black border-white/10 rounded-2xl p-2 mt-2">
               <DropdownMenuItem asChild className="h-12 rounded-xl font-bold">
                 <Link href="/">Find Turfs</Link>
               </DropdownMenuItem>
@@ -89,17 +87,16 @@ export function Navbar() {
                 <Link href="/about">About</Link>
               </DropdownMenuItem>
               {isAdmin && (
-                <DropdownMenuItem asChild className="h-12 rounded-xl font-bold text-accent">
+                <DropdownMenuItem asChild className="h-12 rounded-xl font-bold text-[#1AFF73]">
                   <Link href="/admin">Admin Portal</Link>
                 </DropdownMenuItem>
               )}
-              <DropdownMenuSeparator className="bg-white/10 mx-1" />
               {!user ? (
                 <DropdownMenuItem asChild className="h-12 rounded-xl font-bold">
                   <Link href="/login">Admin Login</Link>
                 </DropdownMenuItem>
               ) : (
-                <DropdownMenuItem onClick={handleLogout} className="text-destructive h-12 rounded-xl font-bold">
+                <DropdownMenuItem onClick={handleLogout} className="text-red-500 h-12 rounded-xl font-bold">
                   <LogOut className="mr-3 h-4 w-4" /> Logout
                 </DropdownMenuItem>
               )}

@@ -1,4 +1,3 @@
-
 "use client"
 
 import Link from "next/link"
@@ -27,7 +26,7 @@ export function Navbar() {
     }
   }
 
-  const isAdmin = user?.email === "admin@turfista.com"
+  const isAdmin = user?.email === "khbhargav@gmail.com"
 
   return (
     <nav className="sticky top-0 z-50 w-full glass-card border-b border-white/10 px-4 py-4 md:px-8">

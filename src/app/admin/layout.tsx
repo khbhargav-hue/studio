@@ -4,13 +4,13 @@ import { ReactNode, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@/firebase';
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from '@/components/ui/sidebar';
-import { LayoutDashboard, PlusCircle, Settings, LogOut, Trophy, Eye, MousePointerClick } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, LogOut, Trophy } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { Loader2 } from 'lucide-react';
 
-const ADMIN_EMAIL = 'admin@turfista.com';
+const ADMIN_EMAIL = 'khbhargav@gmail.com';
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const { user, loading } = useUser();

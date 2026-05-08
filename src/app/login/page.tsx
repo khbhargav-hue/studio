@@ -13,7 +13,7 @@ import { signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-const ADMIN_EMAIL = "admin@turfista.com";
+const ADMIN_EMAIL = "khbhargav@gmail.com";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -25,13 +25,11 @@ export default function LoginPage() {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // If user is already logged in as admin, redirect to dashboard
   useEffect(() => {
     if (!loading && user) {
       if (user.email === ADMIN_EMAIL) {
         router.push("/admin");
       } else {
-        // Log out unauthorized users if they somehow got here
         if (auth) signOut(auth);
         setError("Access denied. This portal is for administrators only.");
       }
@@ -49,7 +47,6 @@ export default function LoginPage() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
       if (userCredential.user.email !== ADMIN_EMAIL) {
-        // Immediately sign out if the email doesn't match the admin email
         await signOut(auth);
         setError("Unauthorized access. Admin credentials required.");
         setIsLoggingIn(false);
@@ -63,7 +60,7 @@ export default function LoginPage() {
       router.push("/admin");
     } catch (err: any) {
       let message = "Failed to login. Please check your credentials.";
-      if (err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {
+      if (err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
         message = "Invalid email or password.";
       } else if (err.code === 'auth/invalid-email') {
         message = "Please enter a valid email address.";
@@ -87,7 +84,6 @@ export default function LoginPage() {
       
       <div className="flex-1 flex items-center justify-center p-4">
         <div className="relative w-full max-w-md">
-          {/* Decorative Glow */}
           <div className="absolute -inset-1 bg-gradient-to-r from-primary to-accent rounded-3xl blur opacity-20 animate-pulse" />
           
           <Card className="relative w-full glass-card border-white/10 overflow-hidden rounded-3xl shadow-2xl">
@@ -120,7 +116,7 @@ export default function LoginPage() {
                   <Input 
                     id="email" 
                     type="email" 
-                    placeholder="admin@turfista.com" 
+                    placeholder="khbhargav@gmail.com" 
                     className="bg-background/40 border-white/5 h-14 rounded-2xl focus:border-primary/50 transition-all text-base"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}

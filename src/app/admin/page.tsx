@@ -2,7 +2,7 @@
 
 import { useCollection, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, doc, deleteDoc } from 'firebase/firestore';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -22,12 +22,27 @@ import {
   Plus, 
   Loader2,
   Users,
-  Star
+  Star,
+  BarChart3,
+  LineChart
 } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { useMemo } from 'react';
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  AreaChart,
+  Area
+} from "recharts";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 
 export default function AdminDashboard() {
   const db = useFirestore();
@@ -45,6 +60,34 @@ export default function AdminDashboard() {
 
   const { data: turfs, loading: turfsLoading } = useCollection(turfsQuery);
   const { data: stats } = useDoc(statsRef);
+
+  // Derive dynamic analytics
+  const processedAnalytics = useMemo(() => {
+    if (!turfs) return { areaStats: [], mostViewed: null, topArea: 'N/A' };
+
+    const areaCounts: Record<string, number> = {};
+    let maxViews = -1;
+    let mostViewed = null;
+
+    turfs.forEach(turf => {
+      // Area distribution
+      areaCounts[turf.area] = (areaCounts[turf.area] || 0) + (turf.views || 0);
+      
+      // Most viewed
+      if ((turf.views || 0) > maxViews) {
+        maxViews = turf.views;
+        mostViewed = turf;
+      }
+    });
+
+    const areaStats = Object.entries(areaCounts)
+      .map(([name, views]) => ({ name, views }))
+      .sort((a, b) => b.views - a.views);
+
+    const topArea = areaStats.length > 0 ? areaStats[0].name : 'N/A';
+
+    return { areaStats, mostViewed, topArea };
+  }, [turfs]);
 
   const handleDelete = (id: string, name: string) => {
     if (!db) return;
@@ -72,6 +115,13 @@ export default function AdminDashboard() {
       </div>
     );
   }
+
+  const chartConfig = {
+    views: {
+      label: "Total Views",
+      color: "hsl(var(--primary))",
+    },
+  };
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -128,8 +178,92 @@ export default function AdminDashboard() {
             <TrendingUp className="h-5 w-5 text-accent group-hover:scale-110 transition-transform" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">Vijayanagar</div>
+            <div className="text-3xl font-bold truncate">{processedAnalytics.topArea}</div>
             <p className="text-xs text-muted-foreground mt-1">Highest regional activity</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <Card className="glass-card border-white/5 rounded-[2rem] overflow-hidden">
+          <CardHeader>
+            <div className="flex items-center gap-2 mb-1">
+              <BarChart3 className="h-5 w-5 text-primary" />
+              <CardTitle className="text-xl font-headline font-bold">Area Popularity</CardTitle>
+            </div>
+            <CardDescription>Views distribution across different Mysuru areas</CardDescription>
+          </CardHeader>
+          <CardContent className="h-[300px]">
+            <ChartContainer config={chartConfig} className="w-full h-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={processedAnalytics.areaStats}>
+                  <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                  <XAxis 
+                    dataKey="name" 
+                    stroke="rgba(255,255,255,0.4)" 
+                    fontSize={12} 
+                    tickLine={false} 
+                    axisLine={false} 
+                  />
+                  <YAxis 
+                    stroke="rgba(255,255,255,0.4)" 
+                    fontSize={12} 
+                    tickLine={false} 
+                    axisLine={false} 
+                    tickFormatter={(value) => `${value}`} 
+                  />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar 
+                    dataKey="views" 
+                    fill="var(--color-views)" 
+                    radius={[4, 4, 0, 0]} 
+                    barSize={32}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+
+        <Card className="glass-card border-white/5 rounded-[2rem] overflow-hidden flex flex-col">
+          <CardHeader>
+            <div className="flex items-center gap-2 mb-1">
+              <Star className="h-5 w-5 text-accent" />
+              <CardTitle className="text-xl font-headline font-bold">Most Viewed Venue</CardTitle>
+            </div>
+            <CardDescription>Current trending turf on the platform</CardDescription>
+          </CardHeader>
+          <CardContent className="flex-1 flex flex-col justify-center items-center text-center p-8">
+            {processedAnalytics.mostViewed ? (
+              <div className="space-y-4">
+                <div className="relative w-32 h-32 mx-auto rounded-full overflow-hidden border-4 border-primary/20 p-1">
+                  <img 
+                    src={processedAnalytics.mostViewed.images[0]} 
+                    alt={processedAnalytics.mostViewed.name}
+                    className="w-full h-full object-cover rounded-full"
+                  />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-black text-primary uppercase tracking-tighter">
+                    {processedAnalytics.mostViewed.name}
+                  </h3>
+                  <p className="text-muted-foreground font-bold">{processedAnalytics.mostViewed.area}</p>
+                </div>
+                <div className="flex gap-4 justify-center">
+                  <div className="bg-white/5 rounded-2xl p-4 min-w-[100px]">
+                    <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Total Views</p>
+                    <p className="text-2xl font-bold">{processedAnalytics.mostViewed.views || 0}</p>
+                  </div>
+                  <div className="bg-white/5 rounded-2xl p-4 min-w-[100px]">
+                    <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Leads</p>
+                    <p className="text-2xl font-bold text-accent">{processedAnalytics.mostViewed.whatsappClicks || 0}</p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-muted-foreground">No data available</div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -138,8 +272,8 @@ export default function AdminDashboard() {
       <div className="glass-card rounded-[2rem] overflow-hidden border-white/5 shadow-2xl">
         <div className="p-6 border-b border-white/5 bg-white/5 flex items-center justify-between">
           <h2 className="font-headline text-xl font-bold">Venue Listings</h2>
-          <Badge variant="secondary" className="bg-primary/20 text-primary border-none">
-            {turfs?.length || 0} Total
+          <Badge variant="secondary" className="bg-primary/20 text-primary border-none px-3 py-1 font-bold">
+            {turfs?.length || 0} ACTIVE
           </Badge>
         </div>
         <div className="overflow-x-auto">
@@ -149,7 +283,7 @@ export default function AdminDashboard() {
                 <TableHead className="font-bold">Venue</TableHead>
                 <TableHead className="font-bold">Area</TableHead>
                 <TableHead className="font-bold">Price/hr</TableHead>
-                <TableHead className="font-bold">Rating</TableHead>
+                <TableHead className="font-bold text-center">Views</TableHead>
                 <TableHead className="font-bold text-center">Featured</TableHead>
                 <TableHead className="text-right font-bold">Actions</TableHead>
               </TableRow>
@@ -160,11 +294,8 @@ export default function AdminDashboard() {
                   <TableCell className="font-bold text-lg">{turf.name}</TableCell>
                   <TableCell className="text-muted-foreground">{turf.area}</TableCell>
                   <TableCell className="font-bold text-primary">₹{turf.pricePerHour}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1.5">
-                      <Star className="h-4 w-4 text-primary fill-current" />
-                      <span className="font-bold">{turf.rating}</span>
-                    </div>
+                  <TableCell className="text-center font-mono">
+                    {turf.views || 0}
                   </TableCell>
                   <TableCell className="text-center">
                     {turf.isPopular ? (

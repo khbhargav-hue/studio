@@ -26,7 +26,7 @@ import {
   BarChart3,
   Trophy,
   Database,
-  CheckCircle
+  ShieldCheck
 } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
@@ -111,26 +111,49 @@ export default function AdminDashboard() {
     setIsSeeding(true);
     
     try {
-      const promises = MOCK_TURFS.map(turf => {
+      // 1. Seed Turf Listings
+      const turfPromises = MOCK_TURFS.map(turf => {
         const turfRef = doc(db, 'turfs', turf.id);
         return setDoc(turfRef, {
           ...turf,
-          updatedAt: serverTimestamp()
+          updatedAt: serverTimestamp(),
+          views: turf.views || 0,
+          whatsappClicks: turf.whatsappClicks || 0
         }, { merge: true });
       });
 
-      await Promise.all(promises);
+      // 2. Seed Global Analytics
+      const statsRef = doc(db, 'analytics', 'stats');
+      const statsPromise = setDoc(statsRef, {
+        totalViews: MOCK_TURFS.reduce((acc, t) => acc + (t.views || 0), 0),
+        totalWhatsAppClicks: MOCK_TURFS.reduce((acc, t) => acc + (t.whatsappClicks || 0), 0),
+        totalUsers: 1420,
+      }, { merge: true });
+
+      // 3. Seed Branding Defaults
+      const brandingRef = doc(db, 'settings', 'branding');
+      const brandingPromise = setDoc(brandingRef, {
+        heroBadgeText: "WE CONNECT YOU TO THE BEST TURFS",
+        heroHeading1: "PLAY MORE.",
+        heroHeading2: "BOOK EASY.",
+        heroDescription: "Discover and book Mysuru’s best sports turfs in one place. Football, Cricket, Pickleball and more — all in one platform.",
+        heroImageUrl: "https://picsum.photos/seed/turf-hero/1920/1080",
+        logoUrl: "",
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+
+      await Promise.all([...turfPromises, statsPromise, brandingPromise]);
       
       toast({
-        title: "Database Synced",
-        description: "Real-world Mysuru venues have been added to your collection.",
+        title: "Firestore Synced",
+        description: "5 Mysuru Arenas, Analytics, and Branding are now live.",
       });
     } catch (error) {
       console.error(error);
       toast({
         variant: "destructive",
         title: "Sync Failed",
-        description: "Check your permissions and try again.",
+        description: "Check your internet connection or admin permissions.",
       });
     } finally {
       setIsSeeding(false);
@@ -164,7 +187,7 @@ export default function AdminDashboard() {
             variant="outline" 
             onClick={handleSeedData} 
             disabled={isSeeding}
-            className="border-white/5 hover:bg-white/5 h-12 rounded-2xl font-bold"
+            className="border-white/5 hover:bg-white/5 h-12 rounded-2xl font-bold bg-white/5"
           >
             {isSeeding ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Database className="h-5 w-5 mr-2" />}
             Sync Real Data

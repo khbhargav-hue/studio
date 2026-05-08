@@ -24,7 +24,9 @@ export const MOCK_TURFS: Turf[] = [
     contactNumber: '+91 8431452323',
     whatsappNumber: '918431452323',
     mapUrl: 'https://maps.google.com/?q=Matchbox+Vijaynagar+Mysuru',
-    isPopular: true
+    isPopular: true,
+    views: 1240,
+    whatsappClicks: 85
   },
   {
     id: 'patel-turfbox',
@@ -49,7 +51,9 @@ export const MOCK_TURFS: Turf[] = [
     contactNumber: '+91 8217587207',
     whatsappNumber: '918217587207',
     mapUrl: 'https://maps.google.com/?q=PatelTurfBox+Srirampura+Mysuru',
-    isPopular: true
+    isPopular: true,
+    views: 940,
+    whatsappClicks: 62
   },
   {
     id: 'perfect-x-arena',
@@ -73,7 +77,9 @@ export const MOCK_TURFS: Turf[] = [
     contactNumber: '+91 9686299909',
     whatsappNumber: '919686299909',
     mapUrl: 'https://maps.google.com/?q=Perfect+X+Arena+Bogadi+Mysuru',
-    isPopular: true
+    isPopular: true,
+    views: 520,
+    whatsappClicks: 41
   },
   {
     id: 'kubers-turf',
@@ -97,7 +103,9 @@ export const MOCK_TURFS: Turf[] = [
     contactNumber: '+91 7795797627',
     whatsappNumber: '917795797627',
     mapUrl: 'https://maps.google.com/?q=Kuber+Turf+Kuvempunagar+Mysuru',
-    isPopular: false
+    isPopular: false,
+    views: 310,
+    whatsappClicks: 12
   },
   {
     id: 'sports-park-mysuru',
@@ -121,6 +129,8 @@ export const MOCK_TURFS: Turf[] = [
     contactNumber: '+91 9972016719',
     whatsappNumber: '919972016719',
     mapUrl: 'https://maps.google.com/?q=Sports+Park+Mysuru+Bogadi',
-    isPopular: false
+    isPopular: false,
+    views: 450,
+    whatsappClicks: 28
   }
 ];

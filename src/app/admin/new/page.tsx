@@ -72,33 +72,34 @@ function SelectionGroup({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {options.map((opt) => {
           const isSelected = selected.includes(opt);
+          const id = `opt-${title.replace(/\s+/g, '-')}-${opt}`;
           return (
-            <div 
+            <label 
               key={opt}
+              htmlFor={id}
               className={cn(
                 "group relative flex items-center space-x-3 p-3 rounded-xl border transition-all cursor-pointer",
                 isSelected 
                   ? "bg-primary/10 border-primary shadow-[0_0_15px_rgba(26,255,115,0.1)]" 
                   : "bg-white/5 border-white/5 hover:border-white/20"
               )}
-              onClick={() => onToggle(opt)}
             >
               <Checkbox 
-                id={`opt-${opt}`}
+                id={id}
                 checked={isSelected}
-                onCheckedChange={() => {}} // Controlled purely by the div's onClick for loop prevention
-                className={cn(isSelected && "border-primary", "pointer-events-none")}
+                onCheckedChange={() => onToggle(opt)}
+                className={cn(isSelected && "border-primary")}
               />
-              <Label 
+              <span 
                 className={cn(
-                  "flex-1 text-xs font-semibold cursor-pointer z-10 pointer-events-none", 
+                  "flex-1 text-xs font-semibold select-none", 
                   isSelected ? "text-primary" : "text-muted-foreground"
                 )}
               >
                 {opt}
-              </Label>
+              </span>
               {isSelected && <div className="absolute inset-0 bg-primary/5 rounded-xl animate-pulse pointer-events-none" />}
-            </div>
+            </label>
           );
         })}
       </div>
@@ -144,30 +145,28 @@ function NewTurfForm() {
   });
 
   useEffect(() => {
-    if (existingTurf) {
-      // Use functional update and deep comparison would be better, but simple stable set for now
+    if (existingTurf && editId) {
       setFormData(prev => {
-        // Prevent re-setting if we already have the data to avoid update loops
-        if (prev.id === existingTurf.id && prev.updatedAt === existingTurf.updatedAt && prev.id !== "") {
+        // Prevent re-setting if we've already loaded this specific document
+        if (prev.id === editId && prev.name !== "") {
           return prev;
         }
         return {
           ...prev,
           ...existingTurf,
-          id: existingTurf.id || "",
+          id: existingTurf.id || editId,
           courtPricing: existingTurf.courtPricing || {},
           images: existingTurf.images?.length ? existingTurf.images : [""]
         };
       });
     }
-  }, [existingTurf]);
+  }, [existingTurf, editId]);
 
   const toggleSelection = useCallback((field: keyof typeof formData, value: string) => {
     setFormData(prev => {
       const current = prev[field] as string[];
       if (current.includes(value)) {
         const next = current.filter(v => v !== value);
-        // Clean up pricing if removed
         const nextPricing = { ...prev.courtPricing };
         if (field === 'courtTypes') delete nextPricing[value];
         return { ...prev, [field]: next, courtPricing: nextPricing };
@@ -229,7 +228,6 @@ function NewTurfForm() {
     e.preventDefault();
     if (!db) return;
 
-    // Calculate starting price based on breakdown if available
     const prices = Object.values(formData.courtPricing);
     const minPrice = prices.length > 0 ? Math.min(...prices) : formData.pricePerHour;
 

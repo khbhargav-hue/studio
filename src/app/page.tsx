@@ -6,7 +6,7 @@ import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { TurfCard } from "@/components/turf-card"
 import { Input } from "@/components/ui/input"
-import { Search, Loader2, Link as LinkIcon, ShieldCheck, CalendarCheck, Headphones, Lock } from "lucide-react"
+import { Search, Loader2, Link as LinkIcon } from "lucide-react"
 import { 
   Select, 
   SelectContent, 
@@ -141,51 +141,6 @@ export default function Home() {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Features Row */}
-        <div className="absolute bottom-12 left-0 right-0 z-10 px-4">
-          <div className="max-w-7xl mx-auto flex flex-wrap justify-between gap-8 md:gap-4">
-            <div className="flex items-center gap-4 group">
-              <div className="h-12 w-12 rounded-xl bg-[#1AFF73]/5 border border-[#1AFF73]/10 flex items-center justify-center group-hover:bg-[#1AFF73]/10 transition-colors">
-                <ShieldCheck className="h-6 w-6 text-[#1AFF73]" />
-              </div>
-              <div className="text-left">
-                <h4 className="text-sm font-bold text-white">Trusted Turfs</h4>
-                <p className="text-[11px] text-white/40">Verified & quality assured</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-4 group">
-              <div className="h-12 w-12 rounded-xl bg-[#1AFF73]/5 border border-[#1AFF73]/10 flex items-center justify-center group-hover:bg-[#1AFF73]/10 transition-colors">
-                <CalendarCheck className="h-6 w-6 text-[#1AFF73]" />
-              </div>
-              <div className="text-left">
-                <h4 className="text-sm font-bold text-white">Easy Booking</h4>
-                <p className="text-[11px] text-white/40">Book in just a few clicks</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4 group">
-              <div className="h-12 w-12 rounded-xl bg-[#1AFF73]/5 border border-[#1AFF73]/10 flex items-center justify-center group-hover:bg-[#1AFF73]/10 transition-colors">
-                <Headphones className="h-6 w-6 text-[#1AFF73]" />
-              </div>
-              <div className="text-left">
-                <h4 className="text-sm font-bold text-white">24/7 Support</h4>
-                <p className="text-[11px] text-white/40">We're always here to help</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4 group">
-              <div className="h-12 w-12 rounded-xl bg-[#1AFF73]/5 border border-[#1AFF73]/10 flex items-center justify-center group-hover:bg-[#1AFF73]/10 transition-colors">
-                <Lock className="h-6 w-6 text-[#1AFF73]" />
-              </div>
-              <div className="text-left">
-                <h4 className="text-sm font-bold text-white">Secure & Reliable</h4>
-                <p className="text-[11px] text-white/40">Safe payments & secure</p>
               </div>
             </div>
           </div>

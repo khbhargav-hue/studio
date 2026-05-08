@@ -86,17 +86,14 @@ function SelectionGroup({
               <Checkbox 
                 id={`opt-${opt}`}
                 checked={isSelected}
-                onCheckedChange={() => onToggle(opt)}
-                className={cn(isSelected && "border-primary")}
-                onClick={(e) => e.stopPropagation()}
+                onCheckedChange={() => {}} // Controlled purely by the div's onClick for loop prevention
+                className={cn(isSelected && "border-primary", "pointer-events-none")}
               />
               <Label 
-                htmlFor={`opt-${opt}`}
                 className={cn(
-                  "flex-1 text-xs font-semibold cursor-pointer z-10", 
+                  "flex-1 text-xs font-semibold cursor-pointer z-10 pointer-events-none", 
                   isSelected ? "text-primary" : "text-muted-foreground"
                 )}
-                onClick={(e) => e.stopPropagation()}
               >
                 {opt}
               </Label>
@@ -148,13 +145,20 @@ function NewTurfForm() {
 
   useEffect(() => {
     if (existingTurf) {
-      setFormData(prev => ({
-        ...prev,
-        ...existingTurf,
-        id: existingTurf.id || "",
-        courtPricing: existingTurf.courtPricing || {},
-        images: existingTurf.images?.length ? existingTurf.images : [""]
-      }));
+      // Use functional update and deep comparison would be better, but simple stable set for now
+      setFormData(prev => {
+        // Prevent re-setting if we already have the data to avoid update loops
+        if (prev.id === existingTurf.id && prev.updatedAt === existingTurf.updatedAt && prev.id !== "") {
+          return prev;
+        }
+        return {
+          ...prev,
+          ...existingTurf,
+          id: existingTurf.id || "",
+          courtPricing: existingTurf.courtPricing || {},
+          images: existingTurf.images?.length ? existingTurf.images : [""]
+        };
+      });
     }
   }, [existingTurf]);
 

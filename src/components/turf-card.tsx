@@ -42,12 +42,12 @@ export function TurfCard({ turf }: TurfCardProps) {
           
           <div className="absolute left-4 top-4 flex flex-col gap-2">
             <Badge className="bg-primary text-primary-foreground font-black px-3 py-1 text-xs shadow-lg">
-              {turf.rating || 0} <Star className="ml-1 h-3 w-3 fill-current" />
+              {turf.rating || 4.5} <Star className="ml-1 h-3 w-3 fill-current" />
             </Badge>
           </div>
 
           <div className="absolute bottom-4 left-4 flex flex-wrap gap-2">
-            {turf.sportTypes?.map((sport) => (
+            {(turf.sportTypes || []).map((sport) => (
               <Badge key={sport} variant="secondary" className="bg-white/10 backdrop-blur-md border-white/5 text-[10px] font-bold uppercase tracking-wider text-white">
                 {sport}
               </Badge>
@@ -74,7 +74,7 @@ export function TurfCard({ turf }: TurfCardProps) {
         </div>
 
         <div className="flex flex-wrap gap-2 mb-6">
-          {turf.courtTypes?.map(court => (
+          {(turf.courtTypes || []).slice(0, 2).map(court => (
             <Badge key={court} variant="outline" className="border-white/5 text-muted-foreground text-[10px] py-0 px-2 flex items-center gap-1">
               <Maximize className="h-2.5 w-2.5" />
               {court}

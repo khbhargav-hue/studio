@@ -5,7 +5,7 @@ import { useState, useMemo } from "react"
 import { Navbar } from "@/components/navbar"
 import { TurfCard } from "@/components/turf-card"
 import { Input } from "@/components/ui/input"
-import { Search, Trophy, Loader2, Settings2, Filter } from "lucide-react"
+import { Search, Trophy, Loader2 } from "lucide-react"
 import { 
   Select, 
   SelectContent, 
@@ -33,12 +33,14 @@ export default function Home() {
   const [areaFilter, setAreaFilter] = useState("all")
   const [courtFilter, setCourtFilter] = useState("all")
 
+  // Dynamically derive areas from Firestore data
   const areas = useMemo(() => {
     if (!turfs) return []
     const uniqueAreas = Array.from(new Set(turfs.map(t => t.area))).filter(Boolean)
     return uniqueAreas.sort()
   }, [turfs])
 
+  // Filter logic for displayed turfs
   const filteredTurfs = useMemo(() => {
     if (!turfs) return []
     return turfs.filter(turf => {
@@ -119,7 +121,7 @@ export default function Home() {
                   <SelectValue placeholder="Court Size" />
                 </SelectTrigger>
                 <SelectContent className="bg-card border-white/10">
-                  <SelectItem value="all">All Court Sizes</SelectItem>
+                  <SelectItem value="all">All Sizes</SelectItem>
                   <SelectItem value="half">Half Court</SelectItem>
                   <SelectItem value="full">Full Court</SelectItem>
                 </SelectContent>
@@ -132,7 +134,7 @@ export default function Home() {
                   <SelectValue placeholder="Area" />
                 </SelectTrigger>
                 <SelectContent className="bg-card border-white/10">
-                  <SelectItem value="all">Mysuru (All Areas)</SelectItem>
+                  <SelectItem value="all">All Areas</SelectItem>
                   {areas.map(area => (
                     <SelectItem key={area} value={area}>{area}</SelectItem>
                   ))}
@@ -152,7 +154,16 @@ export default function Home() {
               <p className="text-muted-foreground mt-2 text-lg">Hand-picked premium facilities for professional play.</p>
             </div>
             <div className="hidden md:flex gap-2">
-               <Badge variant="outline" className="border-white/5 text-[10px] uppercase font-bold px-4 py-1.5 opacity-50 hover:opacity-100 hover:border-primary cursor-pointer transition-all" onClick={() => setSportFilter("all")}>
+               <Badge 
+                 variant="outline" 
+                 className="border-white/5 text-[10px] uppercase font-bold px-4 py-1.5 opacity-50 hover:opacity-100 hover:border-primary cursor-pointer transition-all" 
+                 onClick={() => {
+                   setSportFilter("all");
+                   setAreaFilter("all");
+                   setCourtFilter("all");
+                   setSearchQuery("");
+                 }}
+               >
                  Reset
                </Badge>
                {["Football", "Cricket", "Pickleball"].map(s => (
@@ -175,7 +186,7 @@ export default function Home() {
           ) : filteredTurfs.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
               {filteredTurfs.map((turf) => (
-                <TurfCard key={turf.id} turf={turf} />
+                <TurfCard key={turf.id} turf={turf as any} />
               ))}
             </div>
           ) : (

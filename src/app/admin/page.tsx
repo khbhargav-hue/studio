@@ -1,20 +1,10 @@
+'use client';
 
-"use client"
-
-import { useState, useEffect } from "react"
-import Link from "next/link"
-import { Navbar } from "@/components/navbar"
-import { Button } from "@/components/ui/button"
-import { 
-  Plus, 
-  Edit2, 
-  Trash2, 
-  Eye, 
-  MousePointerClick, 
-  TrendingUp,
-  Loader2,
-  Users
-} from "lucide-react"
+import { useCollection, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, query, orderBy, doc, deleteDoc } from 'firebase/firestore';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { 
   Table, 
   TableBody, 
@@ -22,152 +12,170 @@ import {
   TableHead, 
   TableHeader, 
   TableRow 
-} from "@/components/ui/table"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { useUser, useCollection, useDoc, useFirestore } from "@/firebase"
-import { useRouter } from "next/navigation"
-import { collection, deleteDoc, doc, query, orderBy } from "firebase/firestore"
-import { useToast } from "@/hooks/use-toast"
-import { errorEmitter } from '@/firebase/error-emitter'
-import { FirestorePermissionError } from '@/firebase/errors'
+} from '@/components/ui/table';
+import { 
+  Eye, 
+  MousePointerClick, 
+  TrendingUp, 
+  Edit2, 
+  Trash2, 
+  Plus, 
+  Loader2,
+  Users,
+  Star
+} from 'lucide-react';
+import Link from 'next/link';
+import { useToast } from '@/hooks/use-toast';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 export default function AdminDashboard() {
-  const router = useRouter()
-  const { toast } = useToast()
-  const { user, loading: userLoading } = useUser()
-  const db = useFirestore()
-  
-  // Auth Protection
-  useEffect(() => {
-    if (!userLoading && (!user || user.email !== "admin@turfista.com")) {
-      router.push("/login")
-    }
-  }, [user, userLoading, router])
+  const db = useFirestore();
+  const { toast } = useToast();
 
-  // Data Fetching
-  const turfsQuery = query(collection(db!, "turfs"), orderBy("name", "asc"))
-  const { data: turfs, loading: turfsLoading } = useCollection(turfsQuery)
-  const { data: stats } = useDoc(doc(db!, "analytics", "stats"))
+  const turfsQuery = useMemoFirebase(() => {
+    if (!db) return null;
+    return query(collection(db, 'turfs'), orderBy('name', 'asc'));
+  }, [db]);
 
-  const handleDelete = (id: string) => {
-    if (!db) return
-    if (confirm("Are you sure you want to delete this listing? This action cannot be undone.")) {
-      const turfRef = doc(db, "turfs", id)
+  const statsRef = useMemoFirebase(() => {
+    if (!db) return null;
+    return doc(db, 'analytics', 'stats');
+  }, [db]);
+
+  const { data: turfs, loading: turfsLoading } = useCollection(turfsQuery);
+  const { data: stats } = useDoc(statsRef);
+
+  const handleDelete = (id: string, name: string) => {
+    if (!db) return;
+    if (confirm(`Are you sure you want to delete "${name}"? This action is permanent.`)) {
+      const turfRef = doc(db, 'turfs', id);
       deleteDoc(turfRef).catch(async (err) => {
         const permissionError = new FirestorePermissionError({
           path: turfRef.path,
           operation: 'delete'
-        })
-        errorEmitter.emit('permission-error', permissionError)
-      })
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      });
+      
       toast({
-        title: "Listing Deleted",
-        description: "The turf listing has been removed."
-      })
+        title: 'Listing Deleted',
+        description: `${name} has been removed from the directory.`
+      });
     }
-  }
+  };
 
-  if (userLoading || turfsLoading) {
+  if (turfsLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-background">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      <div className="flex h-[50vh] items-center justify-center">
+        <Loader2 className="h-10 w-10 animate-spin text-primary opacity-50" />
       </div>
-    )
+    );
   }
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <Navbar />
-      
-      <div className="flex-1 max-w-7xl mx-auto w-full px-4 py-8">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-          <div>
-            <h1 className="font-headline text-3xl font-bold">Admin Dashboard</h1>
-            <p className="text-muted-foreground">Manage your venue listings and track performance.</p>
-          </div>
-          <Button asChild className="bg-primary text-primary-foreground font-bold rounded-xl shadow-lg shadow-primary/20">
-            <Link href="/admin/new">
-              <Plus className="mr-2 h-4 w-4" /> Add New Turf
-            </Link>
-          </Button>
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="font-headline text-4xl font-bold tracking-tight">Admin Console</h1>
+          <p className="text-muted-foreground mt-1 text-lg">Real-time performance metrics and venue management.</p>
         </div>
+        <Button asChild className="bg-primary text-primary-foreground font-bold rounded-2xl h-12 px-6 shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all">
+          <Link href="/admin/new">
+            <Plus className="mr-2 h-5 w-5" /> Add New Venue
+          </Link>
+        </Button>
+      </div>
 
-        {/* Analytics Section */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
-          <Card className="glass-card border-white/5">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Views</CardTitle>
-              <Eye className="h-4 w-4 text-primary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.totalViews?.toLocaleString() || 0}</div>
-              <p className="text-xs text-muted-foreground">+12% from last month</p>
-            </CardContent>
-          </Card>
-          <Card className="glass-card border-white/5">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">WhatsApp Clicks</CardTitle>
-              <MousePointerClick className="h-4 w-4 text-accent" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.totalWhatsAppClicks?.toLocaleString() || 0}</div>
-              <p className="text-xs text-muted-foreground">+5.4% from last month</p>
-            </CardContent>
-          </Card>
-          <Card className="glass-card border-white/5">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Users</CardTitle>
-              <Users className="h-4 w-4 text-primary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.totalUsers?.toLocaleString() || 0}</div>
-              <p className="text-xs text-muted-foreground">Registered players</p>
-            </CardContent>
-          </Card>
-          <Card className="glass-card border-white/5">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Popular Area</CardTitle>
-              <TrendingUp className="h-4 w-4 text-primary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">Vijayanagar</div>
-              <p className="text-xs text-muted-foreground">Highest engagement</p>
-            </CardContent>
-          </Card>
+      {/* Analytics Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="glass-card border-white/5 overflow-hidden group">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Total Reach</CardTitle>
+            <Eye className="h-5 w-5 text-primary group-hover:scale-110 transition-transform" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">{stats?.totalViews?.toLocaleString() || 0}</div>
+            <p className="text-xs text-muted-foreground mt-1">Unique page views tracked</p>
+          </CardContent>
+        </Card>
+        
+        <Card className="glass-card border-white/5 overflow-hidden group">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Conversion</CardTitle>
+            <MousePointerClick className="h-5 w-5 text-accent group-hover:scale-110 transition-transform" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">{stats?.totalWhatsAppClicks?.toLocaleString() || 0}</div>
+            <p className="text-xs text-muted-foreground mt-1">Total WhatsApp booking clicks</p>
+          </CardContent>
+        </Card>
+
+        <Card className="glass-card border-white/5 overflow-hidden group">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Players</CardTitle>
+            <Users className="h-5 w-5 text-primary group-hover:scale-110 transition-transform" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">{stats?.totalUsers?.toLocaleString() || 0}</div>
+            <p className="text-xs text-muted-foreground mt-1">Platform user base</p>
+          </CardContent>
+        </Card>
+
+        <Card className="glass-card border-white/5 overflow-hidden group">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Top Area</CardTitle>
+            <TrendingUp className="h-5 w-5 text-accent group-hover:scale-110 transition-transform" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">Vijayanagar</div>
+            <p className="text-xs text-muted-foreground mt-1">Highest regional activity</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Turf Management Table */}
+      <div className="glass-card rounded-[2rem] overflow-hidden border-white/5 shadow-2xl">
+        <div className="p-6 border-b border-white/5 bg-white/5 flex items-center justify-between">
+          <h2 className="font-headline text-xl font-bold">Venue Listings</h2>
+          <Badge variant="secondary" className="bg-primary/20 text-primary border-none">
+            {turfs?.length || 0} Total
+          </Badge>
         </div>
-
-        <div className="glass-card rounded-2xl overflow-hidden border-white/5">
+        <div className="overflow-x-auto">
           <Table>
-            <TableHeader className="bg-white/5">
-              <TableRow className="border-white/10 hover:bg-transparent">
-                <TableHead>Turf Name</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead>Sports</TableHead>
-                <TableHead>Price/hr</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+            <TableHeader>
+              <TableRow className="border-white/5 hover:bg-transparent">
+                <TableHead className="font-bold">Venue</TableHead>
+                <TableHead className="font-bold">Area</TableHead>
+                <TableHead className="font-bold">Price/hr</TableHead>
+                <TableHead className="font-bold">Rating</TableHead>
+                <TableHead className="font-bold text-center">Featured</TableHead>
+                <TableHead className="text-right font-bold">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {turfs?.map((turf) => (
-                <TableRow key={turf.id} className="border-white/5 hover:bg-white/5">
-                  <TableCell className="font-medium">{turf.name}</TableCell>
+                <TableRow key={turf.id} className="border-white/5 hover:bg-white/5 transition-colors">
+                  <TableCell className="font-bold text-lg">{turf.name}</TableCell>
                   <TableCell className="text-muted-foreground">{turf.area}</TableCell>
+                  <TableCell className="font-bold text-primary">₹{turf.pricePerHour}</TableCell>
                   <TableCell>
-                    <div className="flex gap-1">
-                      {turf.sportTypes?.map((s: string) => (
-                        <Badge key={s} variant="secondary" className="bg-background/50 text-[10px]">{s}</Badge>
-                      ))}
+                    <div className="flex items-center gap-1.5">
+                      <Star className="h-4 w-4 text-primary fill-current" />
+                      <span className="font-bold">{turf.rating}</span>
                     </div>
                   </TableCell>
-                  <TableCell>₹{turf.pricePerHour}</TableCell>
-                  <TableCell>
-                    <Badge className="bg-primary/20 text-primary border-none">Active</Badge>
+                  <TableCell className="text-center">
+                    {turf.isPopular ? (
+                      <Badge className="bg-accent/20 text-accent border-accent/20">Featured</Badge>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Standard</span>
+                    )}
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="icon" className="hover:bg-white/10 hover:text-primary" asChild>
+                    <div className="flex justify-end gap-3">
+                      <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-primary/10 hover:text-primary transition-all" asChild>
                         <Link href={`/admin/new?id=${turf.id}`}>
                           <Edit2 className="h-4 w-4" />
                         </Link>
@@ -175,8 +183,8 @@ export default function AdminDashboard() {
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        className="hover:bg-destructive/10 hover:text-destructive"
-                        onClick={() => handleDelete(turf.id)}
+                        className="h-10 w-10 rounded-xl hover:bg-destructive/10 hover:text-destructive transition-all"
+                        onClick={() => handleDelete(turf.id, turf.name)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -186,8 +194,14 @@ export default function AdminDashboard() {
               ))}
               {(!turfs || turfs.length === 0) && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
-                    No turfs found. Start by adding one.
+                  <TableCell colSpan={6} className="text-center py-20">
+                    <div className="flex flex-col items-center gap-3 text-muted-foreground">
+                      <Plus className="h-12 w-12 opacity-20" />
+                      <p className="text-lg">No venues listed yet.</p>
+                      <Button variant="outline" asChild>
+                        <Link href="/admin/new">Create first listing</Link>
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               )}
@@ -196,5 +210,5 @@ export default function AdminDashboard() {
         </div>
       </div>
     </div>
-  )
+  );
 }

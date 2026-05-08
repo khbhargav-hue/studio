@@ -1,82 +1,85 @@
+'use client';
 
-"use client"
-
-import { useState, useEffect, Suspense } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { Navbar } from "@/components/navbar"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Checkbox } from "@/components/ui/checkbox"
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { 
   Card, 
   CardContent, 
   CardDescription, 
   CardHeader, 
   CardTitle,
-} from "@/components/ui/card"
-import { ArrowLeft, Sparkles, Loader2, Save, Image as ImageIcon } from "lucide-react"
-import { generateTurfDescriptionForAdmin } from "@/ai/flows/generate-turf-description-for-admin"
-import { useToast } from "@/hooks/use-toast"
-import { useFirestore, useUser, useDoc } from "@/firebase"
-import { doc, setDoc, serverTimestamp } from "firebase/firestore"
-import { errorEmitter } from '@/firebase/error-emitter'
-import { FirestorePermissionError } from '@/firebase/errors'
+} from "@/components/ui/card";
+import { ArrowLeft, Sparkles, Loader2, Save, Image as ImageIcon, Zap } from "lucide-react";
+import { generateTurfDescriptionForAdmin } from "@/ai/flows/generate-turf-description-for-admin";
+import { useToast } from "@/hooks/use-toast";
+import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/firebase";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 function NewTurfForm() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const { toast } = useToast()
-  const db = useFirestore()
-  const { user, loading: userLoading } = useUser()
-  const editId = searchParams.get("id")
-  const { data: existingTurf, loading: loadingExisting } = useDoc(editId ? doc(db!, "turfs", editId) : null)
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { toast } = useToast();
+  const db = useFirestore();
+  const editId = searchParams.get("id");
 
-  const [isGenerating, setIsGenerating] = useState(false)
+  const turfDocRef = useMemoFirebase(() => {
+    if (!db || !editId) return null;
+    return doc(db, "turfs", editId);
+  }, [db, editId]);
+
+  const { data: existingTurf, loading: loadingExisting } = useDoc(turfDocRef);
+
+  const [isGenerating, setIsGenerating] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     area: "",
     location: "",
     pricePerHour: 1000,
     description: "",
-    amenities: ["Floodlights", "Parking"],
+    amenities: ["Floodlights", "Parking", "Water"],
     sportTypes: ["Football"] as string[],
     courtTypes: ["Full Court"] as string[],
     rating: 4.5,
     reviewCount: 0,
-    openingHours: "06:00 AM - 10:30 PM",
+    openingHours: "06:00 AM - 11:00 PM",
     contactNumber: "",
     whatsappNumber: "",
-    images: ["https://picsum.photos/seed/turf1/800/600"]
-  })
-
-  useEffect(() => {
-    if (!userLoading && (!user || user.email !== "admin@turfista.com")) {
-      router.push("/login")
-    }
-  }, [user, userLoading, router])
+    images: ["https://picsum.photos/seed/turfista/800/600"],
+    isPopular: false
+  });
 
   useEffect(() => {
     if (existingTurf) {
       setFormData({
         ...existingTurf,
-        pricePerHour: existingTurf.pricePerHour || 1000
-      })
+        pricePerHour: existingTurf.pricePerHour || 1000,
+        amenities: existingTurf.amenities || [],
+        sportTypes: existingTurf.sportTypes || [],
+        courtTypes: existingTurf.courtTypes || [],
+        images: existingTurf.images || [""]
+      });
     }
-  }, [existingTurf])
+  }, [existingTurf]);
 
   const handleGenerateDescription = async () => {
     if (!formData.name || !formData.area) {
       toast({
-        title: "Information Required",
-        description: "Please enter the turf name and area before generating a description.",
+        title: "Info Missing",
+        description: "Add a name and area so AI can write a contextual description.",
         variant: "destructive"
-      })
-      return
+      });
+      return;
     }
 
-    setIsGenerating(true)
+    setIsGenerating(true);
     try {
       const result = await generateTurfDescriptionForAdmin({
         turfName: formData.name,
@@ -84,31 +87,30 @@ function NewTurfForm() {
         sportTypes: formData.sportTypes as ("Football" | "Cricket")[],
         pricePerHour: formData.pricePerHour,
         amenities: formData.amenities,
-        uniqueFeatures: `Located in ${formData.area}, Mysuru with premium facilities.`
-      })
-      setFormData(prev => ({ ...prev, description: result.description }))
+        uniqueFeatures: `A premier sports venue located in ${formData.area}.`
+      });
+      setFormData(prev => ({ ...prev, description: result.description }));
       toast({
-        title: "AI Description Generated",
-        description: "A compelling marketing description has been created for you."
-      })
+        title: "AI Description Ready",
+        description: "Review the generated content below.",
+      });
     } catch (error) {
-      console.error(error)
       toast({
-        title: "Generation Failed",
-        description: "There was an error generating the description. Please try again.",
+        title: "AI Writing Failed",
+        description: "Try again in a moment.",
         variant: "destructive"
-      })
+      });
     } finally {
-      setIsGenerating(false)
+      setIsGenerating(false);
     }
-  }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!db) return
+    e.preventDefault();
+    if (!db) return;
 
-    const id = editId || formData.name.toLowerCase().replace(/\s+/g, '-')
-    const turfRef = doc(db, "turfs", id)
+    const id = editId || formData.name.toLowerCase().replace(/\s+/g, '-');
+    const turfRef = doc(db, "turfs", id);
     
     setDoc(turfRef, {
       ...formData,
@@ -120,64 +122,70 @@ function NewTurfForm() {
         path: turfRef.path,
         operation: editId ? 'update' : 'create',
         requestResourceData: formData
-      })
-      errorEmitter.emit('permission-error', permissionError)
-    })
+      });
+      errorEmitter.emit('permission-error', permissionError);
+    });
 
     toast({
-      title: editId ? "Turf Updated" : "Turf Created",
-      description: `${formData.name} has been saved successfully.`
-    })
-    router.push("/admin")
-  }
+      title: editId ? "Venue Updated" : "Venue Created",
+      description: `${formData.name} is now live.`
+    });
+    router.push("/admin");
+  };
 
-  if (userLoading || (editId && loadingExisting)) {
+  if (editId && loadingExisting) {
     return (
-      <div className="flex h-screen items-center justify-center bg-background">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      <div className="flex h-[50vh] items-center justify-center">
+        <Loader2 className="h-10 w-10 animate-spin text-primary opacity-50" />
       </div>
-    )
+    );
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
-      <Navbar />
-      
-      <div className="flex-1 max-w-4xl mx-auto w-full px-4 py-8">
+    <div className="max-w-4xl mx-auto pb-20 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="flex items-center justify-between mb-8">
         <Button 
           variant="ghost" 
           onClick={() => router.back()} 
-          className="mb-6 hover:bg-white/5"
+          className="hover:bg-white/5 rounded-xl"
         >
           <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
         </Button>
+        <div className="flex items-center gap-2 px-4 py-2 bg-accent/10 border border-accent/20 rounded-2xl">
+          <Zap className="h-4 w-4 text-accent" />
+          <span className="text-xs font-bold text-accent uppercase tracking-widest">Admin Mode</span>
+        </div>
+      </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-8">
-            <Card className="glass-card border-white/10">
-              <CardHeader>
-                <CardTitle className="font-headline text-2xl">Basic Information</CardTitle>
-                <CardDescription>Enter the essential details for your sports venue.</CardDescription>
+      <form onSubmit={handleSubmit} className="space-y-8">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+          
+          {/* Main Info Column */}
+          <div className="md:col-span-8 space-y-8">
+            <Card className="glass-card border-white/5 rounded-[2rem] overflow-hidden">
+              <CardHeader className="p-8 pb-0">
+                <CardTitle className="font-headline text-2xl font-bold">Venue Details</CardTitle>
+                <CardDescription>Configure the core properties of the turf.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="p-8 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="name">Turf Name</Label>
+                    <Label htmlFor="name">Venue Name</Label>
                     <Input 
                       id="name" 
-                      placeholder="e.g., Champions Arena" 
-                      className="bg-background/50 border-white/10"
+                      placeholder="e.g., Apex Arena" 
+                      className="h-12 bg-background/50 border-white/5 rounded-xl"
                       value={formData.name}
                       onChange={(e) => setFormData({...formData, name: e.target.value})}
                       required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="area">Area in Mysuru</Label>
+                    <Label htmlFor="area">Area (Mysuru)</Label>
                     <Input 
                       id="area" 
-                      placeholder="e.g., Vijayanagar" 
-                      className="bg-background/50 border-white/10"
+                      placeholder="e.g., Jayalakshmipuram" 
+                      className="h-12 bg-background/50 border-white/5 rounded-xl"
                       value={formData.area}
                       onChange={(e) => setFormData({...formData, area: e.target.value})}
                       required
@@ -185,147 +193,170 @@ function NewTurfForm() {
                   </div>
                 </div>
 
+                <div className="space-y-2">
+                  <Label htmlFor="location">Full Address / Precise Location</Label>
+                  <Input 
+                    id="location" 
+                    placeholder="Exact address for players..." 
+                    className="h-12 bg-background/50 border-white/5 rounded-xl"
+                    value={formData.location}
+                    onChange={(e) => setFormData({...formData, location: e.target.value})}
+                  />
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="pricePerHour">Price Per Hour (₹)</Label>
+                    <Label htmlFor="price">Price Per Hour (₹)</Label>
                     <Input 
-                      id="pricePerHour" 
-                      type="number" 
-                      className="bg-background/50 border-white/10"
+                      id="price" 
+                      type="number"
+                      className="h-12 bg-background/50 border-white/5 rounded-xl font-bold text-primary"
                       value={formData.pricePerHour}
                       onChange={(e) => setFormData({...formData, pricePerHour: Number(e.target.value)})}
                       required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Sports Supported</Label>
-                    <div className="flex gap-4 pt-2">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox 
-                          id="football" 
-                          checked={formData.sportTypes.includes("Football")}
-                          onCheckedChange={(checked) => {
-                            if (checked) setFormData({...formData, sportTypes: [...formData.sportTypes, "Football"]})
-                            else setFormData({...formData, sportTypes: formData.sportTypes.filter(s => s !== "Football")})
-                          }}
-                        />
-                        <label htmlFor="football" className="text-sm font-medium">Football</label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox 
-                          id="cricket" 
-                          checked={formData.sportTypes.includes("Cricket")}
-                          onCheckedChange={(checked) => {
-                            if (checked) setFormData({...formData, sportTypes: [...formData.sportTypes, "Cricket"]})
-                            else setFormData({...formData, sportTypes: formData.sportTypes.filter(s => s !== "Cricket")})
-                          }}
-                        />
-                        <label htmlFor="cricket" className="text-sm font-medium">Cricket</label>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="rating">Rating (0-5)</Label>
+                    <Label htmlFor="timings">Operating Hours</Label>
                     <Input 
-                      id="rating" 
-                      type="number" 
-                      step="0.1"
-                      className="bg-background/50 border-white/10"
-                      value={formData.rating}
-                      onChange={(e) => setFormData({...formData, rating: Number(e.target.value)})}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="whatsapp">WhatsApp Number (e.g., 919900000001)</Label>
-                    <Input 
-                      id="whatsapp" 
-                      placeholder="91..." 
-                      className="bg-background/50 border-white/10"
-                      value={formData.whatsappNumber}
-                      onChange={(e) => setFormData({...formData, whatsappNumber: e.target.value})}
+                      id="timings" 
+                      placeholder="e.g., 06:00 AM - 11:30 PM"
+                      className="h-12 bg-background/50 border-white/5 rounded-xl"
+                      value={formData.openingHours}
+                      onChange={(e) => setFormData({...formData, openingHours: e.target.value})}
                     />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="glass-card border-white/10">
-              <CardHeader className="flex flex-row items-center justify-between">
+            <Card className="glass-card border-white/5 rounded-[2rem] overflow-hidden">
+              <CardHeader className="p-8 pb-0 flex flex-row items-center justify-between">
                 <div>
-                  <CardTitle className="font-headline text-2xl">Description</CardTitle>
-                  <CardDescription>Tell players why they should book your venue.</CardDescription>
+                  <CardTitle className="font-headline text-2xl font-bold">Marketing Copy</CardTitle>
+                  <CardDescription>Tell the story of your venue.</CardDescription>
                 </div>
                 <Button 
                   type="button"
                   variant="secondary"
                   size="sm"
-                  className="bg-accent text-accent-foreground font-bold hover:opacity-90"
+                  className="bg-accent text-accent-foreground font-black hover:opacity-90 rounded-xl"
                   onClick={handleGenerateDescription}
                   disabled={isGenerating}
                 >
-                  {isGenerating ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Sparkles className="mr-2 h-4 w-4" />
-                  )}
-                  AI Write
+                  {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+                  AI GENERATE
                 </Button>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-8">
                 <Textarea 
-                  placeholder="Tell people about your turf..." 
-                  className="min-h-[200px] bg-background/50 border-white/10"
+                  placeholder="Describe your turf's vibe, quality, and community..." 
+                  className="min-h-[200px] bg-background/50 border-white/5 rounded-2xl p-4 leading-relaxed"
                   value={formData.description}
                   onChange={(e) => setFormData({...formData, description: e.target.value})}
                 />
               </CardContent>
             </Card>
+          </div>
 
-            <Card className="glass-card border-white/10">
-              <CardHeader>
-                <CardTitle className="font-headline text-2xl text-accent">Venue Media</CardTitle>
-                <CardDescription>Add the public image URL for this turf.</CardDescription>
+          {/* Settings Column */}
+          <div className="md:col-span-4 space-y-8">
+            <Card className="glass-card border-white/5 rounded-[2rem] overflow-hidden">
+              <CardHeader className="p-6">
+                <CardTitle className="font-headline text-lg font-bold">Status & Visibility</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="p-6 space-y-6">
+                <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
+                  <div className="space-y-0.5">
+                    <Label className="text-sm font-bold">Featured Listing</Label>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Show in Popular section</p>
+                  </div>
+                  <Switch 
+                    checked={formData.isPopular}
+                    onCheckedChange={(checked) => setFormData({...formData, isPopular: checked})}
+                  />
+                </div>
+
+                <div className="space-y-4">
+                  <Label className="text-sm font-bold block mb-3 uppercase tracking-widest opacity-50">Sports</Label>
+                  <div className="space-y-3">
+                    {["Football", "Cricket"].map((sport) => (
+                      <div key={sport} className="flex items-center space-x-3">
+                        <Checkbox 
+                          id={sport.toLowerCase()} 
+                          checked={formData.sportTypes.includes(sport)}
+                          onCheckedChange={(checked) => {
+                            if (checked) setFormData({...formData, sportTypes: [...formData.sportTypes, sport]})
+                            else setFormData({...formData, sportTypes: formData.sportTypes.filter(s => s !== sport)})
+                          }}
+                        />
+                        <label htmlFor={sport.toLowerCase()} className="text-sm font-medium cursor-pointer">{sport}</label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-4 pt-4 border-t border-white/5">
+                  <Label className="text-sm font-bold block mb-3 uppercase tracking-widest opacity-50">Court Sizes</Label>
+                  <div className="space-y-3">
+                    {["Half Court", "Full Court"].map((court) => (
+                      <div key={court} className="flex items-center space-x-3">
+                        <Checkbox 
+                          id={court.toLowerCase().replace(' ', '-')} 
+                          checked={formData.courtTypes.includes(court)}
+                          onCheckedChange={(checked) => {
+                            if (checked) setFormData({...formData, courtTypes: [...formData.courtTypes, court]})
+                            else setFormData({...formData, courtTypes: formData.courtTypes.filter(c => c !== court)})
+                          }}
+                        />
+                        <label htmlFor={court.toLowerCase().replace(' ', '-')} className="text-sm font-medium cursor-pointer">{court}</label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="glass-card border-white/5 rounded-[2rem] overflow-hidden">
+              <CardHeader className="p-6">
+                <CardTitle className="font-headline text-lg font-bold">Public Media</CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="image">Image URL</Label>
+                  <Label className="text-xs">Main Image URL</Label>
                   <Input 
-                    id="image" 
-                    placeholder="https://..." 
-                    className="bg-background/50 border-white/10"
+                    placeholder="https://images.unsplash.com/..." 
+                    className="bg-background/50 border-white/5 rounded-xl h-10"
                     value={formData.images[0]}
                     onChange={(e) => setFormData({...formData, images: [e.target.value]})}
                   />
                 </div>
-                <div className="relative aspect-video rounded-2xl overflow-hidden border border-white/10 bg-black/20 flex items-center justify-center">
+                <div className="relative aspect-video rounded-2xl overflow-hidden border border-white/5 bg-black/20 flex items-center justify-center group">
                   {formData.images[0] ? (
                     <img src={formData.images[0]} alt="Preview" className="object-cover w-full h-full" />
                   ) : (
-                    <div className="text-muted-foreground text-center p-8">
-                      <ImageIcon className="h-12 w-12 mx-auto mb-2 opacity-20" />
-                      <p>Image Preview</p>
+                    <div className="text-muted-foreground text-center p-4">
+                      <ImageIcon className="h-8 w-8 mx-auto mb-2 opacity-20" />
+                      <p className="text-[10px] font-bold">IMAGE PREVIEW</p>
                     </div>
                   )}
                 </div>
               </CardContent>
             </Card>
-
-            <div className="flex gap-4">
-              <Button type="submit" className="flex-1 h-14 bg-primary text-primary-foreground font-bold text-lg rounded-2xl shadow-lg shadow-primary/20">
-                <Save className="mr-2 h-5 w-5" /> {editId ? "Update Listing" : "Save Listing"}
-              </Button>
-              <Button type="button" variant="ghost" onClick={() => router.back()} className="h-14 px-8 border border-white/10 rounded-2xl">
-                Cancel
-              </Button>
-            </div>
           </div>
-        </form>
-      </div>
+        </div>
+
+        <div className="flex gap-4 pt-8">
+          <Button type="submit" className="flex-1 h-16 bg-primary text-primary-foreground font-black text-xl rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.02] transition-transform">
+            <Save className="mr-3 h-6 w-6" /> {editId ? "UPDATE LISTING" : "PUBLISH VENUE"}
+          </Button>
+          <Button type="button" variant="ghost" onClick={() => router.back()} className="h-16 px-8 border border-white/5 rounded-2xl font-bold">
+            CANCEL
+          </Button>
+        </div>
+      </form>
     </div>
-  )
+  );
 }
 
 export default function NewTurfPage() {
@@ -333,5 +364,5 @@ export default function NewTurfPage() {
     <Suspense fallback={<div className="flex h-screen items-center justify-center bg-background"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>}>
       <NewTurfForm />
     </Suspense>
-  )
+  );
 }

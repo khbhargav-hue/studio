@@ -1,0 +1,55 @@
+
+{
+  "entities": {
+    "Turf": {
+      "title": "Turf",
+      "description": "A sports turf venue listing",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "location": { "type": "string" },
+        "area": { "type": "string" },
+        "sportTypes": { "type": "array", "items": { "type": "string" } },
+        "courtTypes": { "type": "array", "items": { "type": "string" } },
+        "pricePerHour": { "type": "number" },
+        "rating": { "type": "number" },
+        "reviewCount": { "type": "number" },
+        "images": { "type": "array", "items": { "type": "string" } },
+        "description": { "type": "string" },
+        "amenities": { "type": "array", "items": { "type": "string" } },
+        "openingHours": { "type": "string" },
+        "contactNumber": { "type": "string" },
+        "whatsappNumber": { "type": "string" },
+        "mapUrl": { "type": "string" },
+        "isPopular": { "type": "boolean" },
+        "views": { "type": "number" },
+        "whatsappClicks": { "type": "number" }
+      },
+      "required": ["name", "area", "pricePerHour"]
+    },
+    "Analytics": {
+      "title": "Analytics",
+      "description": "Global application stats",
+      "type": "object",
+      "properties": {
+        "totalUsers": { "type": "number" },
+        "totalViews": { "type": "number" },
+        "totalWhatsAppClicks": { "type": "number" }
+      }
+    }
+  },
+  "auth": {
+    "providers": ["password"]
+  },
+  "firestore": {
+    "/turfs/{turfId}": {
+      "schema": "Turf",
+      "description": "Collection of sports turfs"
+    },
+    "/analytics/stats": {
+      "schema": "Analytics",
+      "description": "Global usage statistics"
+    }
+  }
+}

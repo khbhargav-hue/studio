@@ -1,9 +1,9 @@
+
 "use client"
 
 import { useParams, useRouter } from "next/navigation"
 import Image from "next/image"
 import { Navbar } from "@/components/navbar"
-import { MOCK_TURFS } from "@/lib/data"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { 
@@ -14,7 +14,8 @@ import {
   MessageCircle, 
   Star, 
   CheckCircle2, 
-  ExternalLink 
+  ExternalLink,
+  Loader2 
 } from "lucide-react"
 import { 
   Carousel, 
@@ -24,11 +25,43 @@ import {
   CarouselPrevious 
 } from "@/components/ui/carousel"
 import { Separator } from "@/components/ui/separator"
+import { useDoc, useFirestore } from "@/firebase"
+import { doc, increment, updateDoc } from "firebase/firestore"
+import { useEffect } from "react"
 
 export default function TurfDetail() {
   const { id } = useParams()
   const router = useRouter()
-  const turf = MOCK_TURFS.find(t => t.id === id)
+  const db = useFirestore()
+  const { data: turf, loading } = useDoc(id ? doc(db!, "turfs", id as string) : null)
+
+  // Track Views
+  useEffect(() => {
+    if (turf && db && id) {
+      const turfRef = doc(db, "turfs", id as string)
+      const statsRef = doc(db, "analytics", "stats")
+      
+      updateDoc(turfRef, { views: increment(1) })
+      updateDoc(statsRef, { totalViews: increment(1) })
+    }
+  }, [turf, db, id])
+
+  const handleWhatsAppClick = () => {
+    if (db && id) {
+      const turfRef = doc(db, "turfs", id as string)
+      const statsRef = doc(db, "analytics", "stats")
+      updateDoc(turfRef, { whatsappClicks: increment(1) })
+      updateDoc(statsRef, { totalWhatsAppClicks: increment(1) })
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    )
+  }
 
   if (!turf) {
     return (
@@ -64,7 +97,7 @@ export default function TurfDetail() {
               <section className="relative rounded-3xl overflow-hidden glass-card p-2">
                 <Carousel className="w-full">
                   <CarouselContent>
-                    {turf.images.map((img, idx) => (
+                    {(turf.images || []).map((img: string, idx: number) => (
                       <CarouselItem key={idx}>
                         <div className="relative aspect-video w-full rounded-2xl overflow-hidden">
                           <Image 
@@ -85,7 +118,7 @@ export default function TurfDetail() {
 
               <section className="glass-card rounded-3xl p-8">
                 <div className="flex flex-wrap items-center gap-3 mb-4">
-                  {turf.sportTypes.map(sport => (
+                  {(turf.sportTypes || []).map((sport: string) => (
                     <Badge key={sport} className="bg-primary text-primary-foreground font-bold">{sport}</Badge>
                   ))}
                   <Badge variant="outline" className="border-accent text-accent">Verified Venue</Badge>
@@ -97,7 +130,7 @@ export default function TurfDetail() {
                   <div className="flex items-center gap-2">
                     <Star className="h-5 w-5 text-primary fill-current" />
                     <span className="font-bold text-foreground">{turf.rating}</span>
-                    <span>({turf.reviewCount} Reviews)</span>
+                    <span>({turf.reviewCount || 0} Reviews)</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <MapPin className="h-5 w-5 text-primary" />
@@ -107,7 +140,7 @@ export default function TurfDetail() {
 
                 <div className="prose prose-invert max-w-none">
                   <h3 className="text-xl font-headline font-bold mb-4">About the Turf</h3>
-                  <p className="text-muted-foreground leading-relaxed">
+                  <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
                     {turf.description}
                   </p>
                 </div>
@@ -118,7 +151,7 @@ export default function TurfDetail() {
                   <div>
                     <h3 className="text-lg font-headline font-bold mb-4">Amenities</h3>
                     <div className="grid grid-cols-1 gap-3">
-                      {turf.amenities.map(item => (
+                      {(turf.amenities || []).map((item: string) => (
                         <div key={item} className="flex items-center gap-2 text-sm text-muted-foreground">
                           <CheckCircle2 className="h-4 w-4 text-primary" />
                           {item}
@@ -152,7 +185,7 @@ export default function TurfDetail() {
                 </div>
 
                 <div className="space-y-4 mb-8">
-                  <Button asChild className="w-full h-14 text-lg font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl">
+                  <Button asChild className="w-full h-14 text-lg font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl" onClick={handleWhatsAppClick}>
                     <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
                       <MessageCircle className="mr-3 h-6 w-6" />
                       Book via WhatsApp

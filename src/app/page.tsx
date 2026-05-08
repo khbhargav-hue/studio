@@ -1,11 +1,11 @@
+
 "use client"
 
 import { useState, useMemo } from "react"
 import { Navbar } from "@/components/navbar"
 import { TurfCard } from "@/components/turf-card"
-import { MOCK_TURFS } from "@/lib/data"
 import { Input } from "@/components/ui/input"
-import { Search, Trophy } from "lucide-react"
+import { Search, Trophy, Loader2 } from "lucide-react"
 import { 
   Select, 
   SelectContent, 
@@ -14,34 +14,42 @@ import {
   SelectValue 
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
+import { useCollection, useFirestore } from "@/firebase"
+import { collection, query, orderBy } from "firebase/firestore"
 
 export default function Home() {
+  const db = useFirestore()
+  const turfsQuery = query(collection(db!, "turfs"), orderBy("name", "asc"))
+  const { data: turfs, loading } = useCollection(turfsQuery)
+
   const [searchQuery, setSearchQuery] = useState("")
   const [sportFilter, setSportFilter] = useState("all")
   const [areaFilter, setAreaFilter] = useState("all")
   const [courtFilter, setCourtFilter] = useState("all")
 
   const areas = useMemo(() => {
-    const uniqueAreas = Array.from(new Set(MOCK_TURFS.map(t => t.area)))
+    if (!turfs) return []
+    const uniqueAreas = Array.from(new Set(turfs.map(t => t.area)))
     return uniqueAreas.sort()
-  }, [])
+  }, [turfs])
 
   const filteredTurfs = useMemo(() => {
-    return MOCK_TURFS.filter(turf => {
+    if (!turfs) return []
+    return turfs.filter(turf => {
       const matchesSearch = turf.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           turf.area.toLowerCase().includes(searchQuery.toLowerCase())
       
       const matchesSport = sportFilter === "all" || 
-                          turf.sportTypes.some(s => s.toLowerCase() === sportFilter.toLowerCase())
+                          turf.sportTypes?.some((s: string) => s.toLowerCase() === sportFilter.toLowerCase())
       
       const matchesArea = areaFilter === "all" || turf.area === areaFilter
 
       const matchesCourt = courtFilter === "all" || 
-                          turf.courtTypes.some(c => c.toLowerCase().includes(courtFilter.toLowerCase()))
+                          turf.courtTypes?.some((c: string) => c.toLowerCase().includes(courtFilter.toLowerCase()))
 
       return matchesSearch && matchesSport && matchesArea && matchesCourt
     })
-  }, [searchQuery, sportFilter, areaFilter, courtFilter])
+  }, [turfs, searchQuery, sportFilter, areaFilter, courtFilter])
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -139,7 +147,11 @@ export default function Home() {
             </Badge>
           </div>
 
-          {filteredTurfs.length > 0 ? (
+          {loading ? (
+            <div className="flex items-center justify-center py-32">
+              <Loader2 className="h-12 w-12 animate-spin text-primary opacity-50" />
+            </div>
+          ) : filteredTurfs.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
               {filteredTurfs.map((turf) => (
                 <TurfCard key={turf.id} turf={turf} />

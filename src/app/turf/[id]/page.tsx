@@ -105,7 +105,8 @@ export default function TurfDetail() {
     )
   }
 
-  const whatsappUrl = `https://wa.me/${turf.whatsappNumber}?text=Hi, I would like to book ${turf.name} for a session.`
+  const message = `Hi, I found ${turf.name} in ${turf.area} on Turfista and would like to inquire about booking a slot for ${turf.sportTypes?.[0] || 'a game'}.`
+  const whatsappUrl = `https://wa.me/${turf.whatsappNumber}?text=${encodeURIComponent(message)}`
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -346,6 +347,20 @@ export default function TurfDetail() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Mobile Sticky Booking Bar */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-background/80 backdrop-blur-xl border-t border-white/5 lg:hidden animate-in slide-in-from-bottom duration-500">
+        <Button 
+          asChild 
+          className="w-full h-16 text-lg font-black bg-primary text-primary-foreground rounded-2xl shadow-lg shadow-primary/20"
+          onClick={handleWhatsAppClick}
+        >
+          <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
+            <MessageCircle className="mr-2 h-6 w-6" />
+            BOOK NOW (₹{turf.pricePerHour}/hr)
+          </a>
+        </Button>
       </div>
     </div>
   )

@@ -8,13 +8,29 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Turf } from "@/lib/types"
+import { useFirestore } from "@/firebase"
+import { doc, updateDoc, increment } from "firebase/firestore"
 
 interface TurfCardProps {
   turf: Turf
 }
 
 export function TurfCard({ turf }: TurfCardProps) {
-  const whatsappUrl = `https://wa.me/${turf.whatsappNumber}?text=Hi, I would like to book ${turf.name} for a session.`
+  const db = useFirestore()
+
+  const handleWhatsAppClick = (e: React.MouseEvent) => {
+    // Analytics tracking
+    if (db && turf.id) {
+      const turfRef = doc(db, "turfs", turf.id)
+      const statsRef = doc(db, "analytics", "stats")
+      
+      updateDoc(turfRef, { whatsappClicks: increment(1) }).catch(() => {});
+      updateDoc(statsRef, { totalWhatsAppClicks: increment(1) }).catch(() => {});
+    }
+  }
+
+  const message = `Hi, I found ${turf.name} in ${turf.area} on Turfista and would like to inquire about booking a slot for ${turf.sportTypes?.[0] || 'a game'}.`
+  const whatsappUrl = `https://wa.me/${turf.whatsappNumber}?text=${encodeURIComponent(message)}`
 
   return (
     <Card className="group relative overflow-hidden border-none bg-card/30 backdrop-blur-md transition-all duration-500 hover:bg-card/50 hover:shadow-[0_0_40px_rgba(26,255,115,0.15)] hover:-translate-y-2 rounded-[2rem]">
@@ -90,6 +106,7 @@ export function TurfCard({ turf }: TurfCardProps) {
       <CardFooter className="p-6 pt-0">
         <Button 
           asChild 
+          onClick={handleWhatsAppClick}
           className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-2xl transition-all shadow-[0_10px_20px_-10px_rgba(26,255,115,0.5)] group-hover:shadow-[0_10px_25px_-5px_rgba(26,255,115,0.6)]"
         >
           <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">

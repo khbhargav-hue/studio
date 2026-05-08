@@ -16,8 +16,7 @@ service cloud.firestore {
         .hasOnly(['views', 'whatsappClicks', 'updatedAt']);
       
       // Admin has full control
-      allow write: if isAdmin();
-      allow update: if isAdmin();
+      allow write, update, delete: if isAdmin();
     }
 
     // Rules for global analytics
@@ -30,6 +29,19 @@ service cloud.firestore {
       // Admin can manage analytics documents
       allow create, delete: if isAdmin();
       allow update: if isAdmin();
+    }
+
+    // Rules for branding and settings
+    match /settings/branding {
+      // Branding must be public for the hero section to load
+      allow read: if true;
+      // Only admin can change branding
+      allow write, update: if isAdmin();
+    }
+
+    // General fallback for settings subcollections
+    match /settings/{document=**} {
+      allow read, write: if isAdmin();
     }
   }
 }

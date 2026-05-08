@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { Star, MapPin, Trophy, MessageCircle } from "lucide-react"
+import { Star, MapPin, MessageCircle, Clock, Maximize } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
@@ -16,55 +16,78 @@ export function TurfCard({ turf }: TurfCardProps) {
   const whatsappUrl = `https://wa.me/${turf.whatsappNumber}?text=Hi, I would like to book ${turf.name} for a session.`
 
   return (
-    <Card className="group overflow-hidden border-none bg-card/40 transition-all duration-300 hover:bg-card/60 hover:shadow-2xl hover:shadow-primary/10">
-      <Link href={`/turf/${turf.id}`}>
-        <div className="relative aspect-[4/3] overflow-hidden">
+    <Card className="group relative overflow-hidden border-none bg-card/30 backdrop-blur-md transition-all duration-500 hover:bg-card/50 hover:shadow-[0_0_40px_rgba(26,255,115,0.15)] hover:-translate-y-2 rounded-[2rem]">
+      {/* Glow Effect Layer */}
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
+        <div className="absolute -inset-[2px] bg-gradient-to-br from-primary/20 via-transparent to-accent/20 rounded-[2rem]" />
+      </div>
+
+      <Link href={`/turf/${turf.id}`} className="block">
+        <div className="relative aspect-[16/11] overflow-hidden rounded-t-[2rem]">
           <Image
             src={turf.images[0]}
             alt={turf.name}
             fill
-            className="object-cover transition-transform duration-500 group-hover:scale-110"
-            data-ai-hint="sports turf"
+            className="object-cover transition-transform duration-700 group-hover:scale-110"
+            data-ai-hint="sports field"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-transparent to-transparent opacity-60" />
-          <Badge className="absolute left-3 top-3 bg-primary text-primary-foreground font-semibold">
-            {turf.rating} <Star className="ml-1 h-3 w-3 fill-current" />
-          </Badge>
-          <div className="absolute bottom-3 left-3 flex gap-2">
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-80" />
+          
+          <div className="absolute left-4 top-4 flex flex-col gap-2">
+            <Badge className="bg-primary text-primary-foreground font-black px-3 py-1 text-xs shadow-lg">
+              {turf.rating} <Star className="ml-1 h-3 w-3 fill-current" />
+            </Badge>
+          </div>
+
+          <div className="absolute bottom-4 left-4 flex flex-wrap gap-2">
             {turf.sportTypes.map((sport) => (
-              <Badge key={sport} variant="secondary" className="bg-background/80 backdrop-blur-sm border-none text-[10px] uppercase tracking-wider">
+              <Badge key={sport} variant="secondary" className="bg-white/10 backdrop-blur-md border-white/5 text-[10px] font-bold uppercase tracking-wider text-white">
                 {sport}
               </Badge>
             ))}
           </div>
         </div>
       </Link>
-      <CardContent className="p-5">
-        <div className="flex justify-between items-start mb-2">
+
+      <CardContent className="p-6">
+        <div className="flex justify-between items-start mb-4">
           <Link href={`/turf/${turf.id}`}>
-            <h3 className="font-headline text-xl font-bold group-hover:text-primary transition-colors line-clamp-1">
+            <h3 className="font-headline text-2xl font-bold group-hover:text-primary transition-colors line-clamp-1 leading-none mb-1">
               {turf.name}
             </h3>
+            <div className="flex items-center text-muted-foreground text-xs gap-1">
+              <MapPin className="h-3 w-3 text-primary" />
+              <span>{turf.area}</span>
+            </div>
           </Link>
-          <span className="text-primary font-bold text-lg">₹{turf.pricePerHour}<span className="text-xs text-muted-foreground font-normal">/hr</span></span>
+          <div className="text-right">
+            <span className="text-primary font-black text-xl leading-none">₹{turf.pricePerHour}</span>
+            <p className="text-[10px] text-muted-foreground font-medium uppercase">per hour</p>
+          </div>
         </div>
-        <div className="flex items-center text-muted-foreground text-sm gap-1 mb-1">
-          <MapPin className="h-3.5 w-3.5 text-primary" />
-          <span className="line-clamp-1">{turf.area}, Mysuru</span>
-        </div>
-        <div className="flex items-center text-muted-foreground text-sm gap-1">
-          <Trophy className="h-3.5 w-3.5 text-accent" />
-          <span>{turf.reviewCount} Reviews</span>
+
+        <div className="flex flex-wrap gap-2 mb-6">
+          {turf.courtTypes.map(court => (
+            <Badge key={court} variant="outline" className="border-white/5 text-muted-foreground text-[10px] py-0 px-2 flex items-center gap-1">
+              <Maximize className="h-2.5 w-2.5" />
+              {court}
+            </Badge>
+          ))}
+          <Badge variant="outline" className="border-white/5 text-muted-foreground text-[10px] py-0 px-2 flex items-center gap-1">
+            <Clock className="h-2.5 w-2.5" />
+            {turf.openingHours.includes('24') ? 'Open 24/7' : turf.openingHours.split('-')[1].trim()}
+          </Badge>
         </div>
       </CardContent>
-      <CardFooter className="p-5 pt-0">
+
+      <CardFooter className="p-6 pt-0">
         <Button 
           asChild 
-          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold"
+          className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-2xl transition-all shadow-[0_10px_20px_-10px_rgba(26,255,115,0.5)] group-hover:shadow-[0_10px_25px_-5px_rgba(26,255,115,0.6)]"
         >
           <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
-            <MessageCircle className="mr-2 h-4 w-4" />
-            Book on WhatsApp
+            <MessageCircle className="mr-2 h-5 w-5" />
+            Quick Book
           </a>
         </Button>
       </CardFooter>

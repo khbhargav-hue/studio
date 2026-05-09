@@ -13,7 +13,7 @@ import {
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
-import { Palette, Save, Loader2, Sparkles, Image as ImageIcon, Monitor, Layout } from "lucide-react";
+import { Palette, Save, Loader2, Sparkles, Image as ImageIcon, Monitor, Layout, Globe, Mail, Phone, Copyright } from "lucide-react";
 import { useFirestore, useDoc, useMemoFirebase } from "@/firebase";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
@@ -38,7 +38,12 @@ export default function BrandingSettingsPage() {
     heroHeading2: "BOOK EASY.",
     heroDescription: "Discover and book Mysuru’s best sports turfs in one place.",
     heroImageUrl: "https://picsum.photos/seed/turf-hero/1920/1080",
-    logoUrl: ""
+    logoUrl: "",
+    seoTitle: "Turfista | Premium Sports Turf Discovery in Mysuru",
+    seoDescription: "Find and book the best football and cricket turfs in Mysuru, Karnataka.",
+    footerEmail: "contact.turfista@gmail.com",
+    footerWhatsapp: "917411322492",
+    copyrightText: "© 2026 Turfista"
   });
 
   useEffect(() => {
@@ -64,7 +69,7 @@ export default function BrandingSettingsPage() {
       .then(() => {
         toast({
           title: "Branding Updated",
-          description: "Changes are now live on the homepage."
+          description: "Changes are now live across the platform."
         });
       })
       .catch(async (err) => {
@@ -89,11 +94,11 @@ export default function BrandingSettingsPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto pb-20 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="max-w-6xl mx-auto pb-20 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="font-headline text-4xl font-bold tracking-tight">Branding Control</h1>
-          <p className="text-muted-foreground mt-1 text-lg">Manage how Turfista looks to your players.</p>
+          <h1 className="font-headline text-4xl font-bold tracking-tight uppercase italic">Branding <span className="text-primary">Control</span></h1>
+          <p className="text-muted-foreground mt-1 text-lg">Manage the visual identity and SEO of Turfista.</p>
         </div>
         <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/20 rounded-2xl">
           <Palette className="h-4 w-4 text-primary" />
@@ -102,121 +107,191 @@ export default function BrandingSettingsPage() {
       </div>
 
       <form onSubmit={handleSave} className="space-y-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <Card className="glass-card border-white/5 rounded-[2rem] overflow-hidden md:col-span-2">
-            <CardHeader className="p-8 pb-4">
-              <CardTitle className="font-headline text-2xl font-bold flex items-center gap-3">
-                <Layout className="h-6 w-6 text-primary" />
-                Hero Narrative
-              </CardTitle>
-              <CardDescription>Update the primary messaging on the landing page hero section.</CardDescription>
-            </CardHeader>
-            <CardContent className="p-8 pt-4 space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="badge">Top Badge Text</Label>
-                <Input 
-                  id="badge" 
-                  className="h-12 bg-background/50 border-white/5 rounded-xl"
-                  value={formData.heroBadgeText}
-                  onChange={(e) => setFormData({...formData, heroBadgeText: e.target.value})}
-                  placeholder="e.g., WE CONNECT YOU TO THE BEST TURFS"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          
+          <div className="lg:col-span-8 space-y-8">
+            <Card className="glass-card border-white/5 rounded-[2rem] overflow-hidden">
+              <CardHeader className="p-8 pb-4">
+                <CardTitle className="font-headline text-2xl font-bold flex items-center gap-3">
+                  <Layout className="h-6 w-6 text-primary" />
+                  Hero Narrative
+                </CardTitle>
+                <CardDescription>Update the primary messaging on the landing page hero section.</CardDescription>
+              </CardHeader>
+              <CardContent className="p-8 pt-4 space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="h1">Heading Line 1 (White)</Label>
+                  <Label htmlFor="badge">Top Badge Text</Label>
                   <Input 
-                    id="h1" 
-                    className="h-12 bg-background/50 border-white/5 rounded-xl font-bold"
-                    value={formData.heroHeading1}
-                    onChange={(e) => setFormData({...formData, heroHeading1: e.target.value})}
-                    placeholder="PLAY MORE."
+                    id="badge" 
+                    className="h-12 bg-background/50 border-white/5 rounded-xl"
+                    value={formData.heroBadgeText}
+                    onChange={(e) => setFormData({...formData, heroBadgeText: e.target.value})}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="h2">Heading Line 2 (Neon Green)</Label>
-                  <Input 
-                    id="h2" 
-                    className="h-12 bg-background/50 border-white/5 rounded-xl font-bold text-primary"
-                    value={formData.heroHeading2}
-                    onChange={(e) => setFormData({...formData, heroHeading2: e.target.value})}
-                    placeholder="BOOK EASY."
-                  />
-                </div>
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="desc">Hero Subheading / Description</Label>
-                <Textarea 
-                  id="desc"
-                  className="min-h-[100px] bg-background/50 border-white/5 rounded-2xl leading-relaxed resize-none"
-                  value={formData.heroDescription}
-                  onChange={(e) => setFormData({...formData, heroDescription: e.target.value})}
-                  placeholder="Tell players what Turfista is about..."
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="glass-card border-white/5 rounded-[2rem] overflow-hidden">
-            <CardHeader className="p-8 pb-4">
-              <CardTitle className="font-headline text-xl font-bold flex items-center gap-3">
-                <ImageIcon className="h-5 w-5 text-accent" />
-                Hero Background
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-8 pt-4 space-y-6">
-              <div className="space-y-2">
-                <Label className="text-xs">Image URL (Unsplash/Direct Link)</Label>
-                <Input 
-                  placeholder="https://images.unsplash.com/..." 
-                  className="bg-background/50 border-white/5 rounded-xl"
-                  value={formData.heroImageUrl}
-                  onChange={(e) => setFormData({...formData, heroImageUrl: e.target.value})}
-                />
-              </div>
-              <div className="relative aspect-video rounded-2xl overflow-hidden border border-white/5 bg-black/40">
-                <img src={formData.heroImageUrl} alt="Hero Preview" className="object-cover w-full h-full opacity-60" />
-                <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
-                  <div className="bg-primary/20 p-2 rounded-full mb-2">
-                    <Monitor className="h-4 w-4 text-primary" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="h1">Heading Line 1 (White)</Label>
+                    <Input 
+                      id="h1" 
+                      className="h-12 bg-background/50 border-white/5 rounded-xl font-bold"
+                      value={formData.heroHeading1}
+                      onChange={(e) => setFormData({...formData, heroHeading1: e.target.value})}
+                    />
                   </div>
-                  <p className="text-[10px] font-bold text-white uppercase tracking-widest">Desktop Preview</p>
+                  <div className="space-y-2">
+                    <Label htmlFor="h2">Heading Line 2 (Neon Green)</Label>
+                    <Input 
+                      id="h2" 
+                      className="h-12 bg-background/50 border-white/5 rounded-xl font-bold text-primary"
+                      value={formData.heroHeading2}
+                      onChange={(e) => setFormData({...formData, heroHeading2: e.target.value})}
+                    />
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
 
-          <Card className="glass-card border-white/5 rounded-[2rem] overflow-hidden">
-            <CardHeader className="p-8 pb-4">
-              <CardTitle className="font-headline text-xl font-bold flex items-center gap-3">
-                <Sparkles className="h-5 w-5 text-primary" />
-                Branding Identity
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-8 pt-4 space-y-6">
-              <div className="space-y-2">
-                <Label className="text-xs">Logo Image URL (Optional)</Label>
-                <Input 
-                  placeholder="Defaults to SVG logo if empty" 
-                  className="bg-background/50 border-white/5 rounded-xl"
-                  value={formData.logoUrl}
-                  onChange={(e) => setFormData({...formData, logoUrl: e.target.value})}
-                />
-              </div>
-              <div className="aspect-video rounded-2xl border border-dashed border-white/10 bg-white/5 flex flex-col items-center justify-center text-center p-6">
-                {formData.logoUrl ? (
-                  <img src={formData.logoUrl} alt="Logo" className="max-h-12 object-contain" />
-                ) : (
-                  <>
-                    <Palette className="h-8 w-8 text-white/10 mb-2" />
-                    <p className="text-[10px] text-muted-foreground font-bold uppercase">Using Default SVG Logo</p>
-                  </>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                <div className="space-y-2">
+                  <Label htmlFor="desc">Hero Subheading</Label>
+                  <Textarea 
+                    id="desc"
+                    className="min-h-[100px] bg-background/50 border-white/5 rounded-2xl leading-relaxed resize-none"
+                    value={formData.heroDescription}
+                    onChange={(e) => setFormData({...formData, heroDescription: e.target.value})}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="glass-card border-white/5 rounded-[2rem] overflow-hidden">
+              <CardHeader className="p-8 pb-4">
+                <CardTitle className="font-headline text-2xl font-bold flex items-center gap-3">
+                  <Globe className="h-6 w-6 text-primary" />
+                  SEO & Search
+                </CardTitle>
+                <CardDescription>Control how your platform appears in Google and social shares.</CardDescription>
+              </CardHeader>
+              <CardContent className="p-8 pt-4 space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="seoTitle">Page Title (Meta Title)</Label>
+                  <Input 
+                    id="seoTitle" 
+                    className="h-12 bg-background/50 border-white/5 rounded-xl"
+                    value={formData.seoTitle}
+                    onChange={(e) => setFormData({...formData, seoTitle: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="seoDesc">Meta Description</Label>
+                  <Textarea 
+                    id="seoDesc"
+                    className="min-h-[100px] bg-background/50 border-white/5 rounded-2xl leading-relaxed resize-none"
+                    value={formData.seoDescription}
+                    onChange={(e) => setFormData({...formData, seoDescription: e.target.value})}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="glass-card border-white/5 rounded-[2rem] overflow-hidden">
+              <CardHeader className="p-8 pb-4">
+                <CardTitle className="font-headline text-2xl font-bold flex items-center gap-3">
+                  <Phone className="h-6 w-6 text-primary" />
+                  Contact & Footer
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-8 pt-4 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="footEmail">Contact Email</Label>
+                    <Input 
+                      id="footEmail" 
+                      type="email"
+                      className="h-12 bg-background/50 border-white/5 rounded-xl"
+                      value={formData.footerEmail}
+                      onChange={(e) => setFormData({...formData, footerEmail: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="footWhatsapp">WhatsApp (Country Code Only)</Label>
+                    <Input 
+                      id="footWhatsapp" 
+                      placeholder="e.g., 917411322492"
+                      className="h-12 bg-background/50 border-white/5 rounded-xl"
+                      value={formData.footerWhatsapp}
+                      onChange={(e) => setFormData({...formData, footerWhatsapp: e.target.value})}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="copyright">Copyright Text</Label>
+                  <Input 
+                    id="copyright" 
+                    className="h-12 bg-background/50 border-white/5 rounded-xl"
+                    value={formData.copyrightText}
+                    onChange={(e) => setFormData({...formData, copyrightText: e.target.value})}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="lg:col-span-4 space-y-8">
+            <Card className="glass-card border-white/5 rounded-[2rem] overflow-hidden">
+              <CardHeader className="p-6">
+                <CardTitle className="font-headline text-xl font-bold flex items-center gap-3">
+                  <Sparkles className="h-5 w-5 text-primary" />
+                  Identity
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 space-y-6">
+                <div className="space-y-2">
+                  <Label className="text-xs">Logo URL (Optional)</Label>
+                  <Input 
+                    placeholder="Defaults to CSS logo if empty" 
+                    className="bg-background/50 border-white/5 rounded-xl"
+                    value={formData.logoUrl}
+                    onChange={(e) => setFormData({...formData, logoUrl: e.target.value})}
+                  />
+                </div>
+                <div className="aspect-video rounded-2xl border border-dashed border-white/10 bg-white/5 flex flex-col items-center justify-center text-center p-6">
+                  {formData.logoUrl ? (
+                    <img src={formData.logoUrl} alt="Logo" className="max-h-12 object-contain" />
+                  ) : (
+                    <>
+                      <Palette className="h-8 w-8 text-white/10 mb-2" />
+                      <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">SVG Logo Active</p>
+                    </>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="glass-card border-white/5 rounded-[2rem] overflow-hidden">
+              <CardHeader className="p-6">
+                <CardTitle className="font-headline text-xl font-bold flex items-center gap-3">
+                  <ImageIcon className="h-5 w-5 text-accent" />
+                  Hero Visual
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 space-y-6">
+                <div className="space-y-2">
+                  <Label className="text-xs">Background Image URL</Label>
+                  <Input 
+                    className="bg-background/50 border-white/5 rounded-xl"
+                    value={formData.heroImageUrl}
+                    onChange={(e) => setFormData({...formData, heroImageUrl: e.target.value})}
+                  />
+                </div>
+                <div className="relative aspect-video rounded-2xl overflow-hidden border border-white/5 bg-black/40">
+                  <img src={formData.heroImageUrl} alt="Hero Preview" className="object-cover w-full h-full opacity-60" />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
+                    <Monitor className="h-4 w-4 text-primary mb-1" />
+                    <p className="text-[10px] font-bold text-white uppercase tracking-widest">Live Hero Preview</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         <Button 

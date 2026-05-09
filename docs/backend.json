@@ -56,7 +56,12 @@
         "heroDescription": { "type": "string" },
         "heroImageUrl": { "type": "string" },
         "logoUrl": { "type": "string" },
-        "updatedAt": { "type": "object" }
+        "updatedAt": { "type": "object" },
+        "seoTitle": { "type": "string" },
+        "seoDescription": { "type": "string" },
+        "footerEmail": { "type": "string" },
+        "footerWhatsapp": { "type": "string" },
+        "copyrightText": { "type": "string" }
       }
     }
   },

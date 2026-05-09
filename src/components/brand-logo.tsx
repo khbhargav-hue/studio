@@ -1,8 +1,26 @@
+
 'use client';
 
 import { cn } from "@/lib/utils";
+import { useFirestore, useDoc, useMemoFirebase } from "@/firebase";
+import { doc } from "firebase/firestore";
 
 export function TurfistaLogo({ className, iconOnly = false }: { className?: string; iconOnly?: boolean }) {
+  const db = useFirestore();
+  const brandingRef = useMemoFirebase(() => {
+    if (!db) return null;
+    return doc(db, "settings", "branding");
+  }, [db]);
+  const { data: branding } = useDoc(brandingRef);
+
+  if (branding?.logoUrl) {
+    return (
+      <div className={cn("flex items-center group cursor-pointer", className)}>
+        <img src={branding.logoUrl} alt="Logo" className={cn("h-8 object-contain", iconOnly && "h-8")} />
+      </div>
+    );
+  }
+
   return (
     <div className={cn("flex items-center gap-2 group cursor-pointer", className)}>
       <div className="relative h-8 w-8 bg-primary rounded-md flex items-center justify-center shadow-[0_0_20px_rgba(57,255,20,0.4)] transition-transform group-hover:scale-110">

@@ -4,8 +4,17 @@
 import Link from "next/link"
 import { TurfistaLogo } from "./brand-logo"
 import { Twitter, Instagram, Facebook } from "lucide-react"
+import { useFirestore, useDoc, useMemoFirebase } from "@/firebase"
+import { doc } from "firebase/firestore"
 
 export function Footer() {
+  const db = useFirestore();
+  const brandingRef = useMemoFirebase(() => {
+    if (!db) return null;
+    return doc(db, "settings", "branding");
+  }, [db]);
+  const { data: branding } = useDoc(brandingRef);
+
   return (
     <footer className="mt-auto border-t border-white/5 bg-black/60 backdrop-blur-3xl py-16 px-4 md:px-8">
       <div className="mx-auto max-w-7xl">
@@ -15,7 +24,7 @@ export function Footer() {
               <TurfistaLogo />
             </Link>
             <p className="text-muted-foreground text-lg font-medium max-w-sm leading-relaxed">
-              Discover and book Mysuru’s best sports turfs in one place. Football, Cricket, Pickleball and more.
+              {branding?.heroDescription || "Discover and book Mysuru’s best sports turfs in one place. Football, Cricket, Pickleball and more."}
             </p>
             <div className="flex gap-4">
               {[Twitter, Instagram, Facebook].map((Icon, idx) => (
@@ -64,7 +73,9 @@ export function Footer() {
             <div className="h-1.5 w-1.5 bg-primary rounded-full animate-pulse" />
             <p className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground/60">Premium Sports Discovery System</p>
           </div>
-          <p className="text-muted-foreground text-[10px] font-black uppercase tracking-[0.4em]">© 2026 Turfista</p>
+          <p className="text-muted-foreground text-[10px] font-black uppercase tracking-[0.4em]">
+            {branding?.copyrightText || "© 2026 Turfista"}
+          </p>
         </div>
       </div>
     </footer>

@@ -1,4 +1,3 @@
-
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
@@ -51,6 +50,9 @@ export const metadata: Metadata = {
     title: 'Turfista | Book Turfs in Mysuru',
     description: 'Find your perfect pitch in seconds. Football, Cricket, and Pickleball in Mysuru.',
     images: ['/og-image.jpg'],
+  },
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
   },
   robots: {
     index: true,

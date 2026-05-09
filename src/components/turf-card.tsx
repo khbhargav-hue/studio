@@ -1,8 +1,9 @@
+
 "use client"
 
 import Image from "next/image"
 import Link from "next/link"
-import { Star, MapPin, MessageCircle, Clock, Maximize, Trophy } from "lucide-react"
+import { Star, MapPin, MessageCircle, Clock, Trophy } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
@@ -43,25 +44,23 @@ export function TurfCard({ turf }: TurfCardProps) {
   const message = `Hi, I found ${turf.name} in ${turf.area} on Turfista and would like to inquire about booking a slot for ${turf.sportTypes?.[0] || 'a game'}.`
   const whatsappUrl = `https://wa.me/${turf.whatsappNumber}?text=${encodeURIComponent(message)}`
 
+  // Use uploaded mainImage, then first gallery image, then a dark sports placeholder
+  const displayImage = turf.mainImage || (turf.galleryImages && turf.galleryImages[0]) || "https://picsum.photos/seed/turf-placeholder/800/600";
+
   return (
-    <Card className="group relative overflow-hidden border-none bg-secondary/40 glass-card rounded-2xl flex flex-col h-full hover:scale-[1.02] transition-all duration-500">
+    <Card className="group relative overflow-hidden border-none bg-secondary/40 glass-card rounded-2xl flex flex-col h-full hover:scale-[1.02] transition-all duration-500 shadow-2xl">
       <Link href={`/turf/${turf.id}`} className="block relative aspect-[16/10] overflow-hidden rounded-t-2xl">
-        {turf.images?.[0] ? (
-          <Image
-            src={turf.images[0]}
-            alt={turf.name}
-            fill
-            className="object-cover transition-transform duration-700 group-hover:scale-110 grayscale-[0.3] group-hover:grayscale-0"
-          />
-        ) : (
-          <div className="absolute inset-0 bg-primary/5 flex items-center justify-center">
-            <Trophy className="h-10 w-10 text-primary opacity-10" />
-          </div>
-        )}
+        <Image
+          src={displayImage}
+          alt={turf.name}
+          fill
+          className="object-cover transition-transform duration-700 group-hover:scale-110 grayscale-[0.3] group-hover:grayscale-0"
+          data-ai-hint="sports turf"
+        />
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
         
         <div className="absolute left-4 top-4">
-          <Badge className="bg-primary text-black font-black px-3 py-1 text-[10px] rounded-md shadow-[0_0_15px_rgba(57,255,20,0.3)]">
+          <Badge className="bg-primary text-black font-black px-3 py-1 text-[10px] rounded-md shadow-[0_0_15px_rgba(57,255,20,0.3)] border-none">
             {turf.rating || 4.5} <Star className="ml-1 h-3 w-3 fill-current" />
           </Badge>
         </div>
@@ -78,7 +77,7 @@ export function TurfCard({ turf }: TurfCardProps) {
       <CardContent className="p-6 flex-1 flex flex-col">
         <div className="mb-6">
           <Link href={`/turf/${turf.id}`}>
-            <h3 className="text-2xl mb-1 group-hover:text-primary transition-colors">
+            <h3 className="text-2xl mb-1 group-hover:text-primary transition-colors italic">
               {turf.name}
             </h3>
             <div className="flex items-center text-white/40 text-[9px] font-black uppercase tracking-[0.2em] gap-1.5">
@@ -90,17 +89,17 @@ export function TurfCard({ turf }: TurfCardProps) {
 
         <div className="grid grid-cols-2 gap-3 mb-8">
           <div className="bg-white/5 p-3 rounded-xl border border-white/5 group-hover:bg-white/10 transition-colors">
-            <p className="text-[8px] text-white/40 font-black uppercase tracking-widest mb-1">Half Court</p>
+            <p className="text-[8px] text-white/40 font-black uppercase tracking-widest mb-1">Standard</p>
             <p className="text-lg font-black text-white">
               ₹{pricingDetails.half || pricingDetails.default}
               <span className="text-[10px] text-white/30 font-medium ml-1">/HR</span>
             </p>
           </div>
           <div className="bg-primary/5 p-3 rounded-xl border border-primary/20 group-hover:bg-primary/10 transition-colors">
-            <p className="text-[8px] text-primary/60 font-black uppercase tracking-widest mb-1">Full Court</p>
+            <p className="text-[8px] text-primary/60 font-black uppercase tracking-widest mb-1">Premier</p>
             <p className="text-lg font-black text-primary">
-              {pricingDetails.full ? `₹${pricingDetails.full}` : 'N/A'}
-              {pricingDetails.full && <span className="text-[10px] text-primary/40 font-medium ml-1">/HR</span>}
+              {pricingDetails.full ? `₹${pricingDetails.full}` : '₹' + (pricingDetails.default + 400)}
+              <span className="text-[10px] text-primary/40 font-medium ml-1">/HR</span>
             </p>
           </div>
         </div>
@@ -117,7 +116,7 @@ export function TurfCard({ turf }: TurfCardProps) {
         <Button 
           asChild 
           onClick={handleWhatsAppClick}
-          className="w-full h-12 bg-primary hover:bg-primary/90 text-black font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-[0_10px_20px_-5px_rgba(57,255,20,0.3)] hover:shadow-[0_15px_30px_-5px_rgba(57,255,20,0.5)] hover:scale-[1.02]"
+          className="w-full h-12 bg-primary hover:bg-primary/90 text-black font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-[0_10px_20px_-5px_rgba(57,255,20,0.3)] hover:shadow-[0_15px_30px_-5px_rgba(57,255,20,0.5)] hover:scale-[1.02] border-none"
         >
           <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
             <MessageCircle className="mr-2 h-4 w-4" />

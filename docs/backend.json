@@ -20,7 +20,8 @@
         },
         "rating": { "type": "number" },
         "reviewCount": { "type": "number" },
-        "images": { "type": "array", "items": { "type": "string" } },
+        "mainImage": { "type": "string", "description": "The primary thumbnail image for the turf" },
+        "galleryImages": { "type": "array", "items": { "type": "string" }, "description": "Additional photos of the venue" },
         "description": { "type": "string" },
         "amenities": { "type": "array", "items": { "type": "string" } },
         "coachingServices": { "type": "array", "items": { "type": "string" } },
@@ -61,7 +62,9 @@
         "seoDescription": { "type": "string" },
         "footerEmail": { "type": "string" },
         "footerWhatsapp": { "type": "string" },
-        "copyrightText": { "type": "string" }
+        "copyrightText": { "type": "string" },
+        "cloudinaryCloudName": { "type": "string" },
+        "cloudinaryUploadPreset": { "type": "string" }
       }
     }
   },

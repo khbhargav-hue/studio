@@ -12,7 +12,8 @@ export interface Turf {
   courtPricing?: Record<string, number>;
   rating: number;
   reviewCount: number;
-  images: string[];
+  mainImage: string;
+  galleryImages: string[];
   description: string;
   amenities: string[];
   coachingServices: string[];

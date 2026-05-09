@@ -12,14 +12,26 @@ import { Switch } from "@/components/ui/switch";
 import { 
   Card, 
   CardContent, 
-  CardDescription, 
   CardHeader, 
   CardTitle,
 } from "@/components/ui/card";
-import { ArrowLeft, Sparkles, Loader2, Save, Image as ImageIcon, Zap, Trophy, MapPin, Settings2, Globe, IndianRupee, Upload, X } from "lucide-react";
+import { 
+  ArrowLeft, 
+  Sparkles, 
+  Loader2, 
+  Save, 
+  Image as ImageIcon, 
+  Zap, 
+  Trophy, 
+  Settings2, 
+  IndianRupee, 
+  Upload, 
+  X,
+  Plus
+} from "lucide-react";
 import { generateTurfDescriptionForAdmin } from "@/ai/flows/generate-turf-description-for-admin";
 import { useToast } from "@/hooks/use-toast";
-import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/firebase";
+import { useFirestore, useDoc, useMemoFirebase } from "@/firebase";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -33,22 +45,6 @@ const COURT_OPTIONS = [
   "Football Half Court", 
   "Football Full Court",
   "Pickleball Court"
-];
-const FACILITY_OPTIONS = [
-  "Swimming Pool", 
-  "Parking", 
-  "Flood Lights", 
-  "Washroom", 
-  "Drinking Water", 
-  "Cafeteria", 
-  "Seating Area"
-];
-const COACHING_OPTIONS = [
-  "Leather Cricket Coaching", 
-  "Cricket Coaching", 
-  "Football Coaching", 
-  "Kids Football Coaching", 
-  "Personal Training"
 ];
 
 function SelectionGroup({ 
@@ -81,7 +77,7 @@ function SelectionGroup({
               className={cn(
                 "group relative flex items-center space-x-3 p-3 rounded-xl border transition-all cursor-pointer",
                 isSelected 
-                  ? "bg-primary/10 border-primary shadow-[0_0_15px_rgba(26,255,115,0.1)]" 
+                  ? "bg-primary/10 border-primary shadow-[0_0_15px_rgba(57,255,20,0.1)]" 
                   : "bg-white/5 border-white/5 hover:border-white/20"
               )}
             >
@@ -114,7 +110,8 @@ function NewTurfForm() {
   const { toast } = useToast();
   const db = useFirestore();
   const editId = searchParams.get("id");
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const mainInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   const brandingRef = useMemoFirebase(() => {
     if (!db) return null;
@@ -130,7 +127,8 @@ function NewTurfForm() {
   const { data: existingTurf, loading: loadingExisting } = useDoc(turfDocRef);
 
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
+  const [isUploadingMain, setIsUploadingMain] = useState(false);
+  const [isUploadingGallery, setIsUploadingGallery] = useState(false);
   const [formData, setFormData] = useState({
     id: "",
     name: "",
@@ -139,16 +137,17 @@ function NewTurfForm() {
     pricePerHour: 1000,
     courtPricing: {} as Record<string, number>,
     description: "",
-    amenities: [] as string[],
+    amenities: ["Flood Lights", "Parking", "Washroom"] as string[],
     sportTypes: [] as string[],
     courtTypes: [] as string[],
     coachingServices: [] as string[],
     rating: 4.5,
     reviewCount: 0,
-    openingHours: "06:00 AM - 11:00 PM",
+    openingHours: "Open 24 Hours",
     contactNumber: "",
     whatsappNumber: "",
-    images: [] as string[],
+    mainImage: "",
+    galleryImages: [] as string[],
     mapUrl: "",
     isPopular: false
   });
@@ -160,7 +159,7 @@ function NewTurfForm() {
         ...existingTurf,
         id: existingTurf.id || editId,
         courtPricing: existingTurf.courtPricing || {},
-        images: existingTurf.images || []
+        galleryImages: existingTurf.galleryImages || []
       }));
     }
   }, [existingTurf, editId]);
@@ -168,8 +167,8 @@ function NewTurfForm() {
   const uploadToCloudinary = async (file: File) => {
     if (!branding?.cloudinaryCloudName || !branding?.cloudinaryUploadPreset) {
       toast({
-        title: "Configuration Required",
-        description: "Please set up Cloudinary in Branding Settings before uploading images.",
+        title: "Configuration Missing",
+        description: "Configure Cloudinary in Branding Settings first.",
         variant: "destructive"
       });
       return null;
@@ -194,36 +193,43 @@ function NewTurfForm() {
       return data.secure_url;
     } catch (error: any) {
       toast({
-        title: "Upload Failed",
-        description: error.message || "Cloudinary connection issue.",
+        title: "Upload Error",
+        description: error.message,
         variant: "destructive"
       });
       return null;
     }
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMainUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setIsUploading(true);
+    setIsUploadingMain(true);
     const url = await uploadToCloudinary(file);
     if (url) {
-      setFormData(prev => ({
-        ...prev,
-        images: [...prev.images, url]
-      }));
-      toast({ title: "Image Uploaded", description: "Venue gallery updated locally. Click Publish to save." });
+      setFormData(prev => ({ ...prev, mainImage: url }));
+      toast({ title: "Main Image Updated" });
     }
-    setIsUploading(false);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    setIsUploadingMain(false);
   };
 
-  const removeImage = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      images: prev.images.filter((_, i) => i !== index)
-    }));
+  const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    setIsUploadingGallery(true);
+    for (const file of files) {
+      const url = await uploadToCloudinary(file);
+      if (url) {
+        setFormData(prev => ({
+          ...prev,
+          galleryImages: [...prev.galleryImages, url]
+        }));
+      }
+    }
+    setIsUploadingGallery(false);
+    toast({ title: "Gallery Updated" });
   };
 
   const toggleSelection = useCallback((field: keyof typeof formData, value: string) => {
@@ -231,9 +237,7 @@ function NewTurfForm() {
       const current = prev[field] as string[];
       if (current.includes(value)) {
         const next = current.filter(v => v !== value);
-        const nextPricing = { ...prev.courtPricing };
-        if (field === 'courtTypes') delete nextPricing[value];
-        return { ...prev, [field]: next, courtPricing: nextPricing };
+        return { ...prev, [field]: next };
       } else {
         return { ...prev, [field]: [...current, value] };
       }
@@ -252,11 +256,7 @@ function NewTurfForm() {
 
   const handleGenerateDescription = async () => {
     if (!formData.name || !formData.area) {
-      toast({
-        title: "Info Missing",
-        description: "Add a name and area so AI can write a contextual description.",
-        variant: "destructive"
-      });
+      toast({ title: "Name & Area required for AI", variant: "destructive" });
       return;
     }
 
@@ -268,21 +268,9 @@ function NewTurfForm() {
         sportTypes: formData.sportTypes as any,
         pricePerHour: formData.pricePerHour,
         amenities: formData.amenities,
-        uniqueFeatures: formData.coachingServices.length > 0 
-          ? `Includes specialized coaching in: ${formData.coachingServices.join(', ')}.`
-          : undefined
       });
       setFormData(prev => ({ ...prev, description: result.description }));
-      toast({
-        title: "AI Description Ready",
-        description: "Review the generated content below.",
-      });
-    } catch (error) {
-      toast({
-        title: "AI Writing Failed",
-        description: "Try again in a moment.",
-        variant: "destructive"
-      });
+      toast({ title: "Description Generated" });
     } finally {
       setIsGenerating(false);
     }
@@ -292,32 +280,24 @@ function NewTurfForm() {
     e.preventDefault();
     if (!db) return;
 
-    const prices = Object.values(formData.courtPricing);
-    const minPrice = prices.length > 0 ? Math.min(...prices) : formData.pricePerHour;
-
     const id = editId || formData.name.toLowerCase().replace(/\s+/g, '-');
     const turfRef = doc(db, "turfs", id);
     
     setDoc(turfRef, {
       ...formData,
       id,
-      pricePerHour: minPrice,
       updatedAt: serverTimestamp()
     }, { merge: true })
     .then(() => {
-      toast({
-        title: editId ? "Venue Updated" : "Venue Created",
-        description: `${formData.name} is now live.`
-      });
+      toast({ title: "Venue Published" });
       router.push("/admin");
     })
     .catch(async (err) => {
-      const permissionError = new FirestorePermissionError({
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
         path: turfRef.path,
-        operation: editId ? 'update' : 'create',
+        operation: 'write',
         requestResourceData: formData
-      });
-      errorEmitter.emit('permission-error', permissionError);
+      }));
     });
   };
 
@@ -330,51 +310,46 @@ function NewTurfForm() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto pb-20 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex items-center justify-between mb-8">
-        <Button 
-          variant="ghost" 
-          onClick={() => router.back()} 
-          className="hover:bg-white/5 rounded-xl"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" /> Dashboard
+    <div className="max-w-6xl mx-auto pb-32 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="flex items-center justify-between mb-12">
+        <Button variant="ghost" onClick={() => router.back()} className="rounded-xl group">
+          <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" /> Dashboard
         </Button>
-        <div className="flex items-center gap-2 px-4 py-2 bg-accent/10 border border-accent/20 rounded-2xl">
-          <Zap className="h-4 w-4 text-accent" />
-          <span className="text-xs font-bold text-accent uppercase tracking-widest">Real-time Sync</span>
+        <div className="flex items-center gap-3">
+          <div className="h-2 w-2 bg-primary rounded-full animate-pulse shadow-[0_0_10px_rgba(57,255,20,1)]" />
+          <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Admin Control Active</span>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <form onSubmit={handleSubmit} className="space-y-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           
-          <div className="lg:col-span-7 space-y-8">
-            <Card className="glass-card border-white/5 rounded-[2rem] overflow-hidden">
-              <CardHeader className="p-8 pb-4">
-                <CardTitle className="font-headline text-2xl font-bold flex items-center gap-3">
-                  <Settings2 className="h-6 w-6 text-primary" />
-                  Venue Identity
+          <div className="lg:col-span-7 space-y-10">
+            {/* Identity Card */}
+            <Card className="glass-card border-white/5 rounded-[2.5rem] overflow-hidden">
+              <CardHeader className="p-10 pb-0">
+                <CardTitle className="font-headline text-3xl font-bold flex items-center gap-4">
+                  <Settings2 className="h-8 w-8 text-primary" />
+                  Arena Basics
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-8 pt-4 space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Venue Name</Label>
+              <CardContent className="p-10 space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-3">
+                    <Label className="text-xs font-black uppercase tracking-widest text-white/40 ml-1">Turf Name</Label>
                     <Input 
-                      id="name" 
                       placeholder="e.g., Kuber's Turf" 
-                      className="h-12 bg-background/50 border-white/5 rounded-xl"
+                      className="h-14 bg-background/50 border-white/5 rounded-2xl"
                       value={formData.name}
                       onChange={(e) => setFormData({...formData, name: e.target.value})}
                       required
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="area">Area (Mysuru)</Label>
+                  <div className="space-y-3">
+                    <Label className="text-xs font-black uppercase tracking-widest text-white/40 ml-1">Zone (Area)</Label>
                     <Input 
-                      id="area" 
                       placeholder="e.g., Kuvempunagar" 
-                      className="h-12 bg-background/50 border-white/5 rounded-xl"
+                      className="h-14 bg-background/50 border-white/5 rounded-2xl"
                       value={formData.area}
                       onChange={(e) => setFormData({...formData, area: e.target.value})}
                       required
@@ -382,35 +357,34 @@ function NewTurfForm() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="location">Address</Label>
+                <div className="space-y-3">
+                  <Label className="text-xs font-black uppercase tracking-widest text-white/40 ml-1">Full Location Address</Label>
                   <Input 
-                    id="location" 
-                    placeholder="Full address for players..." 
-                    className="h-12 bg-background/50 border-white/5 rounded-xl"
+                    placeholder="Physical coordinates..." 
+                    className="h-14 bg-background/50 border-white/5 rounded-2xl"
                     value={formData.location}
                     onChange={(e) => setFormData({...formData, location: e.target.value})}
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="price">Base Hourly (₹)</Label>
-                    <Input 
-                      id="price" 
-                      type="number"
-                      className="h-12 bg-background/50 border-white/5 rounded-xl font-bold text-primary"
-                      value={formData.pricePerHour}
-                      onChange={(e) => setFormData({...formData, pricePerHour: Number(e.target.value)})}
-                      required
-                    />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
+                  <div className="space-y-3">
+                    <Label className="text-xs font-black uppercase tracking-widest text-white/40 ml-1">Starting Price (₹)</Label>
+                    <div className="relative">
+                      <IndianRupee className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary" />
+                      <Input 
+                        type="number"
+                        className="h-14 pl-12 bg-background/50 border-white/5 rounded-2xl font-black text-xl text-primary"
+                        value={formData.pricePerHour}
+                        onChange={(e) => setFormData({...formData, pricePerHour: Number(e.target.value)})}
+                        required
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="timings">Hours</Label>
+                  <div className="space-y-3">
+                    <Label className="text-xs font-black uppercase tracking-widest text-white/40 ml-1">Opening Hours</Label>
                     <Input 
-                      id="timings" 
-                      placeholder="e.g., 24 Hours"
-                      className="h-12 bg-background/50 border-white/5 rounded-xl"
+                      className="h-14 bg-background/50 border-white/5 rounded-2xl"
                       value={formData.openingHours}
                       onChange={(e) => setFormData({...formData, openingHours: e.target.value})}
                     />
@@ -418,22 +392,19 @@ function NewTurfForm() {
                 </div>
 
                 {formData.courtTypes.length > 0 && (
-                  <div className="pt-4 border-t border-white/5">
-                    <h4 className="text-xs font-bold uppercase tracking-widest text-primary mb-4 flex items-center gap-2">
-                      <IndianRupee className="h-4 w-4" /> Court Rates
-                    </h4>
-                    <div className="space-y-3">
+                  <div className="space-y-6 pt-6 border-t border-white/5">
+                    <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Dynamic Pricing Breakdown</h4>
+                    <div className="grid gap-4">
                       {formData.courtTypes.map(type => (
-                        <div key={type} className="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/5">
-                          <Label className="flex-1 text-xs font-bold">{type}</Label>
-                          <div className="relative w-32">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-primary font-bold">₹</span>
+                        <div key={type} className="flex items-center gap-6 p-4 bg-white/5 rounded-2xl border border-white/5">
+                          <span className="flex-1 text-xs font-bold uppercase">{type}</span>
+                          <div className="w-32 relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-primary/60 font-bold">₹</span>
                             <Input 
                               type="number"
-                              className="pl-7 h-10 bg-background/50 border-white/5 rounded-xl font-bold"
+                              className="h-12 pl-8 bg-black/40 border-white/5 rounded-xl text-primary font-bold"
                               value={formData.courtPricing[type] || ""}
                               onChange={(e) => handlePriceChange(type, e.target.value)}
-                              placeholder="0"
                             />
                           </div>
                         </div>
@@ -441,52 +412,32 @@ function NewTurfForm() {
                     </div>
                   </div>
                 )}
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="contact">Phone</Label>
-                    <Input 
-                      id="contact" 
-                      className="h-12 bg-background/50 border-white/5 rounded-xl"
-                      value={formData.contactNumber}
-                      onChange={(e) => setFormData({...formData, contactNumber: e.target.value})}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="whatsapp">WhatsApp (91...)</Label>
-                    <Input 
-                      id="whatsapp" 
-                      className="h-12 bg-background/50 border-white/5 rounded-xl"
-                      value={formData.whatsappNumber}
-                      onChange={(e) => setFormData({...formData, whatsappNumber: e.target.value})}
-                    />
-                  </div>
-                </div>
               </CardContent>
             </Card>
 
-            <Card className="glass-card border-white/5 rounded-[2rem] overflow-hidden">
-              <CardHeader className="p-8 pb-4 flex flex-row items-center justify-between">
-                <CardTitle className="font-headline text-2xl font-bold flex items-center gap-3">
-                  <Sparkles className="h-6 w-6 text-accent" />
-                  Market Copy
+            {/* AI Copywriting */}
+            <Card className="glass-card border-white/5 rounded-[2.5rem] overflow-hidden">
+              <CardHeader className="p-10 pb-4 flex flex-row items-center justify-between">
+                <CardTitle className="font-headline text-3xl font-bold flex items-center gap-4">
+                  <Sparkles className="h-8 w-8 text-accent" />
+                  Marketing Intel
                 </CardTitle>
                 <Button 
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  className="bg-accent text-accent-foreground font-black hover:opacity-90 rounded-xl px-4"
+                  type="button" 
+                  variant="secondary" 
+                  size="sm" 
+                  className="bg-accent text-accent-foreground font-black uppercase tracking-widest text-[9px] h-10 px-6 rounded-xl"
                   onClick={handleGenerateDescription}
                   disabled={isGenerating}
                 >
                   {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
-                  AI ASSIST
+                  Generate with AI
                 </Button>
               </CardHeader>
-              <CardContent className="p-8 pt-4">
+              <CardContent className="p-10 pt-4">
                 <Textarea 
-                  placeholder="Marketing description..." 
-                  className="min-h-[200px] bg-background/50 border-white/5 rounded-2xl p-4 leading-relaxed resize-none focus:border-accent/40"
+                  placeholder="The engine uses AI to craft premium descriptions..." 
+                  className="min-h-[250px] bg-background/50 border-white/5 rounded-[2rem] p-8 leading-relaxed resize-none focus:border-accent/40"
                   value={formData.description}
                   onChange={(e) => setFormData({...formData, description: e.target.value})}
                 />
@@ -494,98 +445,114 @@ function NewTurfForm() {
             </Card>
           </div>
 
-          <div className="lg:col-span-5 space-y-8">
-            {/* Gallery Upload Section */}
-            <Card className="glass-card border-white/5 rounded-[2rem] overflow-hidden">
+          <div className="lg:col-span-5 space-y-10">
+            {/* Real Media Upload */}
+            <Card className="glass-card border-white/5 rounded-[2.5rem] overflow-hidden">
               <CardHeader className="p-8 pb-4">
-                <CardTitle className="font-headline text-2xl font-bold flex items-center gap-3">
+                <CardTitle className="font-headline text-2xl font-bold flex items-center gap-4">
                   <ImageIcon className="h-6 w-6 text-primary" />
-                  Gallery
+                  Real Imagery
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-8 space-y-6">
-                <div 
-                  className="relative aspect-video rounded-[2rem] border-2 border-dashed border-primary/20 bg-primary/5 flex flex-col items-center justify-center cursor-pointer group hover:border-primary/50 transition-all overflow-hidden"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <AnimatePresence>
-                    {isUploading && (
-                      <motion.div 
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="absolute inset-0 z-10 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center gap-4"
-                      >
-                        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                        <span className="text-[10px] font-black text-primary uppercase tracking-[0.4em]">Optimizing...</span>
-                      </motion.div>
+              <CardContent className="p-8 space-y-10">
+                {/* Main Image Dropzone */}
+                <div className="space-y-4">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Primary Display (Thumbnail)</Label>
+                  <div 
+                    className="relative aspect-video rounded-3xl border-2 border-dashed border-primary/20 bg-primary/5 hover:border-primary/50 transition-all cursor-pointer overflow-hidden group"
+                    onClick={() => mainInputRef.current?.click()}
+                  >
+                    <AnimatePresence>
+                      {isUploadingMain && (
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 z-10 bg-black/60 flex flex-col items-center justify-center gap-3">
+                          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                          <span className="text-[9px] font-black text-primary uppercase tracking-[0.4em]">Optimizing...</span>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                    
+                    {formData.mainImage ? (
+                      <img src={formData.mainImage} alt="Main" className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 transition-all duration-700" />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-full gap-4 opacity-40">
+                        <Upload className="h-10 w-10" />
+                        <span className="text-[10px] font-black uppercase tracking-widest">Select Main Photo</span>
+                      </div>
                     )}
-                  </AnimatePresence>
-                  
-                  <div className="flex flex-col items-center gap-4">
-                    <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <Upload className="h-6 w-6 text-primary" />
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xs font-bold uppercase tracking-widest text-white">Upload Photos</p>
-                      <p className="text-[9px] text-white/40 uppercase tracking-widest mt-1">PNG, JPG, WEBP</p>
-                    </div>
+                    <input type="file" ref={mainInputRef} onChange={handleMainUpload} className="hidden" accept="image/*" />
                   </div>
-                  <input type="file" ref={fileInputRef} onChange={handleImageUpload} accept="image/*" className="hidden" />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <AnimatePresence>
-                    {formData.images.map((url, i) => (
-                      <motion.div 
-                        key={url}
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
-                        className="relative aspect-square rounded-2xl overflow-hidden border border-white/10 group"
-                      >
-                        <img src={url} alt={`Gallery ${i}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                        <button 
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); removeImage(i); }}
-                          className="absolute top-2 right-2 h-8 w-8 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
+                {/* Gallery Dropzone */}
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Gallery Collection</Label>
+                    <span className="text-[9px] font-black text-primary uppercase">{formData.galleryImages.length} Photos</span>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <AnimatePresence>
+                      {formData.galleryImages.map((url, i) => (
+                        <motion.div key={url} initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="relative aspect-square rounded-2xl overflow-hidden border border-white/10 group">
+                          <img src={url} alt={`Gal ${i}`} className="w-full h-full object-cover" />
+                          <button 
+                            type="button" 
+                            onClick={() => setFormData(p => ({ ...p, galleryImages: p.galleryImages.filter(u => u !== url) }))}
+                            className="absolute top-2 right-2 h-8 w-8 rounded-full bg-black/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                    
+                    <button 
+                      type="button" 
+                      onClick={() => galleryInputRef.current?.click()}
+                      className="aspect-square rounded-2xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-2 hover:bg-white/5 hover:border-white/20 transition-all"
+                    >
+                      {isUploadingGallery ? <Loader2 className="h-6 w-6 animate-spin text-primary" /> : <Plus className="h-6 w-6 text-white/20" />}
+                      <span className="text-[9px] font-black uppercase text-white/20 tracking-widest">Add More</span>
+                    </button>
+                    <input type="file" ref={galleryInputRef} onChange={handleGalleryUpload} className="hidden" multiple accept="image/*" />
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="glass-card border-white/5 rounded-[2rem] overflow-hidden">
-              <CardHeader className="p-6">
-                <CardTitle className="font-headline text-xl font-bold flex items-center gap-3">
-                  <Zap className="h-5 w-5 text-primary" />
-                  Configuration
+            {/* Config Options */}
+            <Card className="glass-card border-white/5 rounded-[2.5rem] overflow-hidden">
+              <CardHeader className="p-8">
+                <CardTitle className="font-headline text-2xl font-bold flex items-center gap-4">
+                  <Zap className="h-6 w-6 text-primary" />
+                  Platform Config
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-6 space-y-8">
+              <CardContent className="p-8 space-y-10">
                 <SelectionGroup 
-                  title="Sports"
+                  title="Supported Sports"
                   options={SPORT_OPTIONS}
                   selected={formData.sportTypes}
                   onToggle={(v) => toggleSelection('sportTypes', v)}
                   icon={Trophy}
                 />
+                
                 <SelectionGroup 
-                  title="Formats"
+                  title="Arena Formats"
                   options={COURT_OPTIONS}
                   selected={formData.courtTypes}
                   onToggle={(v) => toggleSelection('courtTypes', v)}
                 />
-                <div className="pt-6 border-t border-white/5">
-                  <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
-                    <Label className="text-sm font-bold">Featured</Label>
+
+                <div className="pt-8 border-t border-white/5">
+                  <div className="flex items-center justify-between p-6 bg-white/5 rounded-2xl border border-white/5 group hover:border-primary/20 transition-all">
+                    <div>
+                      <p className="text-sm font-bold uppercase tracking-tight">Promoted Venue</p>
+                      <p className="text-[10px] text-white/40 uppercase tracking-widest mt-1">Show on featured discovery page</p>
+                    </div>
                     <Switch 
                       checked={formData.isPopular}
-                      onCheckedChange={(checked) => setFormData({...formData, isPopular: checked})}
+                      onCheckedChange={(c) => setFormData({...formData, isPopular: c})}
                     />
                   </div>
                 </div>
@@ -594,12 +561,12 @@ function NewTurfForm() {
           </div>
         </div>
 
-        <div className="flex gap-4 pt-8">
-          <Button type="submit" className="flex-1 h-16 bg-primary text-primary-foreground font-black text-xl rounded-2xl shadow-xl hover:scale-[1.01] transition-transform">
-            <Save className="mr-3 h-6 w-6" /> {editId ? "SAVE CHANGES" : "PUBLISH VENUE"}
+        <div className="flex flex-col md:flex-row gap-6 pt-10">
+          <Button type="submit" className="flex-1 h-20 bg-primary text-black font-black text-2xl rounded-[2rem] shadow-2xl hover:scale-[1.01] transition-transform">
+            <Save className="mr-4 h-8 w-8" /> {editId ? "PUBLISH UPDATES" : "PUBLISH ARENA"}
           </Button>
-          <Button type="button" variant="ghost" onClick={() => router.back()} className="h-16 px-8 border border-white/5 rounded-2xl font-bold">
-            CANCEL
+          <Button type="button" variant="outline" onClick={() => router.back()} className="h-20 px-12 border-white/10 bg-white/5 rounded-[2rem] font-black text-xl hover:bg-white/10">
+            DISCARD
           </Button>
         </div>
       </form>
@@ -609,7 +576,7 @@ function NewTurfForm() {
 
 export default function NewTurfPage() {
   return (
-    <Suspense fallback={<div className="flex h-screen items-center justify-center bg-background"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>}>
+    <Suspense fallback={<div className="flex h-screen items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>}>
       <NewTurfForm />
     </Suspense>
   );

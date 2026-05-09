@@ -2,7 +2,7 @@
 import { MetadataRoute } from 'next';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = 'https://turfista.com';
+  const baseUrl = 'https://turfista.vercel.app';
 
   const routes = [
     '',
@@ -21,10 +21,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: route === '' ? 1 : 0.8,
   }));
 
-  // Note: For dynamic turfs, in a real production environment, 
-  // you would fetch all IDs from Firestore here to include them in the sitemap.
-  // Since this is a client-side environment, we'll stick to static routes 
-  // or handle dynamic ones via Search Console discovery.
+  // Note: For dynamic turfs in production, you would fetch all IDs from Firestore here.
+  // Example: 
+  // const turfs = await getTurfsFromFirestore();
+  // const turfRoutes = turfs.map(t => ({ url: `${baseUrl}/turf/${t.id}`, ... }));
 
   return [...routes];
 }

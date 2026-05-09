@@ -1,3 +1,4 @@
+
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
@@ -25,14 +26,14 @@ export const metadata: Metadata = {
     address: true,
     telephone: true,
   },
-  metadataBase: new URL('https://turfista.com'),
+  metadataBase: new URL('https://turfista.vercel.app'),
   alternates: {
     canonical: '/',
   },
   openGraph: {
     title: 'Turfista | Premium Sports Turf Discovery in Mysuru',
     description: 'The elite platform to discover and book sports arenas in Mysuru. Play more, book easy.',
-    url: 'https://turfista.com',
+    url: 'https://turfista.vercel.app',
     siteName: 'Turfista',
     images: [
       {

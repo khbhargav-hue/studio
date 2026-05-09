@@ -8,6 +8,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: '/',
       disallow: ['/admin/', '/login/'],
     },
-    sitemap: 'https://turfista.com/sitemap.xml',
+    sitemap: 'https://turfista.vercel.app/sitemap.xml',
   };
 }

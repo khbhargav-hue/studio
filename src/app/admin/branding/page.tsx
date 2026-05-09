@@ -34,6 +34,7 @@ import { useToast } from "@/hooks/use-toast";
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { TurfistaLogo } from "@/components/brand-logo";
+import { cn } from "@/lib/utils";
 
 export default function BrandingSettingsPage() {
   const db = useFirestore();

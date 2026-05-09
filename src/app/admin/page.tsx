@@ -26,7 +26,7 @@ import {
   BarChart3,
   Trophy,
   Database,
-  ShieldCheck
+  BarChart as BarChartIcon
 } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
@@ -63,23 +63,26 @@ export default function AdminDashboard() {
   const { data: stats } = useDoc(statsRef);
 
   const processedAnalytics = useMemo(() => {
-    if (!turfs) return { areaStats: [], mostViewed: null, topArea: 'N/A' };
+    if (!turfs || turfs.length === 0) return { areaStats: [], mostViewed: null, topArea: 'N/A' };
 
     const areaCounts: Record<string, number> = {};
     let maxViews = -1;
     let mostViewed = null;
 
     turfs.forEach(turf => {
-      areaCounts[turf.area] = (areaCounts[turf.area] || 0) + (turf.views || 0);
+      const views = turf.views || 0;
+      const area = turf.area || 'Unknown';
+      areaCounts[area] = (areaCounts[area] || 0) + views;
       
-      if ((turf.views || 0) > maxViews) {
-        maxViews = turf.views;
+      if (views >= maxViews && views > 0) {
+        maxViews = views;
         mostViewed = turf;
       }
     });
 
     const areaStats = Object.entries(areaCounts)
       .map(([name, views]) => ({ name, views }))
+      .filter(item => item.views > 0)
       .sort((a, b) => b.views - a.views);
 
     const topArea = areaStats.length > 0 ? areaStats[0].name : 'N/A';
@@ -111,26 +114,26 @@ export default function AdminDashboard() {
     setIsSeeding(true);
     
     try {
-      // 1. Seed Turf Listings
+      // Seed Turf Listings with clean starting metrics
       const turfPromises = MOCK_TURFS.map(turf => {
         const turfRef = doc(db, 'turfs', turf.id);
         return setDoc(turfRef, {
           ...turf,
           updatedAt: serverTimestamp(),
-          views: turf.views || 0,
-          whatsappClicks: turf.whatsappClicks || 0
+          views: 0, // Start fresh
+          whatsappClicks: 0 // Start fresh
         }, { merge: true });
       });
 
-      // 2. Seed Global Analytics
+      // Initialize Global Analytics
       const statsRef = doc(db, 'analytics', 'stats');
       const statsPromise = setDoc(statsRef, {
-        totalViews: MOCK_TURFS.reduce((acc, t) => acc + (t.views || 0), 0),
-        totalWhatsAppClicks: MOCK_TURFS.reduce((acc, t) => acc + (t.whatsappClicks || 0), 0),
-        totalUsers: 1420,
+        totalViews: 0,
+        totalWhatsAppClicks: 0,
+        totalUsers: 0,
       }, { merge: true });
 
-      // 3. Seed Branding Defaults
+      // Seed Branding Defaults
       const brandingRef = doc(db, 'settings', 'branding');
       const brandingPromise = setDoc(brandingRef, {
         heroBadgeText: "WE CONNECT YOU TO THE BEST TURFS",
@@ -145,11 +148,10 @@ export default function AdminDashboard() {
       await Promise.all([...turfPromises, statsPromise, brandingPromise]);
       
       toast({
-        title: "Firestore Synced",
-        description: "5 Mysuru Arenas, Analytics, and Branding are now live.",
+        title: "Database Reset",
+        description: "Fresh data synced. All counters reset to zero.",
       });
     } catch (error) {
-      console.error(error);
       toast({
         variant: "destructive",
         title: "Sync Failed",
@@ -180,7 +182,7 @@ export default function AdminDashboard() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="font-headline text-4xl font-bold tracking-tight">Admin Console</h1>
-          <p className="text-muted-foreground mt-1 text-lg">Real-time performance metrics and venue management.</p>
+          <p className="text-muted-foreground mt-1 text-lg">Live database analytics and venue management.</p>
         </div>
         <div className="flex items-center gap-3">
           <Button 
@@ -190,7 +192,7 @@ export default function AdminDashboard() {
             className="border-white/5 hover:bg-white/5 h-12 rounded-2xl font-bold bg-white/5"
           >
             {isSeeding ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Database className="h-5 w-5 mr-2" />}
-            Sync Real Data
+            Reset & Sync Data
           </Button>
           <Button asChild className="bg-primary text-primary-foreground font-bold rounded-2xl h-12 px-6 shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all">
             <Link href="/admin/new">
@@ -208,7 +210,7 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">{stats?.totalViews?.toLocaleString() || 0}</div>
-            <p className="text-xs text-muted-foreground mt-1">Unique page views tracked</p>
+            <p className="text-xs text-muted-foreground mt-1">Live unique page views</p>
           </CardContent>
         </Card>
         
@@ -219,28 +221,28 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">{stats?.totalWhatsAppClicks?.toLocaleString() || 0}</div>
-            <p className="text-xs text-muted-foreground mt-1">Total WhatsApp booking clicks</p>
+            <p className="text-xs text-muted-foreground mt-1">Real booking inquiries</p>
           </CardContent>
         </Card>
 
         <Card className="glass-card border-white/5 overflow-hidden group">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Players</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Active Users</CardTitle>
             <Users className="h-5 w-5 text-primary group-hover:scale-110 transition-transform" />
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">{stats?.totalUsers?.toLocaleString() || 0}</div>
-            <p className="text-xs text-muted-foreground mt-1">Platform user base</p>
+            <p className="text-xs text-muted-foreground mt-1">Platform registrations</p>
           </CardContent>
         </Card>
 
         <Card className="glass-card border-white/5 overflow-hidden group">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Top Area</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Hot Zone</CardTitle>
             <TrendingUp className="h-5 w-5 text-accent group-hover:scale-110 transition-transform" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold truncate">{processedAnalytics.topArea}</div>
+            <div className="text-3xl font-bold truncate">{processedAnalytics.topArea === 'N/A' ? 'None' : processedAnalytics.topArea}</div>
             <p className="text-xs text-muted-foreground mt-1">Highest regional activity</p>
           </CardContent>
         </Card>
@@ -253,37 +255,43 @@ export default function AdminDashboard() {
               <BarChart3 className="h-5 w-5 text-primary" />
               <CardTitle className="text-xl font-headline font-bold">Area Popularity</CardTitle>
             </div>
-            <CardDescription>Views distribution across different Mysuru areas</CardDescription>
+            <CardDescription>Views distribution based on real traffic</CardDescription>
           </CardHeader>
           <CardContent className="h-[300px]">
-            <ChartContainer config={chartConfig} className="w-full h-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={processedAnalytics.areaStats}>
-                  <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                  <XAxis 
-                    dataKey="name" 
-                    stroke="rgba(255,255,255,0.4)" 
-                    fontSize={12} 
-                    tickLine={false} 
-                    axisLine={false} 
-                  />
-                  <YAxis 
-                    stroke="rgba(255,255,255,0.4)" 
-                    fontSize={12} 
-                    tickLine={false} 
-                    axisLine={false} 
-                    tickFormatter={(value) => `${value}`} 
-                  />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar 
-                    dataKey="views" 
-                    fill="var(--color-views)" 
-                    radius={[4, 4, 0, 0]} 
-                    barSize={32}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartContainer>
+            {processedAnalytics.areaStats.length > 0 ? (
+              <ChartContainer config={chartConfig} className="w-full h-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={processedAnalytics.areaStats}>
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                    <XAxis 
+                      dataKey="name" 
+                      stroke="rgba(255,255,255,0.4)" 
+                      fontSize={12} 
+                      tickLine={false} 
+                      axisLine={false} 
+                    />
+                    <YAxis 
+                      stroke="rgba(255,255,255,0.4)" 
+                      fontSize={12} 
+                      tickLine={false} 
+                      axisLine={false} 
+                    />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar 
+                      dataKey="views" 
+                      fill="var(--color-views)" 
+                      radius={[4, 4, 0, 0]} 
+                      barSize={32}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            ) : (
+              <div className="h-full w-full flex flex-col items-center justify-center text-center opacity-20">
+                <BarChartIcon className="h-12 w-12 mb-2" />
+                <p className="text-xs font-bold uppercase tracking-widest">No activity tracked yet</p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -291,9 +299,9 @@ export default function AdminDashboard() {
           <CardHeader>
             <div className="flex items-center gap-2 mb-1">
               <Star className="h-5 w-5 text-accent" />
-              <CardTitle className="text-xl font-headline font-bold">Most Viewed Venue</CardTitle>
+              <CardTitle className="text-xl font-headline font-bold">Trending Venue</CardTitle>
             </div>
-            <CardDescription>Current trending turf on the platform</CardDescription>
+            <CardDescription>Most viewed pitch in the last 30 days</CardDescription>
           </CardHeader>
           <CardContent className="flex-1 flex flex-col justify-center items-center text-center p-8">
             {processedAnalytics.mostViewed ? (
@@ -329,7 +337,10 @@ export default function AdminDashboard() {
                 </div>
               </div>
             ) : (
-              <div className="text-muted-foreground">No data available</div>
+              <div className="h-full w-full flex flex-col items-center justify-center text-center opacity-20 py-10">
+                <Trophy className="h-12 w-12 mb-2" />
+                <p className="text-xs font-bold uppercase tracking-widest">No data available</p>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -337,9 +348,9 @@ export default function AdminDashboard() {
 
       <div className="glass-card rounded-[2rem] overflow-hidden border-white/5 shadow-2xl">
         <div className="p-6 border-b border-white/5 bg-white/5 flex items-center justify-between">
-          <h2 className="font-headline text-xl font-bold">Venue Listings</h2>
+          <h2 className="font-headline text-xl font-bold">Real-time Inventory</h2>
           <Badge variant="secondary" className="bg-primary/20 text-primary border-none px-3 py-1 font-bold">
-            {turfs?.length || 0} ACTIVE
+            {turfs?.length || 0} TOTAL LISTINGS
           </Badge>
         </div>
         <div className="overflow-x-auto">
@@ -350,7 +361,7 @@ export default function AdminDashboard() {
                 <TableHead className="font-bold">Area</TableHead>
                 <TableHead className="font-bold">Price/hr</TableHead>
                 <TableHead className="font-bold text-center">Views</TableHead>
-                <TableHead className="font-bold text-center">Featured</TableHead>
+                <TableHead className="font-bold text-center">Inquiries</TableHead>
                 <TableHead className="text-right font-bold">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -363,12 +374,8 @@ export default function AdminDashboard() {
                   <TableCell className="text-center font-mono">
                     {turf.views || 0}
                   </TableCell>
-                  <TableCell className="text-center">
-                    {turf.isPopular ? (
-                      <Badge className="bg-accent/20 text-accent border-accent/20">Featured</Badge>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">Standard</span>
-                    )}
+                  <TableCell className="text-center font-mono">
+                    {turf.whatsappClicks || 0}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-3">

@@ -3,7 +3,7 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { Star, MapPin, MessageCircle, Clock, Maximize, Trophy } from "lucide-react"
+import { Star, MapPin, MessageCircle, Clock, Maximize, Trophy, IndianRupee } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
@@ -29,96 +29,107 @@ export function TurfCard({ turf }: TurfCardProps) {
     }
   }
 
-  const minPrice = useMemo(() => {
-    if (turf.courtPricing && Object.keys(turf.courtPricing).length > 0) {
-      return Math.min(...Object.values(turf.courtPricing));
-    }
-    return turf.pricePerHour;
+  const pricingDetails = useMemo(() => {
+    const pricing = turf.courtPricing || {};
+    // Find keys that contain 'Half' or 'Full'
+    const halfKey = Object.keys(pricing).find(k => k.toLowerCase().includes('half'));
+    const fullKey = Object.keys(pricing).find(k => k.toLowerCase().includes('full'));
+    
+    return {
+      half: halfKey ? pricing[halfKey] : null,
+      full: fullKey ? pricing[fullKey] : null,
+      default: turf.pricePerHour
+    };
   }, [turf.courtPricing, turf.pricePerHour]);
 
   const message = `Hi, I found ${turf.name} in ${turf.area} on Turfista and would like to inquire about booking a slot for ${turf.sportTypes?.[0] || 'a game'}.`
   const whatsappUrl = `https://wa.me/${turf.whatsappNumber}?text=${encodeURIComponent(message)}`
 
   return (
-    <Card className="group relative overflow-hidden border-none bg-card/30 backdrop-blur-md transition-all duration-500 hover:bg-card/50 hover:shadow-[0_0_40px_rgba(26,255,115,0.15)] hover:-translate-y-2 rounded-[2rem]">
-      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
-        <div className="absolute -inset-[2px] bg-gradient-to-br from-primary/20 via-transparent to-accent/20 rounded-[2rem]" />
-      </div>
+    <Card className="group relative overflow-hidden border-none bg-[#121212] transition-all duration-300 hover:ring-2 hover:ring-primary/40 rounded-[2rem] flex flex-col h-full">
+      <Link href={`/turf/${turf.id}`} className="block relative aspect-[16/10] overflow-hidden">
+        {turf.images?.[0] ? (
+          <Image
+            src={turf.images[0]}
+            alt={turf.name}
+            fill
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+        ) : (
+          <div className="absolute inset-0 bg-primary/5 flex items-center justify-center">
+            <Trophy className="h-10 w-10 text-primary opacity-10" />
+          </div>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+        
+        <div className="absolute left-4 top-4">
+          <Badge className="bg-primary text-primary-foreground font-black px-2.5 py-1 text-[10px] rounded-lg">
+            {turf.rating || 4.5} <Star className="ml-1 h-3 w-3 fill-current" />
+          </Badge>
+        </div>
 
-      <Link href={`/turf/${turf.id}`} className="block">
-        <div className="relative aspect-[16/11] overflow-hidden rounded-t-[2rem]">
-          {turf.images?.[0] ? (
-            <Image
-              src={turf.images[0]}
-              alt={turf.name}
-              fill
-              className="object-cover transition-transform duration-700 group-hover:scale-110"
-            />
-          ) : (
-            <div className="absolute inset-0 bg-primary/5 flex items-center justify-center">
-              <Trophy className="h-12 w-12 text-primary opacity-10" />
-            </div>
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-80" />
-          
-          <div className="absolute left-4 top-4 flex flex-col gap-2">
-            <Badge className="bg-primary text-primary-foreground font-black px-3 py-1 text-xs shadow-lg">
-              {turf.rating || 4.5} <Star className="ml-1 h-3 w-3 fill-current" />
+        <div className="absolute bottom-4 left-4 flex flex-wrap gap-1.5">
+          {(turf.sportTypes || []).slice(0, 3).map((sport) => (
+            <Badge key={sport} variant="secondary" className="bg-black/60 backdrop-blur-md border-white/5 text-[9px] font-bold uppercase tracking-wider text-white px-2 py-0.5">
+              {sport}
             </Badge>
-          </div>
-
-          <div className="absolute bottom-4 left-4 flex flex-wrap gap-2">
-            {(turf.sportTypes || []).map((sport) => (
-              <Badge key={sport} variant="secondary" className="bg-white/10 backdrop-blur-md border-white/5 text-[10px] font-bold uppercase tracking-wider text-white">
-                {sport}
-              </Badge>
-            ))}
-          </div>
+          ))}
         </div>
       </Link>
 
-      <CardContent className="p-6">
-        <div className="flex justify-between items-start mb-4">
+      <CardContent className="p-5 flex-1 flex flex-col">
+        <div className="mb-4">
           <Link href={`/turf/${turf.id}`}>
-            <h3 className="font-headline text-2xl font-bold group-hover:text-primary transition-colors line-clamp-1 leading-none mb-1">
+            <h3 className="font-headline text-xl font-bold group-hover:text-primary transition-colors line-clamp-1 leading-tight mb-1">
               {turf.name}
             </h3>
-            <div className="flex items-center text-muted-foreground text-xs gap-1">
+            <div className="flex items-center text-white/40 text-[10px] font-bold uppercase tracking-widest gap-1">
               <MapPin className="h-3 w-3 text-primary" />
               <span>{turf.area}</span>
             </div>
           </Link>
-          <div className="text-right">
-            <div className="flex flex-col items-end">
-              <p className="text-[10px] text-muted-foreground font-black uppercase tracking-tighter opacity-70">Starting From</p>
-              <span className="text-primary font-black text-xl leading-none">₹{minPrice}</span>
-              <p className="text-[10px] text-muted-foreground font-medium uppercase mt-0.5">per hour</p>
-            </div>
+        </div>
+
+        {/* Dynamic Pricing Breakdown */}
+        <div className="grid grid-cols-2 gap-2 mb-6">
+          <div className="bg-white/5 p-2 rounded-xl border border-white/5">
+            <p className="text-[8px] text-white/30 font-black uppercase tracking-tighter mb-0.5">Half Court</p>
+            <p className="text-sm font-black text-white">
+              {pricingDetails.half ? `₹${pricingDetails.half}` : `₹${pricingDetails.default}`}
+              <span className="text-[9px] text-white/40 font-normal ml-1">/hr</span>
+            </p>
+          </div>
+          <div className="bg-white/5 p-2 rounded-xl border border-white/5">
+            <p className="text-[8px] text-white/30 font-black uppercase tracking-tighter mb-0.5">Full Court</p>
+            <p className="text-sm font-black text-primary">
+              {pricingDetails.full ? `₹${pricingDetails.full}` : 'N/A'}
+              {pricingDetails.full && <span className="text-[9px] text-primary/60 font-normal ml-1">/hr</span>}
+            </p>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2 mb-6">
-          {(turf.courtTypes || []).slice(0, 2).map(court => (
-            <Badge key={court} variant="outline" className="border-white/5 text-muted-foreground text-[10px] py-0 px-2 flex items-center gap-1">
+        <div className="flex flex-wrap gap-2 mt-auto">
+          <Badge variant="outline" className="border-white/5 text-white/40 text-[9px] py-0 px-2 h-6 flex items-center gap-1">
+            <Clock className="h-2.5 w-2.5" />
+            {turf.openingHours?.includes('24') ? '24/7' : turf.openingHours || 'N/A'}
+          </Badge>
+          {(turf.courtTypes || []).slice(0, 1).map(court => (
+            <Badge key={court} variant="outline" className="border-white/5 text-white/40 text-[9px] py-0 px-2 h-6 flex items-center gap-1">
               <Maximize className="h-2.5 w-2.5" />
               {court}
             </Badge>
           ))}
-          <Badge variant="outline" className="border-white/5 text-muted-foreground text-[10px] py-0 px-2 flex items-center gap-1">
-            <Clock className="h-2.5 w-2.5" />
-            {turf.openingHours?.includes('24') ? 'Open 24/7' : turf.openingHours || 'Timing N/A'}
-          </Badge>
         </div>
       </CardContent>
 
-      <CardFooter className="p-6 pt-0">
+      <CardFooter className="p-5 pt-0">
         <Button 
           asChild 
           onClick={handleWhatsAppClick}
-          className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-2xl transition-all shadow-[0_10px_20px_-10px_rgba(26,255,115,0.5)] group-hover:shadow-[0_10px_25px_-5px_rgba(26,255,115,0.6)]"
+          className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl transition-all shadow-lg shadow-primary/10"
         >
           <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
-            <MessageCircle className="mr-2 h-5 w-5" />
+            <MessageCircle className="mr-2 h-4 w-4" />
             Quick Book
           </a>
         </Button>

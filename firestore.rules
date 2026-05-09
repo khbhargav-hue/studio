@@ -11,14 +11,17 @@ service cloud.firestore {
       // Anyone can see the venues
       allow read: if true;
       
-      // Anyone can increment view counts or clicks (allow create if the doc exists or is being updated)
-      // Note: We use setDoc with merge on the client, which maps to create/update
-      allow create, update: if request.resource.data.diff(resource.data || {}).affectedKeys()
-        .hasOnly(['views', 'whatsappClicks', 'updatedAt', 'id', 'name', 'area', 'location', 'pricePerHour', 'courtPricing', 'rating', 'reviewCount', 'images', 'description', 'amenities', 'coachingServices', 'openingHours', 'contactNumber', 'whatsappNumber', 'mapUrl', 'isPopular'])
-        || isAdmin();
+      // Anyone can increment view counts or clicks
+      // We allow updates to these specific fields for any user
+      allow update: if request.resource.data.diff(resource.data).affectedKeys()
+        .hasOnly(['views', 'whatsappClicks', 'updatedAt']) || isAdmin();
       
-      // Admin has full control
-      allow write, delete: if isAdmin();
+      // Allow creation of these fields if the doc is being initialized via public interaction
+      allow create: if request.resource.data.keys().hasAny(['views', 'whatsappClicks']) || isAdmin();
+      
+      // Admin has full control for everything else
+      allow delete: if isAdmin();
+      allow write: if isAdmin();
     }
 
     // Rules for global analytics
@@ -27,8 +30,7 @@ service cloud.firestore {
       allow read: if isAdmin();
       
       // Anyone can update counters
-      allow create, update: if request.resource.data.diff(resource.data || {}).affectedKeys()
-        .hasOnly(['totalViews', 'totalWhatsAppClicks', 'totalUsers']);
+      allow create, update: if true;
       
       // Admin can manage analytics documents fully
       allow write, delete: if isAdmin();
@@ -36,13 +38,11 @@ service cloud.firestore {
 
     // Rules for branding and settings
     match /settings/branding {
-      // Branding must be public for the hero section to load
       allow read: if true;
-      // Only admin can change branding
       allow write, update: if isAdmin();
     }
 
-    // General fallback for settings subcollections
+    // General fallback for other settings
     match /settings/{document=**} {
       allow read, write: if isAdmin();
     }

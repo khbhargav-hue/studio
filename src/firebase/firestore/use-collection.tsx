@@ -6,6 +6,7 @@ import {
   onSnapshot,
   QuerySnapshot,
   DocumentData,
+  CollectionReference,
 } from 'firebase/firestore';
 import { errorEmitter } from '../error-emitter';
 import { FirestorePermissionError } from '../errors';
@@ -33,8 +34,19 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
         setLoading(false);
       },
       async (serverError) => {
-        // More robust path extraction for different Firebase versions
-        const path = (query as any).path || (query as any)._query?.path?.toString() || 'unknown collection';
+        // Robust path extraction for both CollectionReference and Query
+        let path = 'unknown';
+        try {
+          if (query instanceof CollectionReference) {
+            path = query.path;
+          } else if ((query as any)._query?.path) {
+            path = (query as any)._query.path.toString();
+          } else if ((query as any).path) {
+            path = (query as any).path;
+          }
+        } catch (e) {
+          path = 'error-extracting-path';
+        }
         
         const permissionError = new FirestorePermissionError({
           path,

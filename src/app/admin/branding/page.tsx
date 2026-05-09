@@ -86,8 +86,8 @@ export default function BrandingSettingsPage() {
   const uploadToCloudinary = async (file: File) => {
     if (!formData.cloudinaryCloudName || !formData.cloudinaryUploadPreset) {
       toast({
-        title: "Cloudinary Config Required",
-        description: "Please enter your Cloudinary Cloud Name and Upload Preset in the configuration section.",
+        title: "Configuration Required",
+        description: "Please provide your Cloudinary Cloud Name and Upload Preset below.",
         variant: "destructive"
       });
       return null;
@@ -103,13 +103,17 @@ export default function BrandingSettingsPage() {
         body: uploadFormData
       });
       
-      if (!response.ok) throw new Error('Upload failed');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error?.message || 'Upload failed');
+      }
+
       const data = await response.json();
       return data.secure_url;
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Upload Failed",
-        description: "Verify your Cloudinary credentials and try again.",
+        description: error.message || "Could not connect to Cloudinary.",
         variant: "destructive"
       });
       return null;
@@ -124,7 +128,7 @@ export default function BrandingSettingsPage() {
     const url = await uploadToCloudinary(file);
     if (url) {
       setFormData(prev => ({ ...prev, logoUrl: url }));
-      toast({ title: "Logo Uploaded", description: "Identity updated successfully." });
+      toast({ title: "Visual Processed", description: "Logo updated in local state. Click Publish to save." });
     }
     setUploadingLogo(false);
   };
@@ -137,7 +141,7 @@ export default function BrandingSettingsPage() {
     const url = await uploadToCloudinary(file);
     if (url) {
       setFormData(prev => ({ ...prev, heroImageUrl: url }));
-      toast({ title: "Background Updated", description: "Hero visual is now ready." });
+      toast({ title: "Backdrop Processed", description: "Hero image updated in local state. Click Publish to save." });
     }
     setUploadingHero(false);
   };
@@ -156,7 +160,7 @@ export default function BrandingSettingsPage() {
       .then(() => {
         toast({
           title: "Platform Published",
-          description: "All changes are now live across Turfista."
+          description: "All visual changes are now live across Turfista."
         });
       })
       .catch(async (err) => {
@@ -205,8 +209,66 @@ export default function BrandingSettingsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           
           <div className="lg:col-span-8 space-y-10">
+            {/* Storage Config */}
+            <Card className="glass-card border-primary/20 bg-primary/5 rounded-[3rem] overflow-hidden shadow-2xl relative border-dashed">
+              <CardHeader className="p-10 pb-0">
+                <CardTitle className="font-headline text-3xl font-bold flex items-center gap-4">
+                  <Cloud className="h-8 w-8 text-primary" />
+                  Cloud Storage Config
+                </CardTitle>
+                <CardDescription className="text-lg">Required for image uploads to work.</CardDescription>
+              </CardHeader>
+              <CardContent className="p-10 space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-3">
+                    <Label htmlFor="cloudName" className="text-xs font-black uppercase tracking-[0.2em] text-white/40 ml-1">Cloud Name</Label>
+                    <Input 
+                      id="cloudName" 
+                      placeholder="e.g., turfista-media"
+                      className="h-14 bg-background border-white/5 rounded-2xl px-6 focus:border-primary/50"
+                      value={formData.cloudinaryCloudName}
+                      onChange={(e) => setFormData({...formData, cloudinaryCloudName: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-3">
+                    <Label htmlFor="preset" className="text-xs font-black uppercase tracking-[0.2em] text-white/40 ml-1">Unsigned Upload Preset</Label>
+                    <Input 
+                      id="preset" 
+                      placeholder="e.g., website_assets"
+                      className="h-14 bg-background border-white/5 rounded-2xl px-6 focus:border-primary/50"
+                      value={formData.cloudinaryUploadPreset}
+                      onChange={(e) => setFormData({...formData, cloudinaryUploadPreset: e.target.value})}
+                    />
+                  </div>
+                </div>
+                
+                <div className={cn(
+                  "p-6 rounded-2xl border flex items-start gap-4 transition-all",
+                  formData.cloudinaryCloudName && formData.cloudinaryUploadPreset 
+                    ? "bg-primary/10 border-primary/30 text-primary" 
+                    : "bg-destructive/10 border-destructive/30 text-destructive"
+                )}>
+                  {formData.cloudinaryCloudName && formData.cloudinaryUploadPreset ? (
+                    <CheckCircle2 className="h-6 w-6 shrink-0" />
+                  ) : (
+                    <AlertCircle className="h-6 w-6 shrink-0" />
+                  )}
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-black uppercase tracking-widest">
+                      {formData.cloudinaryCloudName && formData.cloudinaryUploadPreset ? "Storage System Engaged" : "Configuration Missing"}
+                    </p>
+                    <p className="text-xs font-medium opacity-70 leading-relaxed">
+                      {formData.cloudinaryCloudName && formData.cloudinaryUploadPreset 
+                        ? "You can now upload assets. Images will be automatically optimized and stored." 
+                        : "Upload functionality is currently disabled. Please provide Cloudinary credentials."}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Identity Control */}
-            <Card className="glass-card border-white/5 rounded-[3rem] overflow-hidden shadow-2xl relative">
+            <Card className="glass-card border-white/5 rounded-[3rem] overflow-hidden shadow-2xl">
               <CardHeader className="p-10 pb-0">
                 <CardTitle className="font-headline text-3xl font-bold flex items-center gap-4">
                   <TurfistaLogo iconOnly size="md" />
@@ -226,7 +288,7 @@ export default function BrandingSettingsPage() {
                     {uploadingLogo ? (
                       <div className="flex flex-col items-center gap-4">
                         <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                        <span className="text-[10px] font-black text-primary uppercase tracking-widest">Uploading...</span>
+                        <span className="text-[10px] font-black text-primary uppercase tracking-widest">Processing...</span>
                       </div>
                     ) : formData.logoUrl ? (
                       <img src={formData.logoUrl} alt="Logo" className="max-h-full max-w-full object-contain drop-shadow-[0_0_20px_rgba(57,255,20,0.6)]" />
@@ -247,7 +309,6 @@ export default function BrandingSettingsPage() {
                 
                 <div className="text-center space-y-2">
                   <p className="text-xs font-bold text-white/40 uppercase tracking-[0.3em]">Recommended: 512x512 Transparent PNG</p>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Max 2MB. Logo updates instantly in sidebar.</p>
                 </div>
               </CardContent>
             </Card>
@@ -275,7 +336,7 @@ export default function BrandingSettingsPage() {
                         className="absolute inset-0 z-20 bg-black/60 flex flex-col items-center justify-center gap-4"
                       >
                         <Loader2 className="h-16 w-16 animate-spin text-primary" />
-                        <span className="text-xs font-black text-primary uppercase tracking-[0.4em]">Processing Visuals...</span>
+                        <span className="text-xs font-black text-primary uppercase tracking-[0.4em]">Optimizing...</span>
                       </motion.div>
                     ) : null}
                   </AnimatePresence>
@@ -296,69 +357,6 @@ export default function BrandingSettingsPage() {
                     <p className="mt-6 text-[10px] font-black text-white uppercase tracking-[0.5em] opacity-40 group-hover:opacity-100 transition-opacity">REPLACE BACKGROUND</p>
                   </div>
                   <input type="file" ref={heroInputRef} onChange={handleHeroUpload} accept="image/*" className="hidden" />
-                </div>
-                
-                <div className="flex items-center gap-4 p-6 bg-white/5 rounded-2xl border border-white/5">
-                  <Monitor className="h-5 w-5 text-primary opacity-40" />
-                  <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Format: 1920x1080 WebP/JPG • 21:9 or 16:9 Aspect Ratio</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Storage Config */}
-            <Card className="glass-card border-white/5 rounded-[3rem] overflow-hidden shadow-2xl border-primary/10">
-              <CardHeader className="p-10 pb-0">
-                <CardTitle className="font-headline text-3xl font-bold flex items-center gap-4">
-                  <Cloud className="h-8 w-8 text-primary" />
-                  Cloud Storage
-                </CardTitle>
-                <CardDescription className="text-lg">Connect your Cloudinary account for seamless uploads.</CardDescription>
-              </CardHeader>
-              <CardContent className="p-10 space-y-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-3">
-                    <Label htmlFor="cloudName" className="text-xs font-black uppercase tracking-[0.2em] text-white/40 ml-1">Cloud Name</Label>
-                    <Input 
-                      id="cloudName" 
-                      placeholder="e.g., turfista-media"
-                      className="h-14 bg-white/5 border-white/5 rounded-2xl px-6 focus:border-primary/50"
-                      value={formData.cloudinaryCloudName}
-                      onChange={(e) => setFormData({...formData, cloudinaryCloudName: e.target.value})}
-                    />
-                  </div>
-                  <div className="space-y-3">
-                    <Label htmlFor="preset" className="text-xs font-black uppercase tracking-[0.2em] text-white/40 ml-1">Unsigned Upload Preset</Label>
-                    <Input 
-                      id="preset" 
-                      placeholder="e.g., website_assets"
-                      className="h-14 bg-white/5 border-white/5 rounded-2xl px-6 focus:border-primary/50"
-                      value={formData.cloudinaryUploadPreset}
-                      onChange={(e) => setFormData({...formData, cloudinaryUploadPreset: e.target.value})}
-                    />
-                  </div>
-                </div>
-                
-                <div className={cn(
-                  "p-6 rounded-2xl border flex items-start gap-4 transition-all",
-                  formData.cloudinaryCloudName && formData.cloudinaryUploadPreset 
-                    ? "bg-primary/5 border-primary/20 text-primary" 
-                    : "bg-destructive/5 border-destructive/20 text-destructive"
-                )}>
-                  {formData.cloudinaryCloudName && formData.cloudinaryUploadPreset ? (
-                    <CheckCircle2 className="h-6 w-6 shrink-0" />
-                  ) : (
-                    <AlertCircle className="h-6 w-6 shrink-0" />
-                  )}
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-black uppercase tracking-widest">
-                      {formData.cloudinaryCloudName && formData.cloudinaryUploadPreset ? "Storage Ready" : "Configuration Required"}
-                    </p>
-                    <p className="text-xs font-medium opacity-70">
-                      {formData.cloudinaryCloudName && formData.cloudinaryUploadPreset 
-                        ? "Images will be automatically processed and stored in your cloud." 
-                        : "Upload functionality is disabled until Cloudinary settings are provided."}
-                    </p>
-                  </div>
                 </div>
               </CardContent>
             </Card>

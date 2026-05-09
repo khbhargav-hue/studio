@@ -185,13 +185,17 @@ function NewTurfForm() {
         body: uploadFormData
       });
       
-      if (!response.ok) throw new Error('Upload failed');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error?.message || 'Upload failed');
+      }
+
       const data = await response.json();
       return data.secure_url;
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Upload Failed",
-        description: "Verify your Cloudinary credentials in Branding Settings.",
+        description: error.message || "Cloudinary connection issue.",
         variant: "destructive"
       });
       return null;
@@ -209,7 +213,7 @@ function NewTurfForm() {
         ...prev,
         images: [...prev.images, url]
       }));
-      toast({ title: "Image Uploaded", description: "Venue gallery updated." });
+      toast({ title: "Image Uploaded", description: "Venue gallery updated locally. Click Publish to save." });
     }
     setIsUploading(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -300,6 +304,13 @@ function NewTurfForm() {
       pricePerHour: minPrice,
       updatedAt: serverTimestamp()
     }, { merge: true })
+    .then(() => {
+      toast({
+        title: editId ? "Venue Updated" : "Venue Created",
+        description: `${formData.name} is now live.`
+      });
+      router.push("/admin");
+    })
     .catch(async (err) => {
       const permissionError = new FirestorePermissionError({
         path: turfRef.path,
@@ -308,12 +319,6 @@ function NewTurfForm() {
       });
       errorEmitter.emit('permission-error', permissionError);
     });
-
-    toast({
-      title: editId ? "Venue Updated" : "Venue Created",
-      description: `${formData.name} is now live.`
-    });
-    router.push("/admin");
   };
 
   if (editId && loadingExisting) {

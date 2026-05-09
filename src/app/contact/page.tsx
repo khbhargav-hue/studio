@@ -6,11 +6,11 @@ import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { MessageCircle, Mail, Phone, Twitter, Instagram, Facebook, Send } from "lucide-react"
+import { MessageCircle, Mail, Twitter, Instagram, Facebook, Send, ShieldCheck } from "lucide-react"
 
 export default function ContactPage() {
   const handleWhatsAppSupport = () => {
-    window.open("https://wa.me/910000000000?text=Hi Turfista Support, I need help with...", "_blank")
+    window.open("https://wa.me/917411322492?text=Hi Turfista Support, I need help with...", "_blank")
   }
 
   return (
@@ -23,14 +23,14 @@ export default function ContactPage() {
             
             <div className="lg:col-span-5 space-y-12">
               <div>
-                <div className="inline-block bg-primary/10 text-primary text-[10px] font-black uppercase tracking-[0.4em] px-5 py-2 rounded-xl mb-6">
-                  Get In Touch
+                <div className="inline-block bg-primary/10 text-primary text-[10px] font-black uppercase tracking-[0.4em] px-5 py-2 rounded-xl mb-6 border border-primary/20">
+                  Player Support
                 </div>
                 <h1 className="font-headline text-5xl md:text-6xl font-black tracking-tighter uppercase italic leading-none text-white mb-6">
-                  Contact <br /><span className="text-primary">Support</span>
+                  Get In <br /><span className="text-primary">Touch</span>
                 </h1>
                 <p className="text-lg text-white/60 font-medium leading-relaxed">
-                  Need help with a booking or have a suggestion for the platform? Our team is standing by.
+                  Need help with a booking or have a suggestion for the platform? Our team is available for instant support.
                 </p>
               </div>
 
@@ -41,26 +41,26 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1">Email Us</p>
-                    <p className="text-lg font-bold text-white">support@turfista.com</p>
+                    <p className="text-lg font-bold text-white">contact.turfista@gmail.com</p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-6 group">
                   <div className="h-14 w-14 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center group-hover:bg-primary group-hover:text-black transition-all">
-                    <Phone className="h-6 w-6" />
+                    <ShieldCheck className="h-6 w-6" />
                   </div>
                   <div>
-                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1">Call Us</p>
-                    <p className="text-lg font-bold text-white">+91 000 000 0000</p>
+                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1">Reliability</p>
+                    <p className="text-lg font-bold text-white">Verified Connections</p>
                   </div>
                 </div>
               </div>
 
               <Button 
                 onClick={handleWhatsAppSupport}
-                className="w-full h-20 text-xl font-black bg-primary text-black rounded-[2rem] shadow-xl shadow-primary/20 hover:scale-[1.02] transition-transform"
+                className="w-full h-20 text-xl font-black bg-[#25D366] hover:bg-[#20ba5a] text-white rounded-[2rem] shadow-xl shadow-[#25D366]/20 hover:scale-[1.02] transition-transform flex items-center justify-center gap-3"
               >
-                <MessageCircle className="mr-3 h-6 w-6" />
+                <MessageCircle className="h-7 w-7" />
                 CHAT ON WHATSAPP
               </Button>
 

@@ -4,9 +4,14 @@
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
-import { ShieldCheck, TrendingUp, Users, Target, CheckCircle2 } from "lucide-react"
+import { ShieldCheck, TrendingUp, Users, Target, CheckCircle2, MessageCircle } from "lucide-react"
 
 export default function PartnerPage() {
+  const handlePartnerWhatsApp = () => {
+    const message = `Hello Turfista, I would like to list my turf on your platform.\n\nTurf Name:\nArea:\nSports Available:\nContact Number:`;
+    window.open(`https://wa.me/917411322492?text=${encodeURIComponent(message)}`, "_blank");
+  }
+
   return (
     <div className="flex min-h-screen flex-col bg-[#050505]">
       <Navbar />
@@ -14,14 +19,14 @@ export default function PartnerPage() {
       <main className="flex-1 pt-32 pb-20">
         <div className="mx-auto max-w-5xl px-4">
           <div className="text-center mb-24">
-            <div className="inline-block bg-primary/10 text-primary text-[10px] font-black uppercase tracking-[0.4em] px-5 py-2 rounded-xl mb-6">
-              Arena Portal
+            <div className="inline-block bg-primary/10 text-primary text-[10px] font-black uppercase tracking-[0.4em] px-5 py-2 rounded-xl mb-6 border border-primary/20">
+              Arena Partnership
             </div>
             <h1 className="font-headline text-6xl md:text-8xl font-black tracking-tighter uppercase italic leading-none text-white mb-8">
-              Grow Your <br /><span className="text-primary">Turf Business</span>
+              List Your Turf <br /><span className="text-primary">on Turfista</span>
             </h1>
             <p className="text-xl text-white/60 font-medium leading-relaxed max-w-2xl mx-auto">
-              Join Mysuru's most elite sports network. List your arena on Turfista and connect with thousands of local players.
+              Partner with Turfista and connect your sports arena with players across Mysuru. Join the city's most elite sports network.
             </p>
           </div>
 
@@ -54,7 +59,7 @@ export default function PartnerPage() {
                   "Verified Badge to build trust with players",
                   "Real-time analytics on views and booking leads",
                   "Promotion on Turfista's social media channels",
-                  "Direct connection with players via WhatsApp/Call",
+                  "Direct connection with players via WhatsApp",
                   "Custom pricing breakdown for different court types"
                 ].map((benefit, idx) => (
                   <div key={idx} className="flex items-center gap-4 text-white/70 font-medium">
@@ -65,11 +70,15 @@ export default function PartnerPage() {
               </div>
 
               <div className="mt-16 space-y-4">
-                <Button className="h-16 px-10 bg-primary text-black font-black text-lg rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.02] transition-transform">
-                  APPLY TO JOIN NETWORK
+                <Button 
+                  onClick={handlePartnerWhatsApp}
+                  className="h-20 px-10 bg-[#25D366] hover:bg-[#20ba5a] text-white font-black text-lg rounded-2xl shadow-xl shadow-[#25D366]/20 hover:scale-[1.02] transition-transform flex items-center gap-3"
+                >
+                  <MessageCircle className="h-6 w-6" />
+                  BECOME A TURF PARTNER
                 </Button>
                 <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest ml-1">
-                  Our team will review your arena within 48 hours.
+                  Our team will review your request and get back to you within 48 hours.
                 </p>
               </div>
             </div>

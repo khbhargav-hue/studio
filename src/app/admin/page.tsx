@@ -54,6 +54,7 @@ import {
 } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { MOCK_TURFS } from '@/lib/data';
+import { cn } from "@/lib/utils";
 
 export default function AdminDashboard() {
   const db = useFirestore();

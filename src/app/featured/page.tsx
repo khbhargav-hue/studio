@@ -1,11 +1,12 @@
 
 "use client"
 
+import { useMemo } from "react"
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { TurfCard } from "@/components/turf-card"
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase"
-import { collection, query, where, orderBy } from "firebase/firestore"
+import { collection, query, where } from "firebase/firestore"
 import { Loader2, Star } from "lucide-react"
 
 export default function FeaturedPage() {
@@ -13,14 +14,22 @@ export default function FeaturedPage() {
   
   const featuredQuery = useMemoFirebase(() => {
     if (!db) return null
+    // Removed orderBy to avoid composite index requirement
     return query(
       collection(db, "turfs"), 
-      where("isPopular", "==", true),
-      orderBy("name", "asc")
+      where("isPopular", "==", true)
     )
   }, [db])
 
-  const { data: turfs, loading } = useCollection(featuredQuery)
+  const { data: rawTurfs, loading } = useCollection(featuredQuery)
+
+  // Perform sorting on the client side to bypass index requirements for small datasets
+  const turfs = useMemo(() => {
+    if (!rawTurfs) return null
+    return [...rawTurfs].sort((a: any, b: any) => 
+      (a.name || "").localeCompare(b.name || "")
+    )
+  }, [rawTurfs])
 
   return (
     <div className="flex min-h-screen flex-col bg-[#050505]">

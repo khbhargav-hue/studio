@@ -3,7 +3,7 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { Star, MapPin, MessageCircle, Clock, Trophy } from "lucide-react"
+import { Star, MapPin, MessageCircle, Clock } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
@@ -44,18 +44,23 @@ export function TurfCard({ turf }: TurfCardProps) {
   const message = `Hi, I found ${turf.name} in ${turf.area} on Turfista and would like to inquire about booking a slot for ${turf.sportTypes?.[0] || 'a game'}.`
   const whatsappUrl = `https://wa.me/${turf.whatsappNumber}?text=${encodeURIComponent(message)}`
 
-  // Use uploaded mainImage, then first gallery image, then a dark sports placeholder
-  const displayImage = turf.mainImage || (turf.galleryImages && turf.galleryImages[0]) || "https://picsum.photos/seed/turf-placeholder/800/600";
+  // Use uploaded mainImage with Cloudinary optimization params, then fallbacks
+  const rawImage = turf.mainImage || (turf.galleryImages && turf.galleryImages[0]) || "https://picsum.photos/seed/turf-placeholder/800/600";
+  
+  // Apply Cloudinary optimization if applicable
+  const displayImage = rawImage.includes('cloudinary.com') 
+    ? rawImage.replace('/upload/', '/upload/f_auto,q_auto,w_800/') 
+    : rawImage;
 
   return (
     <Card className="group relative overflow-hidden border-none bg-secondary/40 glass-card rounded-2xl flex flex-col h-full hover:scale-[1.02] transition-all duration-500 shadow-2xl">
-      <Link href={`/turf/${turf.id}`} className="block relative aspect-[16/10] overflow-hidden rounded-t-2xl">
+      <Link href={`/turf/${turf.id}`} className="block relative aspect-[16/10] overflow-hidden rounded-t-2xl" aria-label={`View details for ${turf.name}`}>
         <Image
           src={displayImage}
-          alt={turf.name}
+          alt={`Exterior view of ${turf.name} sports turf in ${turf.area}, Mysuru`}
           fill
           className="object-cover transition-transform duration-700 group-hover:scale-110 grayscale-[0.3] group-hover:grayscale-0"
-          data-ai-hint="sports turf"
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
         
@@ -82,7 +87,7 @@ export function TurfCard({ turf }: TurfCardProps) {
             </h3>
             <div className="flex items-center text-white/40 text-[9px] font-black uppercase tracking-[0.2em] gap-1.5">
               <MapPin className="h-3 w-3 text-primary" />
-              <span>{turf.area}</span>
+              <span>{turf.area}, MYSURU</span>
             </div>
           </Link>
         </div>
@@ -116,6 +121,7 @@ export function TurfCard({ turf }: TurfCardProps) {
         <Button 
           asChild 
           onClick={handleWhatsAppClick}
+          aria-label={`Book ${turf.name} via WhatsApp`}
           className="w-full h-12 bg-primary hover:bg-primary/90 text-black font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-[0_10px_20px_-5px_rgba(57,255,20,0.3)] hover:shadow-[0_15px_30px_-5px_rgba(57,255,20,0.5)] hover:scale-[1.02] border-none"
         >
           <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">

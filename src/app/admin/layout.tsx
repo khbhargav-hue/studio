@@ -44,52 +44,52 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-background">
-        <Sidebar className="border-r border-white/5 bg-card/50 backdrop-blur-xl">
-          <SidebarHeader className="p-8">
+        <Sidebar className="border-r border-white/5 bg-card/50 backdrop-blur-xl w-80">
+          <SidebarHeader className="p-10">
             <Link href="/">
-              <TurfistaLogo />
+              <TurfistaLogo size="lg" />
             </Link>
           </SidebarHeader>
-          <SidebarContent className="px-4">
+          <SidebarContent className="px-6 space-y-2">
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Dashboard" className="h-12 rounded-xl font-bold uppercase tracking-widest text-[10px]">
+                <SidebarMenuButton asChild tooltip="Dashboard" className="h-14 rounded-2xl font-bold uppercase tracking-widest text-xs px-4">
                   <Link href="/admin">
-                    <LayoutDashboard className="h-5 w-5" />
+                    <LayoutDashboard className="h-5 w-5 mr-2" />
                     <span>Dashboard</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Add New Turf" className="h-12 rounded-xl font-bold uppercase tracking-widest text-[10px]">
+                <SidebarMenuButton asChild tooltip="Add New Turf" className="h-14 rounded-2xl font-bold uppercase tracking-widest text-xs px-4">
                   <Link href="/admin/new">
-                    <PlusCircle className="h-5 w-5" />
+                    <PlusCircle className="h-5 w-5 mr-2" />
                     <span>Add New Turf</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Branding" className="h-12 rounded-xl font-bold uppercase tracking-widest text-[10px]">
+                <SidebarMenuButton asChild tooltip="Branding" className="h-14 rounded-2xl font-bold uppercase tracking-widest text-xs px-4">
                   <Link href="/admin/branding">
-                    <Palette className="h-5 w-5" />
+                    <Palette className="h-5 w-5 mr-2" />
                     <span>Branding</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarContent>
-          <SidebarFooter className="p-6">
+          <SidebarFooter className="p-8">
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton onClick={handleLogout} className="h-12 rounded-xl font-bold uppercase tracking-widest text-[10px] text-destructive hover:text-destructive hover:bg-destructive/10">
-                  <LogOut className="h-5 w-5" />
+                <SidebarMenuButton onClick={handleLogout} className="h-14 rounded-2xl font-bold uppercase tracking-widest text-xs px-4 text-destructive hover:text-destructive hover:bg-destructive/10">
+                  <LogOut className="h-5 w-5 mr-2" />
                   <span>Logout</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarFooter>
         </Sidebar>
-        <main className="flex-1 overflow-y-auto px-4 py-8 md:px-8">
+        <main className="flex-1 overflow-y-auto px-6 py-10 md:px-12">
           {children}
         </main>
       </div>

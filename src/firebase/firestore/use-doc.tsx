@@ -28,13 +28,15 @@ export function useDoc<T = DocumentData>(ref: DocumentReference<T> | null) {
         setData(snapshot.exists() ? { ...snapshot.data()!, id: snapshot.id } : null);
         setLoading(false);
       },
-      async (err) => {
+      async (serverError) => {
         const permissionError = new FirestorePermissionError({
           path: ref.path,
           operation: 'get',
+          message: serverError.message
         });
+        
         errorEmitter.emit('permission-error', permissionError);
-        setError(err);
+        setError(serverError);
         setLoading(false);
       }
     );

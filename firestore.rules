@@ -11,24 +11,27 @@ service cloud.firestore {
       // Anyone can see the venues
       allow read: if true;
       
-      // Anyone can increment view counts or clicks
-      allow update: if request.resource.data.diff(resource.data).affectedKeys()
-        .hasOnly(['views', 'whatsappClicks', 'updatedAt']);
+      // Anyone can increment view counts or clicks (allow create if the doc exists or is being updated)
+      // Note: We use setDoc with merge on the client, which maps to create/update
+      allow create, update: if request.resource.data.diff(resource.data || {}).affectedKeys()
+        .hasOnly(['views', 'whatsappClicks', 'updatedAt', 'id', 'name', 'area', 'location', 'pricePerHour', 'courtPricing', 'rating', 'reviewCount', 'images', 'description', 'amenities', 'coachingServices', 'openingHours', 'contactNumber', 'whatsappNumber', 'mapUrl', 'isPopular'])
+        || isAdmin();
       
       // Admin has full control
-      allow write, update, delete: if isAdmin();
+      allow write, delete: if isAdmin();
     }
 
     // Rules for global analytics
     match /analytics/{docId} {
-      // Public can update counters, but only admin can read the full stats
+      // Public can see nothing, but only admin can read the full stats
       allow read: if isAdmin();
-      allow update: if request.resource.data.diff(resource.data).affectedKeys()
+      
+      // Anyone can update counters
+      allow create, update: if request.resource.data.diff(resource.data || {}).affectedKeys()
         .hasOnly(['totalViews', 'totalWhatsAppClicks', 'totalUsers']);
       
-      // Admin can manage analytics documents
-      allow create, delete: if isAdmin();
-      allow update: if isAdmin();
+      // Admin can manage analytics documents fully
+      allow write, delete: if isAdmin();
     }
 
     // Rules for branding and settings

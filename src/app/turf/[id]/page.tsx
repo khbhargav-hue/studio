@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useParams, useRouter } from "next/navigation"
@@ -34,8 +33,10 @@ import {
 } from "@/components/ui/carousel"
 import { Separator } from "@/components/ui/separator"
 import { useDoc, useFirestore, useMemoFirebase, useCollection } from "@/firebase"
-import { doc, increment, updateDoc, query, collection, limit } from "firebase/firestore"
+import { doc, increment, setDoc, query, collection, limit } from "firebase/firestore"
 import { useEffect, useMemo, useRef } from "react"
+import { errorEmitter } from '@/firebase/error-emitter'
+import { FirestorePermissionError } from '@/firebase/errors'
 
 export default function TurfDetail() {
   const { id } = useParams()
@@ -69,8 +70,25 @@ export default function TurfDetail() {
       hasIncremented.current = true;
       const statsRef = doc(db, "analytics", "stats")
       const turfRef = doc(db, "turfs", id as string)
-      updateDoc(turfRef, { views: increment(1) }).catch(() => {});
-      updateDoc(statsRef, { totalViews: increment(1) }).catch(() => {});
+      
+      // Use setDoc with merge to ensure it works even if analytics doc is missing
+      setDoc(turfRef, { views: increment(1) }, { merge: true })
+        .catch(async (err) => {
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: turfRef.path,
+            operation: 'write',
+            requestResourceData: { views: 'increment' }
+          }));
+        });
+
+      setDoc(statsRef, { totalViews: increment(1) }, { merge: true })
+        .catch(async (err) => {
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: statsRef.path,
+            operation: 'write',
+            requestResourceData: { totalViews: 'increment' }
+          }));
+        });
     }
   }, [db, id])
 
@@ -78,8 +96,24 @@ export default function TurfDetail() {
     if (db && id) {
       const turfRef = doc(db, "turfs", id as string)
       const statsRef = doc(db, "analytics", "stats")
-      updateDoc(turfRef, { whatsappClicks: increment(1) }).catch(() => {});
-      updateDoc(statsRef, { totalWhatsAppClicks: increment(1) }).catch(() => {});
+      
+      setDoc(turfRef, { whatsappClicks: increment(1) }, { merge: true })
+        .catch(async (err) => {
+           errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: turfRef.path,
+            operation: 'write',
+            requestResourceData: { whatsappClicks: 'increment' }
+          }));
+        });
+
+      setDoc(statsRef, { totalWhatsAppClicks: increment(1) }, { merge: true })
+        .catch(async (err) => {
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: statsRef.path,
+            operation: 'write',
+            requestResourceData: { totalWhatsAppClicks: 'increment' }
+          }));
+        });
     }
   }
 

@@ -32,13 +32,18 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
         setData(items);
         setLoading(false);
       },
-      async (err) => {
+      async (serverError) => {
+        // More robust path extraction for different Firebase versions
+        const path = (query as any).path || (query as any)._query?.path?.toString() || 'unknown collection';
+        
         const permissionError = new FirestorePermissionError({
-          path: (query as any)._query?.path?.toString() || 'unknown',
+          path,
           operation: 'list',
+          message: serverError.message
         });
+        
         errorEmitter.emit('permission-error', permissionError);
-        setError(err);
+        setError(serverError);
         setLoading(false);
       }
     );

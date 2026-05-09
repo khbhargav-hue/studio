@@ -22,7 +22,8 @@ import {
   Zap,
   TrendingUp,
   Trophy,
-  IndianRupee
+  IndianRupee,
+  Navigation
 } from "lucide-react"
 import { 
   Carousel, 
@@ -71,7 +72,6 @@ export default function TurfDetail() {
       const statsRef = doc(db, "analytics", "stats")
       const turfRef = doc(db, "turfs", id as string)
       
-      // Use setDoc with merge to ensure it works even if analytics doc is missing
       setDoc(turfRef, { views: increment(1) }, { merge: true })
         .catch(async (err) => {
           errorEmitter.emit('permission-error', new FirestorePermissionError({
@@ -150,6 +150,7 @@ export default function TurfDetail() {
 
   const message = `Hi, I found ${turf.name} in ${turf.area} on Turfista and would like to inquire about booking a slot for ${turf.sportTypes?.[0] || 'a game'}.`
   const whatsappUrl = `https://wa.me/${turf.whatsappNumber}?text=${encodeURIComponent(message)}`
+  const googleMapsUrl = turf.mapUrl || `https://maps.google.com/?q=${encodeURIComponent(turf.location + ' ' + turf.name + ' Mysuru')}`
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -381,22 +382,40 @@ export default function TurfDetail() {
                 <div className="space-y-8">
                   <div className="flex items-center justify-between">
                     <h4 className="font-black text-[10px] uppercase tracking-[0.4em] text-muted-foreground">The Pitch Location</h4>
-                    <Button variant="link" asChild className="p-0 h-auto text-primary hover:text-primary/80 font-black text-[10px] uppercase tracking-widest">
-                      <a href={turf.mapUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5">
-                        GET DIRECTIONS <ExternalLink className="h-3.5 w-3.5" />
+                  </div>
+                  <div className="bg-white/5 rounded-[2.5rem] p-8 border border-white/5 space-y-6 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:scale-110 transition-transform duration-500">
+                      <Navigation className="h-20 w-20 text-primary" />
+                    </div>
+                    
+                    <div className="space-y-4 relative z-10">
+                      <div className="flex items-start gap-4">
+                        <div className="mt-1 bg-primary/20 p-2 rounded-xl border border-primary/30">
+                          <MapPin className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-1">Venue Area</p>
+                          <p className="text-xl font-bold text-foreground">{turf.area}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Full Address</p>
+                        <p className="text-sm font-medium leading-relaxed text-white/60">
+                          {turf.location}
+                        </p>
+                      </div>
+                    </div>
+
+                    <Button 
+                      asChild 
+                      className="w-full h-14 bg-white/5 hover:bg-primary hover:text-primary-foreground border border-white/10 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all group-hover:border-primary/50"
+                    >
+                      <a href={googleMapsUrl} target="_blank" rel="noopener noreferrer">
+                        <Navigation className="mr-2 h-4 w-4" />
+                        Get Directions
                       </a>
                     </Button>
-                  </div>
-                  <div className="aspect-[4/3] relative rounded-[2.5rem] overflow-hidden border border-white/10 shadow-inner group">
-                    <iframe
-                      src={`https://www.google.com/maps/embed/v1/place?key=YOUR_GOOGLE_MAPS_API_KEY&q=${encodeURIComponent(turf.area + ' Mysuru')}`}
-                      className="absolute inset-0 w-full h-full grayscale opacity-40 contrast-125 transition-all duration-700 group-hover:scale-110 group-hover:opacity-60 group-hover:grayscale-0"
-                      loading="lazy"
-                    ></iframe>
-                    <div className="absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-transparent pointer-events-none" />
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                       <MapPin className="h-10 w-10 text-primary drop-shadow-[0_0_15px_rgba(26,255,115,0.8)]" />
-                    </div>
                   </div>
                 </div>
               </aside>

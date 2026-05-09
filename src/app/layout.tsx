@@ -36,7 +36,7 @@ export const metadata: Metadata = {
     siteName: 'Turfista',
     images: [
       {
-        url: '/og-image.jpg', // Placeholder for actual OG image
+        url: '/og-image.jpg',
         width: 1200,
         height: 630,
         alt: 'Turfista - Premium Sports Discovery',
@@ -52,7 +52,7 @@ export const metadata: Metadata = {
     images: ['/og-image.jpg'],
   },
   verification: {
-    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
+    google: 'pKy1gc8j1-W_uMHCMRQSec_DOu-xeYd6ZOdJRzcs0m8',
   },
   robots: {
     index: true,

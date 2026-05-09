@@ -14,6 +14,17 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { 
   Eye, 
   MousePointerClick, 
   TrendingUp, 
@@ -92,21 +103,20 @@ export default function AdminDashboard() {
 
   const handleDelete = (id: string, name: string) => {
     if (!db) return;
-    if (confirm(`Are you sure you want to delete "${name}"? This action is permanent.`)) {
-      const turfRef = doc(db, 'turfs', id);
-      deleteDoc(turfRef).catch(async (err) => {
-        const permissionError = new FirestorePermissionError({
-          path: turfRef.path,
-          operation: 'delete'
-        });
-        errorEmitter.emit('permission-error', permissionError);
+    
+    const turfRef = doc(db, 'turfs', id);
+    deleteDoc(turfRef).catch(async (err) => {
+      const permissionError = new FirestorePermissionError({
+        path: turfRef.path,
+        operation: 'delete'
       });
-      
-      toast({
-        title: 'Listing Deleted',
-        description: `${name} has been removed from the directory.`
-      });
-    }
+      errorEmitter.emit('permission-error', permissionError);
+    });
+    
+    toast({
+      title: 'Listing Deleted',
+      description: `${name} has been removed from the directory.`
+    });
   };
 
   const handleSeedData = async () => {
@@ -114,18 +124,16 @@ export default function AdminDashboard() {
     setIsSeeding(true);
     
     try {
-      // Seed Turf Listings with clean starting metrics
       const turfPromises = MOCK_TURFS.map(turf => {
         const turfRef = doc(db, 'turfs', turf.id);
         return setDoc(turfRef, {
           ...turf,
           updatedAt: serverTimestamp(),
-          views: 0, // Start fresh
-          whatsappClicks: 0 // Start fresh
+          views: 0,
+          whatsappClicks: 0
         }, { merge: true });
       });
 
-      // Initialize Global Analytics
       const statsRef = doc(db, 'analytics', 'stats');
       const statsPromise = setDoc(statsRef, {
         totalViews: 0,
@@ -133,7 +141,6 @@ export default function AdminDashboard() {
         totalUsers: 0,
       }, { merge: true });
 
-      // Seed Branding Defaults
       const brandingRef = doc(db, 'settings', 'branding');
       const brandingPromise = setDoc(brandingRef, {
         heroBadgeText: "WE CONNECT YOU TO THE BEST TURFS",
@@ -384,14 +391,35 @@ export default function AdminDashboard() {
                           <Edit2 className="h-4 w-4" />
                         </Link>
                       </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-10 w-10 rounded-xl hover:bg-destructive/10 hover:text-destructive transition-all"
-                        onClick={() => handleDelete(turf.id, turf.name)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-10 w-10 rounded-xl hover:bg-destructive/10 hover:text-destructive transition-all"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="glass-card border-white/10 rounded-[2rem]">
+                          <AlertDialogHeader>
+                            <AlertDialogTitle className="font-headline font-bold uppercase italic">Remove Venue?</AlertDialogTitle>
+                            <AlertDialogDescription className="text-white/60">
+                              This will permanently remove <span className="text-white font-bold">{turf.name}</span> from the public directory. This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel className="bg-white/5 border-white/5 rounded-xl font-bold">Cancel</AlertDialogCancel>
+                            <AlertDialogAction 
+                              onClick={() => handleDelete(turf.id, turf.name)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl font-bold"
+                            >
+                              Delete Forever
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </TableCell>
                 </TableRow>

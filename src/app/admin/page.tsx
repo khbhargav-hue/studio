@@ -115,7 +115,7 @@ export default function AdminDashboard() {
     
     toast({
       title: 'Listing Deleted',
-      description: `${name} has been removed from the directory.`
+      description: `${name} has been removed.`
     });
   };
 
@@ -144,9 +144,9 @@ export default function AdminDashboard() {
       const brandingRef = doc(db, 'settings', 'branding');
       const brandingPromise = setDoc(brandingRef, {
         heroBadgeText: "WE CONNECT YOU TO THE BEST TURFS",
-        heroHeading1: "PLAY MORE.",
-        heroHeading2: "BOOK EASY.",
-        heroDescription: "Discover and book Mysuru’s best sports turfs in one place. Football, Cricket, Pickleball and more — all in one platform.",
+        heroHeading1: "BOOK EASY.",
+        heroHeading2: "PLAY MORE.",
+        heroDescription: "Discover and book Mysuru’s best sports turfs in one place.",
         heroImageUrl: "https://picsum.photos/seed/turf-hero/1920/1080",
         logoUrl: "",
         updatedAt: serverTimestamp()
@@ -155,14 +155,14 @@ export default function AdminDashboard() {
       await Promise.all([...turfPromises, statsPromise, brandingPromise]);
       
       toast({
-        title: "Database Reset",
-        description: "Fresh data synced. All counters reset to zero.",
+        title: "Database Synced",
+        description: "Real-world turf data is now live.",
       });
     } catch (error) {
       toast({
         variant: "destructive",
         title: "Sync Failed",
-        description: "Check your internet connection or admin permissions.",
+        description: "Verify admin permissions and connection.",
       });
     } finally {
       setIsSeeding(false);
@@ -171,222 +171,193 @@ export default function AdminDashboard() {
 
   if (turfsLoading) {
     return (
-      <div className="flex h-[50vh] items-center justify-center">
-        <Loader2 className="h-10 w-10 animate-spin text-primary opacity-50" />
+      <div className="flex h-screen items-center justify-center bg-black">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
       </div>
     );
   }
 
   const chartConfig = {
     views: {
-      label: "Total Views",
+      label: "Activity",
       color: "hsl(var(--primary))",
     },
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-10 animate-in fade-in duration-500">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="font-headline text-4xl font-bold tracking-tight">Admin Console</h1>
-          <p className="text-muted-foreground mt-1 text-lg">Live database analytics and venue management.</p>
+          <h1 className="text-5xl tracking-tight">COMMAND <span className="text-primary">CENTER</span></h1>
+          <p className="text-muted-foreground mt-2 text-lg font-medium">Real-time arena metrics and platform management.</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           <Button 
             variant="outline" 
             onClick={handleSeedData} 
             disabled={isSeeding}
-            className="border-white/5 hover:bg-white/5 h-12 rounded-2xl font-bold bg-white/5"
+            className="border-white/10 hover:bg-white/5 h-14 rounded-xl font-black text-xs uppercase tracking-widest bg-white/5"
           >
             {isSeeding ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Database className="h-5 w-5 mr-2" />}
-            Reset & Sync Data
+            Sync Real Data
           </Button>
-          <Button asChild className="bg-primary text-primary-foreground font-bold rounded-2xl h-12 px-6 shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all">
+          <Button asChild className="bg-primary text-black font-black uppercase tracking-widest text-xs rounded-xl h-14 px-8 shadow-xl shadow-primary/20 hover:scale-[1.02] transition-transform">
             <Link href="/admin/new">
-              <Plus className="mr-2 h-5 w-5" /> Add New Venue
+              <Plus className="mr-2 h-5 w-5" /> Add Venue
             </Link>
           </Button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="glass-card border-white/5 overflow-hidden group">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Total Reach</CardTitle>
-            <Eye className="h-5 w-5 text-primary group-hover:scale-110 transition-transform" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{stats?.totalViews?.toLocaleString() || 0}</div>
-            <p className="text-xs text-muted-foreground mt-1">Live unique page views</p>
-          </CardContent>
-        </Card>
-        
-        <Card className="glass-card border-white/5 overflow-hidden group">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Conversion</CardTitle>
-            <MousePointerClick className="h-5 w-5 text-accent group-hover:scale-110 transition-transform" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{stats?.totalWhatsAppClicks?.toLocaleString() || 0}</div>
-            <p className="text-xs text-muted-foreground mt-1">Real booking inquiries</p>
-          </CardContent>
-        </Card>
-
-        <Card className="glass-card border-white/5 overflow-hidden group">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Active Users</CardTitle>
-            <Users className="h-5 w-5 text-primary group-hover:scale-110 transition-transform" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{stats?.totalUsers?.toLocaleString() || 0}</div>
-            <p className="text-xs text-muted-foreground mt-1">Platform registrations</p>
-          </CardContent>
-        </Card>
-
-        <Card className="glass-card border-white/5 overflow-hidden group">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Hot Zone</CardTitle>
-            <TrendingUp className="h-5 w-5 text-accent group-hover:scale-110 transition-transform" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold truncate">{processedAnalytics.topArea === 'N/A' ? 'None' : processedAnalytics.topArea}</div>
-            <p className="text-xs text-muted-foreground mt-1">Highest regional activity</p>
-          </CardContent>
-        </Card>
+        {[
+          { label: "Total Views", val: stats?.totalViews, icon: Eye, color: "text-primary" },
+          { label: "Bookings", val: stats?.totalWhatsAppClicks, icon: MousePointerClick, color: "text-primary" },
+          { label: "Members", val: stats?.totalUsers, icon: Users, color: "text-primary" },
+          { label: "Hot Zone", val: processedAnalytics.topArea, icon: TrendingUp, color: "text-primary" }
+        ].map((item, i) => (
+          <Card key={i} className="glass-card border-none overflow-hidden group">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-[10px] font-black text-white/40 uppercase tracking-widest">{item.label}</CardTitle>
+              <item.icon className={cn("h-4 w-4 transition-transform group-hover:scale-125", item.color)} />
+            </CardHeader>
+            <CardContent>
+              <div className="text-4xl font-black italic tracking-tighter">
+                {typeof item.val === 'number' ? item.val.toLocaleString() : (item.val === 'N/A' ? 'NONE' : item.val)}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <Card className="glass-card border-white/5 rounded-[2rem] overflow-hidden">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <Card className="lg:col-span-8 glass-card border-none rounded-2xl overflow-hidden">
           <CardHeader>
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-3">
               <BarChart3 className="h-5 w-5 text-primary" />
-              <CardTitle className="text-xl font-headline font-bold">Area Popularity</CardTitle>
+              <CardTitle className="text-2xl">AREA <span className="text-primary">TRAFFIC</span></CardTitle>
             </div>
-            <CardDescription>Views distribution based on real traffic</CardDescription>
+            <CardDescription className="text-white/40 font-bold uppercase tracking-widest text-[10px]">Views distribution by region</CardDescription>
           </CardHeader>
-          <CardContent className="h-[300px]">
+          <CardContent className="h-[350px] p-6">
             {processedAnalytics.areaStats.length > 0 ? (
               <ChartContainer config={chartConfig} className="w-full h-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={processedAnalytics.areaStats}>
-                    <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
                     <XAxis 
                       dataKey="name" 
-                      stroke="rgba(255,255,255,0.4)" 
-                      fontSize={12} 
+                      stroke="rgba(255,255,255,0.2)" 
+                      fontSize={10} 
                       tickLine={false} 
                       axisLine={false} 
+                      className="font-black uppercase tracking-widest"
                     />
                     <YAxis 
-                      stroke="rgba(255,255,255,0.4)" 
-                      fontSize={12} 
+                      stroke="rgba(255,255,255,0.2)" 
+                      fontSize={10} 
                       tickLine={false} 
                       axisLine={false} 
+                      className="font-black"
                     />
                     <ChartTooltip content={<ChartTooltipContent />} />
                     <Bar 
                       dataKey="views" 
-                      fill="var(--color-views)" 
+                      fill="hsl(var(--primary))" 
                       radius={[4, 4, 0, 0]} 
-                      barSize={32}
+                      barSize={40}
                     />
                   </BarChart>
                 </ResponsiveContainer>
               </ChartContainer>
             ) : (
-              <div className="h-full w-full flex flex-col items-center justify-center text-center opacity-20">
-                <BarChartIcon className="h-12 w-12 mb-2" />
-                <p className="text-xs font-bold uppercase tracking-widest">No activity tracked yet</p>
+              <div className="h-full flex flex-col items-center justify-center text-center opacity-20">
+                <BarChartIcon className="h-12 w-12 mb-4" />
+                <p className="text-xs font-black uppercase tracking-[0.3em]">Awaiting Data Flow</p>
               </div>
             )}
           </CardContent>
         </Card>
 
-        <Card className="glass-card border-white/5 rounded-[2rem] overflow-hidden flex flex-col">
+        <Card className="lg:col-span-4 glass-card border-none rounded-2xl overflow-hidden flex flex-col">
           <CardHeader>
-            <div className="flex items-center gap-2 mb-1">
-              <Star className="h-5 w-5 text-accent" />
-              <CardTitle className="text-xl font-headline font-bold">Trending Venue</CardTitle>
+            <div className="flex items-center gap-3">
+              <Star className="h-5 w-5 text-primary" />
+              <CardTitle className="text-2xl">MVP <span className="text-primary">VENUE</span></CardTitle>
             </div>
-            <CardDescription>Most viewed pitch in the last 30 days</CardDescription>
           </CardHeader>
           <CardContent className="flex-1 flex flex-col justify-center items-center text-center p-8">
             {processedAnalytics.mostViewed ? (
-              <div className="space-y-4">
-                <div className="relative w-32 h-32 mx-auto rounded-full overflow-hidden border-4 border-primary/20 p-1">
-                  {processedAnalytics.mostViewed.images?.[0] ? (
-                    <img 
-                      src={processedAnalytics.mostViewed.images[0]} 
-                      alt={processedAnalytics.mostViewed.name}
-                      className="w-full h-full object-cover rounded-full"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-primary/10 flex items-center justify-center rounded-full">
-                      <Trophy className="h-10 w-10 text-primary opacity-20" />
-                    </div>
-                  )}
+              <div className="space-y-6">
+                <div className="relative w-40 h-40 mx-auto rounded-2xl overflow-hidden border-2 border-primary/20 p-1 group">
+                  <img 
+                    src={processedAnalytics.mostViewed.images[0]} 
+                    alt="MVP"
+                    className="w-full h-full object-cover rounded-xl grayscale-[0.5] group-hover:grayscale-0 transition-all duration-500"
+                  />
+                  <div className="absolute inset-0 bg-primary/10 group-hover:bg-transparent transition-colors" />
                 </div>
                 <div>
-                  <h3 className="text-2xl font-black text-primary uppercase tracking-tighter">
+                  <h3 className="text-3xl text-primary leading-none mb-1">
                     {processedAnalytics.mostViewed.name}
                   </h3>
-                  <p className="text-muted-foreground font-bold">{processedAnalytics.mostViewed.area}</p>
+                  <p className="text-white/40 text-[10px] font-black uppercase tracking-widest">{processedAnalytics.mostViewed.area}</p>
                 </div>
-                <div className="flex gap-4 justify-center">
-                  <div className="bg-white/5 rounded-2xl p-4 min-w-[100px]">
-                    <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Total Views</p>
-                    <p className="text-2xl font-bold">{processedAnalytics.mostViewed.views || 0}</p>
+                <div className="flex gap-4">
+                  <div className="bg-white/5 rounded-xl p-4 min-w-[100px] border border-white/5">
+                    <p className="text-[9px] text-white/40 font-black uppercase tracking-widest mb-1">Reach</p>
+                    <p className="text-2xl font-black italic">{processedAnalytics.mostViewed.views || 0}</p>
                   </div>
-                  <div className="bg-white/5 rounded-2xl p-4 min-w-[100px]">
-                    <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Leads</p>
-                    <p className="text-2xl font-bold text-accent">{processedAnalytics.mostViewed.whatsappClicks || 0}</p>
+                  <div className="bg-primary/10 rounded-xl p-4 min-w-[100px] border border-primary/20">
+                    <p className="text-[9px] text-primary/60 font-black uppercase tracking-widest mb-1">Leads</p>
+                    <p className="text-2xl font-black italic text-primary">{processedAnalytics.mostViewed.whatsappClicks || 0}</p>
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="h-full w-full flex flex-col items-center justify-center text-center opacity-20 py-10">
-                <Trophy className="h-12 w-12 mb-2" />
-                <p className="text-xs font-bold uppercase tracking-widest">No data available</p>
+              <div className="h-full flex flex-col items-center justify-center text-center opacity-20 py-20">
+                <Trophy className="h-12 w-12 mb-4" />
+                <p className="text-xs font-black uppercase tracking-[0.3em]">No MVP Identified</p>
               </div>
             )}
           </CardContent>
         </Card>
       </div>
 
-      <div className="glass-card rounded-[2rem] overflow-hidden border-white/5 shadow-2xl">
-        <div className="p-6 border-b border-white/5 bg-white/5 flex items-center justify-between">
-          <h2 className="font-headline text-xl font-bold">Real-time Inventory</h2>
-          <Badge variant="secondary" className="bg-primary/20 text-primary border-none px-3 py-1 font-bold">
-            {turfs?.length || 0} TOTAL LISTINGS
+      <div className="glass-card rounded-2xl overflow-hidden border-none shadow-2xl">
+        <div className="p-8 border-b border-white/5 bg-white/5 flex items-center justify-between">
+          <h2 className="text-2xl">LIVE <span className="text-primary">INVENTORY</span></h2>
+          <Badge className="bg-primary/20 text-primary border-none px-4 py-1.5 font-black text-[10px] uppercase tracking-widest">
+            {turfs?.length || 0} TOTAL UNITS
           </Badge>
         </div>
         <div className="overflow-x-auto">
           <Table>
-            <TableHeader>
+            <TableHeader className="bg-white/5">
               <TableRow className="border-white/5 hover:bg-transparent">
-                <TableHead className="font-bold">Venue</TableHead>
-                <TableHead className="font-bold">Area</TableHead>
-                <TableHead className="font-bold">Price/hr</TableHead>
-                <TableHead className="font-bold text-center">Views</TableHead>
-                <TableHead className="font-bold text-center">Inquiries</TableHead>
-                <TableHead className="text-right font-bold">Actions</TableHead>
+                <TableHead className="font-black uppercase tracking-widest text-[10px] py-6">Venue</TableHead>
+                <TableHead className="font-black uppercase tracking-widest text-[10px]">Zone</TableHead>
+                <TableHead className="font-black uppercase tracking-widest text-[10px]">Base Rate</TableHead>
+                <TableHead className="font-black uppercase tracking-widest text-[10px] text-center">Traffic</TableHead>
+                <TableHead className="font-black uppercase tracking-widest text-[10px] text-center">Leads</TableHead>
+                <TableHead className="text-right font-black uppercase tracking-widest text-[10px]">Management</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {turfs?.map((turf) => (
                 <TableRow key={turf.id} className="border-white/5 hover:bg-white/5 transition-colors">
-                  <TableCell className="font-bold text-lg">{turf.name}</TableCell>
-                  <TableCell className="text-muted-foreground">{turf.area}</TableCell>
-                  <TableCell className="font-bold text-primary">₹{turf.pricePerHour}</TableCell>
-                  <TableCell className="text-center font-mono">
+                  <TableCell className="font-black text-xl italic tracking-tighter text-white py-6">{turf.name}</TableCell>
+                  <TableCell className="text-white/40 font-bold uppercase tracking-widest text-xs">{turf.area}</TableCell>
+                  <TableCell className="font-black text-primary italic">₹{turf.pricePerHour}</TableCell>
+                  <TableCell className="text-center font-mono font-bold text-white/60">
                     {turf.views || 0}
                   </TableCell>
-                  <TableCell className="text-center font-mono">
+                  <TableCell className="text-center font-mono font-bold text-primary">
                     {turf.whatsappClicks || 0}
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-3">
-                      <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-primary/10 hover:text-primary transition-all" asChild>
+                    <div className="flex justify-end gap-2">
+                      <Button variant="ghost" size="icon" className="h-10 w-10 rounded-lg hover:bg-primary/10 hover:text-primary transition-all" asChild>
                         <Link href={`/admin/new?id=${turf.id}`}>
                           <Edit2 className="h-4 w-4" />
                         </Link>
@@ -397,25 +368,25 @@ export default function AdminDashboard() {
                           <Button 
                             variant="ghost" 
                             size="icon" 
-                            className="h-10 w-10 rounded-xl hover:bg-destructive/10 hover:text-destructive transition-all"
+                            className="h-10 w-10 rounded-lg hover:bg-destructive/10 hover:text-destructive transition-all"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </AlertDialogTrigger>
-                        <AlertDialogContent className="glass-card border-white/10 rounded-[2rem]">
+                        <AlertDialogContent className="glass-card border-white/10 rounded-2xl">
                           <AlertDialogHeader>
-                            <AlertDialogTitle className="font-headline font-bold uppercase italic">Remove Venue?</AlertDialogTitle>
-                            <AlertDialogDescription className="text-white/60">
-                              This will permanently remove <span className="text-white font-bold">{turf.name}</span> from the public directory. This action cannot be undone.
+                            <AlertDialogTitle className="text-3xl text-destructive italic">TERMINATE LISTING?</AlertDialogTitle>
+                            <AlertDialogDescription className="text-white/60 font-medium">
+                              Removing <span className="text-white font-black">{turf.name}</span> will instantly wipe it from the public discovery engine.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel className="bg-white/5 border-white/5 rounded-xl font-bold">Cancel</AlertDialogCancel>
+                          <AlertDialogFooter className="mt-6">
+                            <AlertDialogCancel className="bg-white/5 border-white/5 rounded-xl font-black uppercase tracking-widest text-xs">ABORT</AlertDialogCancel>
                             <AlertDialogAction 
                               onClick={() => handleDelete(turf.id, turf.name)}
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl font-bold"
+                              className="bg-destructive text-white hover:bg-destructive/90 rounded-xl font-black uppercase tracking-widest text-xs"
                             >
-                              Delete Forever
+                              TERMINATE
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
@@ -424,19 +395,6 @@ export default function AdminDashboard() {
                   </TableCell>
                 </TableRow>
               ))}
-              {(!turfs || turfs.length === 0) && (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-20">
-                    <div className="flex flex-col items-center gap-3 text-muted-foreground">
-                      <Plus className="h-12 w-12 opacity-20" />
-                      <p className="text-lg">No venues listed yet.</p>
-                      <Button variant="outline" asChild>
-                        <Link href="/admin/new">Create first listing</Link>
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )}
             </TableBody>
           </Table>
         </div>

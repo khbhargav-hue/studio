@@ -1,30 +1,29 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 120 8% 2%;
+    --background: 0 0% 2%;
     --foreground: 0 0% 100%;
-    --card: 120 8% 5%;
+    --card: 0 0% 4%;
     --card-foreground: 0 0% 100%;
-    --popover: 120 8% 5%;
+    --popover: 0 0% 4%;
     --popover-foreground: 0 0% 100%;
-    --primary: 142 100% 54%;
-    --primary-foreground: 120 8% 2%;
-    --secondary: 120 8% 10%;
+    --primary: 110 100% 54%; /* Neon Green #39FF14 */
+    --primary-foreground: 0 0% 0%;
+    --secondary: 0 0% 8%;
     --secondary-foreground: 0 0% 100%;
-    --muted: 120 8% 10%;
-    --muted-foreground: 120 5% 60%;
-    --accent: 78 68% 67%;
-    --accent-foreground: 120 8% 2%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 60%;
+    --accent: 110 100% 54%;
+    --accent-foreground: 0 0% 0%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 120 8% 12%;
-    --input: 120 8% 12%;
-    --ring: 142 100% 54%;
-    --radius: 1.5rem;
+    --border: 0 0% 12%;
+    --input: 0 0% 12%;
+    --ring: 110 100% 54%;
+    --radius: 1rem;
   }
 }
 
@@ -35,31 +34,46 @@
   body {
     @apply bg-background text-foreground font-body antialiased;
   }
+  h1, h2, h3, h4, h5, h6, .font-headline {
+    font-family: 'Space Grotesk', sans-serif;
+    @apply italic font-black uppercase tracking-tighter;
+  }
 }
 
 .text-neon {
-  text-shadow: 0 0 15px rgba(26, 255, 115, 0.6);
+  color: hsl(var(--primary));
+  text-shadow: 0 0 15px hsla(var(--primary), 0.6), 0 0 30px hsla(var(--primary), 0.2);
 }
 
 .glass-card {
-  background: rgba(10, 12, 10, 0.7);
+  background: rgba(8, 8, 8, 0.6);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  transition: all 0.3s ease;
+}
+
+.glass-card:hover {
+  border-color: hsla(var(--primary), 0.4);
+  box-shadow: 0 0 30px hsla(var(--primary), 0.05);
 }
 
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #050505;
+  background: #000;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1AFF7333;
+  background: hsl(var(--primary) / 0.2);
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #1AFF7366;
+  background: hsl(var(--primary) / 0.5);
+}
+
+.hero-gradient {
+  background: linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.9) 100%);
 }

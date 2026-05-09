@@ -15,7 +15,6 @@ import {
   MessageCircle, 
   Star, 
   CheckCircle2, 
-  ExternalLink,
   Loader2,
   GraduationCap,
   ShieldCheck,
@@ -97,23 +96,8 @@ export default function TurfDetail() {
       const turfRef = doc(db, "turfs", id as string)
       const statsRef = doc(db, "analytics", "stats")
       
-      setDoc(turfRef, { whatsappClicks: increment(1) }, { merge: true })
-        .catch(async (err) => {
-           errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: turfRef.path,
-            operation: 'write',
-            requestResourceData: { whatsappClicks: 'increment' }
-          }));
-        });
-
-      setDoc(statsRef, { totalWhatsAppClicks: increment(1) }, { merge: true })
-        .catch(async (err) => {
-          errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: statsRef.path,
-            operation: 'write',
-            requestResourceData: { totalWhatsAppClicks: 'increment' }
-          }));
-        });
+      setDoc(turfRef, { whatsappClicks: increment(1) }, { merge: true }).catch(() => {});
+      setDoc(statsRef, { totalWhatsAppClicks: increment(1) }, { merge: true }).catch(() => {});
     }
   }
 
@@ -126,7 +110,7 @@ export default function TurfDetail() {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-background">
+      <div className="flex h-screen items-center justify-center bg-black">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
       </div>
     )
@@ -134,307 +118,174 @@ export default function TurfDetail() {
 
   if (!turf) {
     return (
-      <div className="flex flex-col min-h-screen">
+      <div className="flex flex-col min-h-screen bg-black">
         <Navbar />
         <div className="flex-1 flex flex-col items-center justify-center p-8">
-          <div className="bg-white/5 p-10 rounded-[3rem] text-center border border-white/5">
-            <Zap className="h-16 w-16 text-primary/20 mx-auto mb-6" />
-            <h1 className="text-3xl font-bold mb-4">Venue not found</h1>
-            <p className="text-muted-foreground mb-8">The pitch you're looking for might have been moved.</p>
-            <Button onClick={() => router.push("/")} className="rounded-2xl h-12 px-8">Back to Search</Button>
+          <div className="glass-card p-16 rounded-3xl text-center">
+            <Zap className="h-20 w-20 text-primary opacity-20 mx-auto mb-6" />
+            <h1 className="text-4xl mb-4">PITCH <span className="text-primary">MISSING</span></h1>
+            <p className="text-white/40 mb-8 font-medium">This arena has been decommissioned or moved.</p>
+            <Button onClick={() => router.push("/")} className="bg-primary text-black font-black uppercase tracking-widest h-14 px-10 rounded-xl">Back to Base</Button>
           </div>
         </div>
       </div>
     )
   }
 
-  const message = `Hi, I found ${turf.name} in ${turf.area} on Turfista and would like to inquire about booking a slot for ${turf.sportTypes?.[0] || 'a game'}.`
+  const message = `Hi, I found ${turf.name} in ${turf.area} on Turfista and would like to inquire about booking a slot.`
   const whatsappUrl = `https://wa.me/${turf.whatsappNumber}?text=${encodeURIComponent(message)}`
   const googleMapsUrl = turf.mapUrl || `https://maps.google.com/?q=${encodeURIComponent(turf.location + ' ' + turf.name + ' Mysuru')}`
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen bg-black">
       <Navbar />
       
-      <div className="flex-1 pb-20">
-        <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="flex-1 pb-20 pt-10">
+        <div className="max-w-7xl mx-auto px-4">
           <Button 
             variant="ghost" 
             onClick={() => router.back()} 
-            className="mb-6 hover:bg-white/5 rounded-xl font-bold"
+            className="mb-8 hover:bg-white/5 rounded-xl font-black text-xs uppercase tracking-widest text-white/60"
           >
-            <ArrowLeft className="mr-2 h-4 w-4" /> Back to Search
+            <ArrowLeft className="mr-2 h-4 w-4" /> RE-SEARCH
           </Button>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-            <div className="lg:col-span-2 space-y-12">
-              <section className="relative rounded-[2.5rem] overflow-hidden glass-card p-3 border-white/10 shadow-2xl">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+            <div className="lg:col-span-8 space-y-12">
+              <section className="relative rounded-3xl overflow-hidden glass-card p-2 border-white/10 shadow-2xl">
                 <Carousel className="w-full">
                   <CarouselContent>
-                    {(turf.images || []).length > 0 ? (
-                      turf.images.map((img: string, idx: number) => (
-                        <CarouselItem key={idx}>
-                          <div className="relative aspect-video w-full rounded-[2rem] overflow-hidden">
-                            {img ? (
-                              <Image 
-                                src={img} 
-                                alt={turf.name} 
-                                fill 
-                                className="object-cover"
-                                priority={idx === 0}
-                              />
-                            ) : (
-                              <div className="w-full h-full bg-black/40 flex items-center justify-center">
-                                <Zap className="h-20 w-20 text-primary opacity-20" />
-                              </div>
-                            )}
-                          </div>
-                        </CarouselItem>
-                      ))
-                    ) : (
-                      <CarouselItem>
-                        <div className="relative aspect-video w-full rounded-[2rem] overflow-hidden bg-black/40 flex items-center justify-center">
-                          <Zap className="h-20 w-20 text-primary opacity-20" />
+                    {(turf.images || []).map((img: string, idx: number) => (
+                      <CarouselItem key={idx}>
+                        <div className="relative aspect-video w-full rounded-2xl overflow-hidden">
+                          <Image src={img} alt={turf.name} fill className="object-cover grayscale-[0.2] hover:grayscale-0 transition-all duration-700" priority={idx === 0} />
                         </div>
                       </CarouselItem>
-                    )}
+                    ))}
                   </CarouselContent>
-                  <CarouselPrevious className="left-8 bg-background/80 hover:bg-primary hover:text-primary-foreground border-none" />
-                  <CarouselNext className="right-8 bg-background/80 hover:bg-primary hover:text-primary-foreground border-none" />
+                  <CarouselPrevious className="left-8 bg-black/80 hover:bg-primary hover:text-black border-none" />
+                  <CarouselNext className="right-8 bg-black/80 hover:bg-primary hover:text-black border-none" />
                 </Carousel>
               </section>
 
-              <section className="glass-card rounded-[3rem] p-8 md:p-14 border-white/5 relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-8 opacity-5">
-                   <Trophy className="h-40 w-40 text-primary" />
-                </div>
-
-                <div className="flex flex-wrap items-center gap-3 mb-8">
-                  {(turf.sportTypes || []).map((sport: string) => (
-                    <Badge key={sport} className="bg-primary text-primary-foreground font-black px-6 py-1.5 text-xs rounded-xl shadow-lg shadow-primary/20">{sport}</Badge>
-                  ))}
-                  <Badge variant="outline" className="border-accent/40 text-accent px-4 py-1.5 flex items-center gap-1.5 rounded-xl font-bold text-[10px] uppercase tracking-widest bg-accent/5">
-                    <ShieldCheck className="h-3.5 w-3.5" />
-                    Verified Partner
+              <section className="glass-card rounded-3xl p-10 md:p-16 relative overflow-hidden">
+                <div className="flex flex-wrap items-center gap-4 mb-10">
+                  <Badge className="bg-primary text-black font-black px-5 py-1.5 text-xs rounded-lg shadow-[0_0_15px_rgba(57,255,20,0.4)]">VERIFIED PITCH</Badge>
+                  <Badge variant="outline" className="border-white/10 text-white/40 px-4 py-1.5 rounded-lg font-black text-[10px] uppercase tracking-[0.2em] bg-white/5">
+                    <Star className="h-3 w-3 text-primary mr-2 fill-current" />
+                    {turf.rating} SCORE
                   </Badge>
-                  {turf.isPopular && (
-                    <Badge variant="outline" className="border-primary/40 text-primary px-4 py-1.5 flex items-center gap-1.5 rounded-xl font-bold text-[10px] uppercase tracking-widest bg-primary/5">
-                      <TrendingUp className="h-3.5 w-3.5" />
-                      Trending Venue
-                    </Badge>
-                  )}
                 </div>
                 
-                <h1 className="font-headline text-5xl md:text-7xl font-bold mb-8 tracking-tighter leading-[0.9] italic uppercase">{turf.name}</h1>
+                <h1 className="text-6xl md:text-8xl mb-8 tracking-tighter italic">
+                  {turf.name.split(' ').map((word: string, i: number) => (
+                    <span key={i} className={i === 0 ? "text-white" : "text-primary drop-shadow-[0_0_10px_rgba(57,255,20,0.4)]"}>
+                      {word}{' '}
+                    </span>
+                  ))}
+                </h1>
                 
-                <div className="flex flex-wrap items-center gap-10 text-muted-foreground mb-12">
-                  <div className="flex items-center gap-3 bg-white/5 px-6 py-3 rounded-2xl border border-white/5">
-                    <Star className="h-6 w-6 text-primary fill-current" />
-                    <span className="font-black text-foreground text-2xl tracking-tighter">{turf.rating}</span>
-                    <span className="text-xs font-bold uppercase tracking-widest opacity-40">Rating</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-6 w-6 text-primary" />
-                    <span className="font-bold text-lg">{turf.area}, Mysuru</span>
-                  </div>
+                <div className="flex items-center gap-3 text-white/40 mb-12">
+                  <MapPin className="h-5 w-5 text-primary" />
+                  <span className="font-black uppercase tracking-widest text-sm">{turf.area}, MYSURU</span>
                 </div>
 
-                <div className="space-y-16">
+                <div className="space-y-20">
                   <div className="prose prose-invert max-w-none">
-                    <h3 className="text-2xl font-headline font-bold mb-6 flex items-center gap-3">
-                      <div className="h-10 w-1.5 bg-primary rounded-full shadow-[0_0_10px_rgba(26,255,115,0.5)]" />
-                      The Experience
+                    <h3 className="text-3xl text-white mb-8 flex items-center gap-4">
+                      <div className="h-10 w-2 bg-primary rounded-full" />
+                      ARENA INTEL
                     </h3>
-                    <p className="text-muted-foreground leading-relaxed text-xl font-medium whitespace-pre-wrap">
+                    <p className="text-white/70 leading-relaxed text-xl font-medium italic whitespace-pre-wrap border-l-4 border-white/5 pl-8">
                       {turf.description}
                     </p>
                   </div>
 
-                  {(turf.coachingServices && turf.coachingServices.length > 0) && (
-                    <div className="bg-primary/5 border border-primary/10 rounded-[2.5rem] p-10 relative overflow-hidden group">
-                      <div className="absolute -right-10 -bottom-10 opacity-5 group-hover:scale-110 transition-transform duration-700">
-                        <GraduationCap className="h-64 w-64" />
-                      </div>
-                      <h3 className="text-2xl font-headline font-bold mb-8 flex items-center gap-3 text-primary">
-                        <GraduationCap className="h-8 w-8" />
-                        Pro Training Programs
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        {turf.coachingServices.map((service: string) => (
-                          <div key={service} className="flex items-center gap-4 text-foreground font-bold bg-white/5 p-4 rounded-2xl border border-white/5 group-hover:bg-primary/10 transition-colors">
-                            <div className="bg-primary/20 p-2 rounded-lg">
-                              <CheckCircle2 className="h-5 w-5 text-primary" />
-                            </div>
-                            {service}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-16 pt-8">
-                    <div>
-                      <h3 className="text-2xl font-headline font-bold mb-8 flex items-center gap-3">
-                        <Zap className="h-6 w-6 text-primary" />
-                        Elite Amenities
-                      </h3>
-                      <div className="grid grid-cols-1 gap-5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                    <div className="space-y-8">
+                      <h3 className="text-2xl text-primary italic">AMENITIES</h3>
+                      <div className="grid gap-4">
                         {(turf.amenities || []).map((item: string) => (
-                          <div key={item} className="flex items-center gap-4 text-muted-foreground font-bold group">
-                            <div className="h-2 w-2 bg-primary rounded-full group-hover:scale-150 transition-transform shadow-[0_0_10px_rgba(26,255,115,1)]" />
+                          <div key={item} className="flex items-center gap-4 text-white/60 font-black uppercase tracking-widest text-[10px] group">
+                            <div className="h-2 w-2 bg-primary rounded-full shadow-[0_0_10px_rgba(57,255,20,1)]" />
                             {item}
                           </div>
                         ))}
                       </div>
                     </div>
-                    <div>
-                      <h3 className="text-2xl font-headline font-bold mb-8 flex items-center gap-3">
-                        <Clock className="h-6 w-6 text-accent" />
-                        Active Hours
-                      </h3>
-                      <div className="flex items-start gap-4 bg-white/5 p-8 rounded-[2rem] border border-white/5">
-                        <div>
-                          <p className="font-black text-muted-foreground mb-2 uppercase tracking-[0.3em] text-[10px]">Current Availability</p>
-                          <p className="text-2xl font-black text-foreground italic uppercase">{turf.openingHours}</p>
-                        </div>
+                    <div className="space-y-8">
+                      <h3 className="text-2xl text-primary italic">OPERATIONS</h3>
+                      <div className="glass-card p-8 rounded-2xl border-white/5 bg-white/5">
+                        <p className="text-[10px] font-black text-white/40 mb-2 uppercase tracking-[0.4em]">Active Hours</p>
+                        <p className="text-3xl font-black italic uppercase text-white">{turf.openingHours}</p>
                       </div>
                     </div>
                   </div>
                 </div>
               </section>
-
-              {relatedTurfs.length > 0 && (
-                <section className="space-y-10">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-3xl md:text-5xl font-headline font-bold tracking-tight">Similar Arenas</h2>
-                      <p className="text-muted-foreground text-lg mt-2 font-medium">Other premium venues you might enjoy in {turf.area}.</p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                    {relatedTurfs.map((t) => (
-                      <TurfCard key={t.id} turf={t as any} />
-                    ))}
-                  </div>
-                </section>
-              )}
             </div>
 
-            <div className="space-y-8">
-              <aside className="sticky top-32 glass-card rounded-[3rem] p-10 border-primary/20 shadow-[0_30px_100px_rgba(26,255,115,0.1)]">
-                <div className="mb-12 text-center">
-                  <p className="text-muted-foreground text-[10px] font-black uppercase tracking-[0.4em] mb-4 opacity-50">Starting Session Rate</p>
+            <div className="lg:col-span-4">
+              <aside className="sticky top-32 glass-card rounded-3xl p-10 space-y-10 border-primary/10 shadow-[0_0_50px_rgba(57,255,20,0.05)]">
+                <div className="text-center">
+                  <p className="text-white/40 text-[9px] font-black uppercase tracking-[0.5em] mb-4">Starting Rate</p>
                   <div className="flex items-center justify-center gap-2">
-                    <span className="text-6xl font-black text-primary italic leading-none">₹{minPrice}</span>
-                    <span className="text-muted-foreground font-black mt-6 uppercase text-sm tracking-widest">/ hr</span>
+                    <span className="text-7xl font-black text-primary italic leading-none drop-shadow-[0_0_15px_rgba(57,255,20,0.4)]">₹{minPrice}</span>
+                    <span className="text-white/40 font-black mt-8 text-sm uppercase tracking-widest">/ HR</span>
                   </div>
                 </div>
 
                 {turf.courtPricing && Object.keys(turf.courtPricing).length > 0 && (
-                  <div className="space-y-4 mb-10">
-                    <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary mb-4 flex items-center gap-2">
-                      <IndianRupee className="h-3 w-3" /> PRICING BREAKDOWN
-                    </h4>
-                    <div className="grid gap-3">
-                      {Object.entries(turf.courtPricing).map(([type, price]) => (
-                        <div key={type} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5 group hover:border-primary/30 transition-all">
-                          <span className="text-xs font-bold text-muted-foreground group-hover:text-foreground">{type}</span>
-                          <span className="font-black text-primary">₹{price}</span>
-                        </div>
-                      ))}
-                    </div>
+                  <div className="space-y-3">
+                    <p className="text-[9px] font-black uppercase tracking-[0.4em] text-primary/60 mb-6">UNIT COSTING</p>
+                    {Object.entries(turf.courtPricing).map(([type, price]) => (
+                      <div key={type} className="flex items-center justify-between p-5 bg-white/5 rounded-xl border border-white/5 hover:border-primary/20 transition-all group">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-white/50 group-hover:text-white transition-colors">{type}</span>
+                        <span className="font-black text-primary italic">₹{price}</span>
+                      </div>
+                    ))}
                   </div>
                 )}
 
-                <div className="space-y-5 mb-10">
+                <div className="space-y-4 pt-4">
                   <Button 
                     asChild 
-                    className="w-full h-20 text-2xl font-black bg-primary hover:bg-primary/90 text-primary-foreground rounded-[2rem] shadow-[0_15px_40px_-5px_rgba(26,255,115,0.4)] transition-all hover:scale-[1.02] active:scale-[0.98]" 
+                    className="w-full h-20 text-xl font-black bg-primary hover:bg-primary/90 text-black rounded-xl shadow-xl shadow-primary/20 hover:scale-[1.02] transition-all" 
                     onClick={handleWhatsAppClick}
                   >
                     <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
-                      <MessageCircle className="mr-4 h-8 w-8" />
-                      BOOK ARENA
+                      <MessageCircle className="mr-3 h-7 w-7" />
+                      BOOK SLOT
                     </a>
                   </Button>
                   
-                  <Button variant="outline" asChild className="w-full h-16 border-white/10 hover:bg-white/5 rounded-2xl font-bold text-lg">
+                  <Button variant="outline" asChild className="w-full h-16 border-white/10 hover:bg-white/5 rounded-xl font-black text-xs uppercase tracking-widest">
                     <a href={`tel:${turf.contactNumber}`}>
-                      <Phone className="mr-3 h-5 w-5" /> CONTACT MANAGER
+                      <Phone className="mr-3 h-4 w-4" /> CALL MANAGER
                     </a>
                   </Button>
                 </div>
 
-                <div className="bg-white/5 rounded-3xl p-6 mb-10">
-                   <h4 className="font-black text-[10px] uppercase tracking-[0.3em] text-muted-foreground mb-4">Venue Features</h4>
-                   <div className="space-y-4">
-                      {(turf.courtTypes || []).map((type: string) => (
-                        <div key={type} className="flex items-center gap-3 text-sm font-bold">
-                          <CheckCircle2 className="h-4 w-4 text-primary" />
-                          {type}
-                        </div>
-                      ))}
-                   </div>
-                </div>
-
-                <Separator className="my-10 bg-white/5" />
-
-                <div className="space-y-8">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-black text-[10px] uppercase tracking-[0.4em] text-muted-foreground">The Pitch Location</h4>
-                  </div>
-                  <div className="bg-white/5 rounded-[2.5rem] p-8 border border-white/5 space-y-6 relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:scale-110 transition-transform duration-500">
+                <div className="pt-10 border-t border-white/5">
+                  <h4 className="text-[9px] font-black uppercase tracking-[0.4em] text-white/40 mb-6">PITCH COORDINATES</h4>
+                  <div className="glass-card p-8 rounded-2xl bg-white/5 relative group cursor-pointer overflow-hidden" onClick={() => window.open(googleMapsUrl, '_blank')}>
+                    <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:scale-110 transition-transform duration-700">
                       <Navigation className="h-20 w-20 text-primary" />
                     </div>
-                    
-                    <div className="space-y-4 relative z-10">
-                      <div className="flex items-start gap-4">
-                        <div className="mt-1 bg-primary/20 p-2 rounded-xl border border-primary/30">
-                          <MapPin className="h-5 w-5 text-primary" />
-                        </div>
-                        <div>
-                          <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-1">Venue Area</p>
-                          <p className="text-xl font-bold text-foreground">{turf.area}</p>
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Full Address</p>
-                        <p className="text-sm font-medium leading-relaxed text-white/60">
-                          {turf.location}
-                        </p>
+                    <div className="relative z-10">
+                      <p className="text-[9px] font-black text-primary uppercase tracking-[0.3em] mb-2">{turf.area}</p>
+                      <p className="text-sm font-medium text-white/60 leading-relaxed mb-6 italic">{turf.location}</p>
+                      <div className="flex items-center gap-2 text-primary font-black text-[9px] uppercase tracking-widest">
+                        <Navigation className="h-3 w-3" />
+                        NAVIGATE VIA MAPS
                       </div>
                     </div>
-
-                    <Button 
-                      asChild 
-                      className="w-full h-14 bg-white/5 hover:bg-primary hover:text-primary-foreground border border-white/10 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all group-hover:border-primary/50"
-                    >
-                      <a href={googleMapsUrl} target="_blank" rel="noopener noreferrer">
-                        <Navigation className="mr-2 h-4 w-4" />
-                        Get Directions
-                      </a>
-                    </Button>
                   </div>
                 </div>
               </aside>
             </div>
           </div>
         </div>
-      </div>
-
-      <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-background/80 backdrop-blur-xl border-t border-white/5 lg:hidden animate-in slide-in-from-bottom duration-500">
-        <Button 
-          asChild 
-          className="w-full h-16 text-lg font-black bg-primary text-primary-foreground rounded-2xl shadow-lg shadow-primary/20"
-          onClick={handleWhatsAppClick}
-        >
-          <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
-            <MessageCircle className="mr-2 h-6 w-6" />
-            BOOK NOW (Starting ₹{minPrice})
-          </a>
-        </Button>
       </div>
 
       <Footer />

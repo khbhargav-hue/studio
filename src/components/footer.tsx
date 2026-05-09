@@ -35,23 +35,25 @@ export function Footer() {
               <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">Discover</h4>
               <nav className="flex flex-col gap-4 text-sm font-bold uppercase tracking-widest text-muted-foreground">
                 <Link href="/" className="hover:text-white transition-colors">Browse Arenas</Link>
-                <Link href="#" className="hover:text-white transition-colors">Featured Venues</Link>
-                <Link href="#" className="hover:text-white transition-colors">Popular Areas</Link>
+                <Link href="/featured" className="hover:text-white transition-colors">Featured Venues</Link>
+                <Link href="/areas" className="hover:text-white transition-colors">Popular Areas</Link>
               </nav>
             </div>
             <div className="space-y-6">
               <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">Platform</h4>
               <nav className="flex flex-col gap-4 text-sm font-bold uppercase tracking-widest text-muted-foreground">
                 <Link href="/about" className="hover:text-white transition-colors">About Us</Link>
-                <Link href="#" className="hover:text-white transition-colors">Contact</Link>
+                <Link href="/contact" className="hover:text-white transition-colors">Contact</Link>
                 <Link href="/admin" className="hover:text-white transition-colors">Arena Portal</Link>
+                <Link href="/partner" className="hover:text-white transition-colors">Partner Program</Link>
               </nav>
             </div>
             <div className="space-y-6 col-span-2 md:col-span-1">
               <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">Legal</h4>
               <nav className="flex flex-col gap-4 text-sm font-bold uppercase tracking-widest text-muted-foreground">
-                <Link href="#" className="hover:text-white transition-colors">Privacy Policy</Link>
-                <Link href="#" className="hover:text-white transition-colors">Terms of Service</Link>
+                <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
+                <Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
+                <Link href="/disclaimer" className="hover:text-white transition-colors">Disclaimer</Link>
               </nav>
             </div>
           </div>

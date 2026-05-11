@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
@@ -58,9 +58,11 @@ export default function ChallengesPage() {
     notes: ""
   })
 
+  // To avoid requiring a composite index in Firestore (status == 'open' AND orderBy createdAt),
+  // we query all challenges ordered by date and filter by status on the client.
   const challengesQuery = useMemoFirebase(() => {
     if (!db) return null
-    return query(collection(db, "challenges"), where("status", "==", "open"), orderBy("createdAt", "desc"))
+    return query(collection(db, "challenges"), orderBy("createdAt", "desc"))
   }, [db])
 
   const myTeamsQuery = useMemoFirebase(() => {
@@ -68,8 +70,13 @@ export default function ChallengesPage() {
     return query(collection(db, "teams"), where("ownerId", "==", user.uid))
   }, [db, user])
 
-  const { data: challenges, loading } = useCollection(challengesQuery)
+  const { data: rawChallenges, loading } = useCollection(challengesQuery)
   const { data: myTeams } = useCollection(myTeamsQuery)
+
+  const challenges = useMemo(() => {
+    if (!rawChallenges) return []
+    return rawChallenges.filter((c: any) => c.status === "open")
+  }, [rawChallenges])
 
   const handlePostChallenge = async (e: React.FormEvent) => {
     e.preventDefault()

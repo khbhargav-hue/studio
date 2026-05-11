@@ -1,5 +1,5 @@
 
-export type SportType = 'Cricket' | 'Football' | 'Pickleball';
+export type SportType = 'Cricket' | 'Football' | 'Pickleball' | 'Badminton';
 
 export interface Turf {
   id: string;
@@ -24,6 +24,35 @@ export interface Turf {
   isPopular?: boolean;
   views?: number;
   whatsappClicks?: number;
+}
+
+export interface Team {
+  id: string;
+  teamName: string;
+  sport: string;
+  area: string;
+  captain: string;
+  whatsapp: string;
+  logoUrl?: string;
+  players: string[];
+  turfPreference?: string;
+  ownerId: string;
+  createdAt: any;
+}
+
+export interface Challenge {
+  id: string;
+  teamId: string;
+  teamName: string;
+  sport: string;
+  turf: string;
+  date: string;
+  time: string;
+  notes?: string;
+  status: 'open' | 'accepted' | 'completed';
+  area: string;
+  ownerId: string;
+  createdAt: any;
 }
 
 export interface Lead {

@@ -32,6 +32,44 @@
       },
       "required": ["name", "area", "pricePerHour"]
     },
+    "Team": {
+      "title": "Team",
+      "description": "A sports team created by a user",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "teamName": { "type": "string" },
+        "sport": { "type": "string", "enum": ["Football", "Cricket", "Badminton", "Pickleball"] },
+        "area": { "type": "string" },
+        "captain": { "type": "string" },
+        "whatsapp": { "type": "string" },
+        "logoUrl": { "type": "string" },
+        "players": { "type": "array", "items": { "type": "string" } },
+        "turfPreference": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "createdAt": { "type": "object" }
+      },
+      "required": ["teamName", "sport", "captain", "whatsapp"]
+    },
+    "Challenge": {
+      "title": "Challenge",
+      "description": "A match challenge issued by a team",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "teamId": { "type": "string" },
+        "teamName": { "type": "string" },
+        "sport": { "type": "string" },
+        "turf": { "type": "string" },
+        "date": { "type": "string" },
+        "time": { "type": "string" },
+        "notes": { "type": "string" },
+        "status": { "type": "string", "enum": ["open", "accepted", "completed"] },
+        "area": { "type": "string" },
+        "createdAt": { "type": "object" }
+      },
+      "required": ["teamId", "date", "time", "sport"]
+    },
     "Lead": {
       "title": "Lead",
       "description": "Information about a booking inquiry",
@@ -59,12 +97,20 @@
     }
   },
   "auth": {
-    "providers": ["password"]
+    "providers": ["password", "google"]
   },
   "firestore": {
     "/turfs/{turfId}": {
       "schema": "Turf",
       "description": "Collection of sports turfs"
+    },
+    "/teams/{teamId}": {
+      "schema": "Team",
+      "description": "Collection of sports teams"
+    },
+    "/challenges/{challengeId}": {
+      "schema": "Challenge",
+      "description": "Collection of match challenges"
     },
     "/leads/{leadId}": {
       "schema": "Lead",

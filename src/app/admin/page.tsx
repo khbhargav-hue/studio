@@ -6,7 +6,7 @@ import { collection, query, orderBy, doc, deleteDoc, setDoc, serverTimestamp, li
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/tabs";
 import { 
   Table, 
   TableBody, 
@@ -60,7 +60,7 @@ import {
   Tooltip as RechartsTooltip,
   Cell
 } from "recharts";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 
@@ -237,7 +237,7 @@ export default function AdminDashboard() {
                       <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.05)" />
                       <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: 'rgba(255,255,255,0.4)', fontSize: 10, fontWeight: 900}} />
                       <YAxis axisLine={false} tickLine={false} tick={{fill: 'rgba(255,255,255,0.4)', fontSize: 10}} />
-                      <RechartsTooltip content={<ChartTooltipContent />} cursor={{fill: 'rgba(255,255,255,0.05)'}} />
+                      <RechartsTooltip content={<AdminDashboardTooltip />} cursor={{fill: 'rgba(255,255,255,0.05)'}} />
                       <Bar dataKey="views" radius={[8, 8, 0, 0]} barSize={50}>
                         {processedAnalytics.areaStats.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={index === 0 ? '#39FF14' : 'rgba(57,255,20,0.3)'} />
@@ -411,7 +411,7 @@ export default function AdminDashboard() {
   );
 }
 
-function ChartTooltipContent({ active, payload }: any) {
+function AdminDashboardTooltip({ active, payload }: any) {
   if (active && payload && payload.length) {
     return (
       <div className="bg-black border border-white/10 p-4 rounded-2xl shadow-2xl backdrop-blur-xl">

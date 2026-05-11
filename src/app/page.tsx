@@ -5,8 +5,7 @@ import { useState, useMemo } from "react"
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { TurfCard } from "@/components/turf-card"
-import { Input } from "@/components/ui/input"
-import { Search, Loader2, MapPin, Zap, Trophy, ShieldCheck, Target } from "lucide-react"
+import { Zap, Trophy, ShieldCheck, Target, Loader2, ArrowRight, Star, SlidersHorizontal } from "lucide-react"
 import { 
   Select, 
   SelectContent, 
@@ -15,16 +14,23 @@ import {
   SelectValue 
 } from "@/components/ui/select"
 import { useCollection, useFirestore, useMemoFirebase, useDoc } from "@/firebase"
-import { collection, query, orderBy, doc } from "firebase/firestore"
+import { collection, query, orderBy, doc, where, limit } from "firebase/firestore"
+import Link from "next/link"
 
 const PREDEFINED_AREAS = ["Bogadi", "Vijaynagar", "Kuvempunagar", "Srirampura", "Bannimantap"];
 
 export default function Home() {
   const db = useFirestore()
   
+  // Queries
   const turfsQuery = useMemoFirebase(() => {
     if (!db) return null
     return query(collection(db, "turfs"), orderBy("name", "asc"))
+  }, [db])
+
+  const featuredQuery = useMemoFirebase(() => {
+    if (!db) return null
+    return query(collection(db, "turfs"), where("isPopular", "==", true), limit(4))
   }, [db])
 
   const brandingRef = useMemoFirebase(() => {
@@ -33,11 +39,13 @@ export default function Home() {
   }, [db])
 
   const { data: turfs, loading } = useCollection(turfsQuery)
+  const { data: featuredTurfs, loading: featuredLoading } = useCollection(featuredQuery)
   const { data: branding } = useDoc(brandingRef)
 
-  const [searchQuery, setSearchQuery] = useState("")
+  // Filters State
   const [sportFilter, setSportFilter] = useState("all")
   const [areaFilter, setAreaFilter] = useState("all")
+  const [sortBy, setSortBy] = useState("price-asc")
 
   const areas = useMemo(() => {
     if (!turfs) return PREDEFINED_AREAS;
@@ -49,71 +57,64 @@ export default function Home() {
 
   const filteredTurfs = useMemo(() => {
     if (!turfs) return []
-    return turfs.filter(turf => {
-      const matchesSearch = 
-        turf.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        turf.area?.toLowerCase().includes(searchQuery.toLowerCase())
-      
+    let result = turfs.filter(turf => {
       const matchesSport = sportFilter === "all" || 
                           turf.sportTypes?.some((s: string) => s.toLowerCase() === sportFilter.toLowerCase())
-      
       const matchesArea = areaFilter === "all" || turf.area === areaFilter
-
-      return matchesSearch && matchesSport && matchesArea
+      return matchesSport && matchesArea
     })
-  }, [turfs, searchQuery, sportFilter, areaFilter])
+
+    // Sorting
+    if (sortBy === "price-asc") result.sort((a, b) => a.pricePerHour - b.pricePerHour)
+    if (sortBy === "price-desc") result.sort((a, b) => b.pricePerHour - a.pricePerHour)
+    if (sortBy === "rating") result.sort((a, b) => (b.rating || 0) - (a.rating || 0))
+
+    return result
+  }, [turfs, sportFilter, areaFilter, sortBy])
 
   return (
     <div className="flex min-h-screen flex-col bg-black">
       <Navbar />
       
-      {/* Refined Minimal Premium Hero Section */}
-      <section className="relative pt-36 pb-20 px-4 bg-black overflow-hidden" aria-labelledby="hero-heading">
-        {/* Subtle Radial Glow */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_top,rgba(57,255,20,0.03)_0%,transparent_70%)] pointer-events-none" />
+      {/* Redesigned Hero Section */}
+      <section className="relative pt-44 pb-32 px-4 bg-black overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_top,rgba(57,255,20,0.05)_0%,transparent_60%)] pointer-events-none" />
 
         <div className="relative z-10 w-full max-w-7xl mx-auto flex flex-col items-center text-center">
-          <div className="inline-flex items-center gap-2 mb-8 bg-primary/5 border border-primary/10 py-1 px-3 rounded-full backdrop-blur-sm animate-in fade-in slide-in-from-top-2 duration-700">
-            <Zap className="h-3 w-3 text-primary" />
-            <span className="text-[8px] font-black text-primary uppercase tracking-[0.4em]">
-              {branding?.heroBadgeText || "WE CONNECT YOU TO THE BEST TURFS"}
+          <div className="inline-flex items-center gap-2 mb-10 bg-primary/5 border border-primary/10 py-2 px-5 rounded-full backdrop-blur-sm animate-in fade-in slide-in-from-top-4 duration-1000">
+            <Zap className="h-4 w-4 text-primary" />
+            <span className="text-[10px] font-black text-primary uppercase tracking-[0.5em]">
+              {branding?.heroBadgeText || "ELITE ARENA NETWORK"}
             </span>
           </div>
           
-          <div className="mb-8 space-y-1 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
-            <h1 id="hero-heading" className="text-5xl md:text-7xl text-primary font-black italic uppercase tracking-tighter drop-shadow-[0_0_20px_rgba(57,255,20,0.2)]">
-              {branding?.heroHeading2 || "BOOK EASY."}
+          <div className="mb-16 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-200">
+            <h1 className="text-6xl md:text-9xl text-white font-black italic uppercase tracking-tighter leading-none mb-4">
+              PLAY <span className="text-primary text-neon">MORE.</span>
             </h1>
-            <p className="text-5xl md:text-7xl text-white font-black italic uppercase tracking-tighter">
-              {branding?.heroHeading1 || "PLAY MORE."}
-            </p>
+            <h2 className="text-6xl md:text-9xl text-white font-black italic uppercase tracking-tighter leading-none">
+              BOOK <span className="text-primary text-neon">EASY.</span>
+            </h2>
           </div>
           
-          <p className="text-sm md:text-base text-white/40 max-w-md font-medium mb-12 animate-in fade-in duration-700 delay-200">
-            {branding?.heroDescription || "Discover and book Mysuru’s best sports turfs in one place."}
+          <p className="text-lg md:text-xl text-white/40 max-w-lg font-medium mb-16 animate-in fade-in duration-1000 delay-300">
+            {branding?.heroDescription || "Discover and book Mysuru’s most premium sports arenas with zero friction."}
           </p>
 
-          {/* Compact Modern Search/Filter Area */}
-          <div className="w-full max-w-2xl animate-in fade-in zoom-in duration-700 delay-300">
-            <div className="glass-card p-1.5 rounded-2xl border-white/5 flex flex-col sm:flex-row gap-1.5 shadow-[0_15px_40px_rgba(0,0,0,0.8)] bg-white/[0.02] backdrop-blur-xl">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-primary/40" />
-                <Input 
-                  aria-label="Search turfs in Mysuru"
-                  placeholder="Find your pitch..." 
-                  className="pl-9 h-10 bg-transparent border-none text-white text-xs placeholder:text-white/10 focus-visible:ring-0 rounded-lg transition-all"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
+          {/* Compact Minimal Filters */}
+          <div className="w-full max-w-4xl animate-in fade-in zoom-in duration-1000 delay-500">
+            <div className="glass-card p-2 rounded-3xl border-white/5 flex flex-col sm:flex-row items-center gap-2 bg-white/[0.03] backdrop-blur-2xl shadow-2xl">
+              <div className="flex items-center gap-3 px-5 py-3 border-r border-white/5 hidden sm:flex">
+                <SlidersHorizontal className="h-4 w-4 text-primary" />
+                <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Filters</span>
               </div>
               
-              <div className="flex gap-1.5 h-10">
-                <div className="w-px bg-white/5 my-2 hidden sm:block" />
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 w-full">
                 <Select value={sportFilter} onValueChange={setSportFilter}>
-                  <SelectTrigger aria-label="Filter by sport" className="h-full w-full sm:w-32 bg-transparent border-none text-white/60 font-bold text-[9px] uppercase tracking-widest rounded-lg hover:bg-white/5 hover:text-white transition-all focus:ring-0">
+                  <SelectTrigger className="h-12 bg-white/5 border-none text-white font-bold text-[10px] uppercase tracking-widest rounded-2xl hover:bg-white/10 transition-all">
                     <SelectValue placeholder="Sport" />
                   </SelectTrigger>
-                  <SelectContent className="bg-[#0A0A0A] border-white/10 rounded-xl">
+                  <SelectContent className="bg-black border-white/10">
                     <SelectItem value="all">All Sports</SelectItem>
                     <SelectItem value="football">Football</SelectItem>
                     <SelectItem value="cricket">Cricket</SelectItem>
@@ -121,99 +122,98 @@ export default function Home() {
                   </SelectContent>
                 </Select>
 
-                <div className="w-px bg-white/5 my-2 hidden sm:block" />
                 <Select value={areaFilter} onValueChange={setAreaFilter}>
-                  <SelectTrigger aria-label="Filter by area" className="h-full w-full sm:w-32 bg-transparent border-none text-white/60 font-bold text-[9px] uppercase tracking-widest rounded-lg hover:bg-white/5 hover:text-white transition-all focus:ring-0">
+                  <SelectTrigger className="h-12 bg-white/5 border-none text-white font-bold text-[10px] uppercase tracking-widest rounded-2xl hover:bg-white/10 transition-all">
                     <SelectValue placeholder="Area" />
                   </SelectTrigger>
-                  <SelectContent className="bg-[#0A0A0A] border-white/10 rounded-xl">
+                  <SelectContent className="bg-black border-white/10">
                     <SelectItem value="all">All Areas</SelectItem>
                     {areas.map(area => (
                       <SelectItem key={area} value={area}>{area}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="h-12 bg-white/5 border-none text-white font-bold text-[10px] uppercase tracking-widest rounded-2xl hover:bg-white/10 transition-all">
+                    <SelectValue placeholder="Sort By" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-black border-white/10">
+                    <SelectItem value="price-asc">Price: Low to High</SelectItem>
+                    <SelectItem value="price-desc">Price: High to Low</SelectItem>
+                    <SelectItem value="rating">Top Rated</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                <div className="flex items-center justify-center h-12 bg-primary/10 rounded-2xl border border-primary/20 text-primary">
+                  <span className="text-[10px] font-black uppercase tracking-widest">{filteredTurfs.length} Venues</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* SEO Content Section - Best Football & Cricket Turfs in Mysuru */}
-      <section className="bg-black py-20 px-4 border-t border-white/5" aria-labelledby="seo-title">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
-          <div className="space-y-8">
-            <div className="inline-flex items-center gap-2 bg-primary/10 text-primary text-[10px] font-black uppercase tracking-[0.4em] px-5 py-2 rounded-xl">
-              <Trophy className="h-3 w-3" />
-              Mysuru Sports Directory
-            </div>
-            <h2 id="seo-title" className="text-4xl md:text-5xl font-black italic uppercase tracking-tighter leading-none">
-              Best Football & <span className="text-primary">Cricket Turfs</span> in Mysuru
-            </h2>
-            <p className="text-white/60 text-lg leading-relaxed font-medium">
-              Mysuru is witnessing a sports revolution. From late-night 5-a-side football matches to weekend box cricket tournaments, Turfista is the #1 discovery engine for athletes in <strong>Karnataka</strong>. Whether you are in <strong>Vijaynagar</strong>, <strong>Bogadi</strong>, or <strong>Kuvempunagar</strong>, finding a verified pitch with elite floodlighting has never been easier.
-            </p>
-            <div className="grid grid-cols-2 gap-8">
-              <div className="flex items-start gap-4">
-                <ShieldCheck className="h-6 w-6 text-primary shrink-0" />
-                <div>
-                  <h4 className="font-bold text-white uppercase text-xs tracking-wider mb-1">Verified Partners</h4>
-                  <p className="text-white/40 text-[11px]">Hand-picked elite sports venues.</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-4">
-                <Target className="h-6 w-6 text-primary shrink-0" />
-                <div>
-                  <h4 className="font-bold text-white uppercase text-xs tracking-wider mb-1">Real-time Booking</h4>
-                  <p className="text-white/40 text-[11px]">Instant connection via WhatsApp.</p>
-                </div>
+      {/* Featured Section */}
+      <section className="px-4 py-24 bg-black border-t border-white/5">
+        <div className="mx-auto max-w-7xl">
+          <div className="flex items-center justify-between mb-16">
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-2 bg-primary rounded-full shadow-[0_0_20px_rgba(57,255,20,0.6)]" />
+              <div>
+                <h2 className="text-4xl font-black italic uppercase tracking-tighter">
+                  FEATURED <span className="text-primary text-neon">ARENAS</span>
+                </h2>
+                <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em] mt-2">Elite hand-picked venues in Mysuru</p>
               </div>
             </div>
+            <Link href="/featured" className="group flex items-center gap-3 text-[10px] font-black text-primary uppercase tracking-widest hover:opacity-80 transition-all">
+              VIEW ALL <ArrowRight className="h-4 w-4 group-hover:translate-x-2 transition-transform" />
+            </Link>
           </div>
-          <div className="relative aspect-video rounded-[3rem] overflow-hidden border border-white/10 group shadow-2xl">
-             <img 
-               src="https://images.unsplash.com/photo-1574629810360-7efbbe195018?q=80&w=1200&auto=format&fit=crop" 
-               alt="Sports turf in Mysuru under floodlights" 
-               className="w-full h-full object-cover grayscale-[0.5] group-hover:grayscale-0 transition-all duration-1000"
-             />
-             <div className="absolute inset-0 bg-primary/10 mix-blend-overlay group-hover:opacity-0 transition-opacity" />
-          </div>
+
+          {featuredLoading ? (
+            <div className="flex justify-center py-20">
+              <Loader2 className="h-12 w-12 animate-spin text-primary opacity-20" />
+            </div>
+          ) : featuredTurfs && featuredTurfs.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
+              {featuredTurfs.map((turf) => (
+                <TurfCard key={turf.id} turf={turf as any} />
+              ))}
+            </div>
+          ) : null}
         </div>
       </section>
 
       {/* Main Inventory Section */}
-      <section className="px-4 py-20 bg-black border-t border-white/5" aria-labelledby="inventory-title">
+      <section className="px-4 py-24 bg-black border-t border-white/5">
         <div className="mx-auto max-w-7xl">
-          <div className="flex items-center justify-between mb-12">
-            <div className="flex items-center gap-3">
-              <div className="h-8 w-1.5 bg-primary rounded-full shadow-[0_0_10px_rgba(57,255,20,0.5)]" />
-              <h2 id="inventory-title" className="text-3xl font-black italic uppercase tracking-tighter">
-                ELITE <span className="text-primary">ARENAS</span>
+          <div className="flex items-center justify-between mb-16">
+            <div className="flex items-center gap-4">
+              <Trophy className="h-8 w-8 text-primary" />
+              <h2 className="text-3xl font-black italic uppercase tracking-tighter">
+                ALL <span className="text-white/40">PITCERS</span>
               </h2>
-            </div>
-            <div className="hidden md:block">
-              <p className="text-[9px] font-black text-white/20 uppercase tracking-[0.3em]">
-                {filteredTurfs.length} verified venues in Mysuru
-              </p>
             </div>
           </div>
 
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-32 gap-4">
-              <Loader2 className="h-10 w-10 animate-spin text-primary opacity-30" />
-              <p className="text-[10px] font-black uppercase tracking-widest text-primary/20">Syncing Pitches...</p>
+            <div className="flex flex-col items-center justify-center py-32 gap-6">
+              <Loader2 className="h-12 w-12 animate-spin text-primary opacity-20" />
+              <p className="text-[10px] font-black uppercase tracking-widest text-white/20">Syncing database...</p>
             </div>
           ) : filteredTurfs.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
               {filteredTurfs.map((turf) => (
                 <TurfCard key={turf.id} turf={turf as any} />
               ))}
             </div>
           ) : (
-            <div className="text-center py-32 glass-card rounded-[2.5rem] border-dashed border-white/10">
-              <MapPin className="h-12 w-12 mx-auto mb-6 text-white/5" />
-              <h3 className="text-2xl font-bold text-white/10 uppercase italic">No Pitches Found</h3>
-              <p className="text-white/20 max-w-xs mx-auto text-xs font-medium mt-2">Try broadening your search criteria.</p>
+            <div className="text-center py-40 glass-card rounded-[4rem] border-dashed border-white/10">
+              <Star className="h-16 w-16 mx-auto mb-8 text-white/5" />
+              <h3 className="text-3xl font-black text-white/10 uppercase italic">No Venues Found</h3>
+              <p className="text-white/20 max-w-xs mx-auto text-sm font-medium mt-4">Refine your filters to discover more arenas.</p>
             </div>
           )}
         </div>

@@ -12,23 +12,19 @@
         "area": { "type": "string" },
         "sportTypes": { "type": "array", "items": { "type": "string", "enum": ["Cricket", "Football", "Pickleball"] } },
         "courtTypes": { "type": "array", "items": { "type": "string" } },
-        "pricePerHour": { "type": "number", "description": "Base or starting price per hour" },
+        "pricePerHour": { "type": "number" },
         "courtPricing": { 
           "type": "object", 
-          "additionalProperties": { "type": "number" },
-          "description": "Mapping of court type names to their specific hourly rates"
+          "additionalProperties": { "type": "number" }
         },
         "rating": { "type": "number" },
         "reviewCount": { "type": "number" },
-        "mainImage": { "type": "string", "description": "The primary thumbnail image for the turf" },
-        "galleryImages": { "type": "array", "items": { "type": "string" }, "description": "Additional photos of the venue" },
+        "mainImage": { "type": "string" },
+        "galleryImages": { "type": "array", "items": { "type": "string" } },
         "description": { "type": "string" },
         "amenities": { "type": "array", "items": { "type": "string" } },
-        "coachingServices": { "type": "array", "items": { "type": "string" } },
         "openingHours": { "type": "string" },
-        "contactNumber": { "type": "string" },
         "whatsappNumber": { "type": "string" },
-        "mapUrl": { "type": "string" },
         "isPopular": { "type": "boolean" },
         "views": { "type": "number" },
         "whatsappClicks": { "type": "number" },
@@ -36,35 +32,29 @@
       },
       "required": ["name", "area", "pricePerHour"]
     },
+    "Lead": {
+      "title": "Lead",
+      "description": "Information about a booking inquiry",
+      "type": "object",
+      "properties": {
+        "turfId": { "type": "string" },
+        "turfName": { "type": "string" },
+        "area": { "type": "string" },
+        "sportType": { "type": "string" },
+        "timestamp": { "type": "object" },
+        "deviceInfo": { "type": "string" },
+        "customerName": { "type": "string" },
+        "customerPhone": { "type": "string" }
+      }
+    },
     "Analytics": {
       "title": "Analytics",
       "description": "Global application usage statistics",
       "type": "object",
       "properties": {
-        "totalUsers": { "type": "number" },
         "totalViews": { "type": "number" },
-        "totalWhatsAppClicks": { "type": "number" }
-      }
-    },
-    "Branding": {
-      "title": "Branding",
-      "description": "Global application branding and hero configuration",
-      "type": "object",
-      "properties": {
-        "heroBadgeText": { "type": "string" },
-        "heroHeading1": { "type": "string" },
-        "heroHeading2": { "type": "string" },
-        "heroDescription": { "type": "string" },
-        "heroImageUrl": { "type": "string" },
-        "logoUrl": { "type": "string" },
-        "updatedAt": { "type": "object" },
-        "seoTitle": { "type": "string" },
-        "seoDescription": { "type": "string" },
-        "footerEmail": { "type": "string" },
-        "footerWhatsapp": { "type": "string" },
-        "copyrightText": { "type": "string" },
-        "cloudinaryCloudName": { "type": "string" },
-        "cloudinaryUploadPreset": { "type": "string" }
+        "totalWhatsAppClicks": { "type": "number" },
+        "totalUsers": { "type": "number" }
       }
     }
   },
@@ -76,13 +66,13 @@
       "schema": "Turf",
       "description": "Collection of sports turfs"
     },
+    "/leads/{leadId}": {
+      "schema": "Lead",
+      "description": "Collection of booking leads"
+    },
     "/analytics/stats": {
       "schema": "Analytics",
       "description": "Global usage statistics"
-    },
-    "/settings/branding": {
-      "schema": "Branding",
-      "description": "Global branding configuration"
     }
   }
 }

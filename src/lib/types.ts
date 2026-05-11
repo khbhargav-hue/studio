@@ -25,3 +25,15 @@ export interface Turf {
   views?: number;
   whatsappClicks?: number;
 }
+
+export interface Lead {
+  id?: string;
+  turfId: string;
+  turfName: string;
+  area: string;
+  sportType: string;
+  timestamp: any;
+  deviceInfo: string;
+  customerName?: string;
+  customerPhone?: string;
+}

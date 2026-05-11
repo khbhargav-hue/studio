@@ -6,6 +6,7 @@ import { FirebaseClientProvider } from "@/firebase"
 import GoogleAnalytics from '@/components/google-analytics';
 import { Analytics } from "@vercel/analytics/react"
 import { SpeedInsights } from "@vercel/speed-insights/next"
+import { MobileNav } from '@/components/mobile-nav';
 
 export const viewport: Viewport = {
   themeColor: '#39FF14',
@@ -88,9 +89,10 @@ export default function RootLayout({
       <body className="font-body bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
         <GoogleAnalytics />
         <FirebaseClientProvider>
-          <main className="min-h-screen">
+          <main className="min-h-screen pb-24 md:pb-0">
             {children}
           </main>
+          <MobileNav />
           <Toaster />
         </FirebaseClientProvider>
         <Analytics />

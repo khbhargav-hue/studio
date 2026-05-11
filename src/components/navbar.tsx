@@ -2,7 +2,7 @@
 "use client"
 
 import Link from "next/link"
-import { User, Menu, LogOut, ShieldCheck } from "lucide-react"
+import { User, Menu, LogOut, ShieldCheck, MapPinned, Users, Trophy } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { 
   DropdownMenu, 
@@ -35,7 +35,6 @@ export function Navbar() {
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
-      router.refresh();
     } catch (error) {
       console.error("Google Sign-in failed", error);
     }
@@ -50,6 +49,7 @@ export function Navbar() {
           <TurfistaLogo />
         </Link>
 
+        {/* Desktop Links */}
         <div className="hidden md:flex items-center gap-8">
           <Link href="/" className="text-[11px] font-black uppercase tracking-widest text-white/60 hover:text-white transition-colors">Find Turfs</Link>
           <Link href="/teams" className="text-[11px] font-black uppercase tracking-widest text-white/60 hover:text-white transition-colors">Teams</Link>
@@ -87,7 +87,7 @@ export function Navbar() {
                   </div>
                   <DropdownMenuSeparator className="bg-white/10 mx-1" />
                   <DropdownMenuItem asChild className="h-12 rounded-xl font-bold cursor-pointer">
-                    <Link href="/teams">My Team Profile</Link>
+                    <Link href="/profile">My Profile</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleLogout} className="text-red-500 focus:bg-red-500/10 focus:text-red-500 h-12 rounded-xl font-bold cursor-pointer mt-1">
                     <LogOut className="mr-3 h-4 w-4" /> Logout
@@ -98,36 +98,35 @@ export function Navbar() {
           </DropdownMenu>
         </div>
 
+        {/* Mobile Menu - Secondary Items Only */}
         <div className="md:hidden">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-10 w-10 text-white">
+              <Button variant="ghost" size="icon" className="h-10 w-10 text-white hover:bg-white/5">
                 <Menu className="h-6 w-6" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-64 bg-black border-white/10 rounded-2xl p-2 mt-2">
-              <DropdownMenuItem asChild className="h-12 rounded-xl font-bold">
-                <Link href="/">Find Turfs</Link>
+            <DropdownMenuContent align="end" className="w-64 bg-black/95 border-white/10 rounded-2xl p-2 mt-2 backdrop-blur-xl">
+              <DropdownMenuItem asChild className="h-12 rounded-xl font-bold text-white/60">
+                <Link href="/about">About Platform</Link>
               </DropdownMenuItem>
-              <DropdownMenuItem asChild className="h-12 rounded-xl font-bold">
-                <Link href="/teams">Teams</Link>
+              <DropdownMenuItem asChild className="h-12 rounded-xl font-bold text-white/60">
+                <Link href="/contact">Support & Contact</Link>
               </DropdownMenuItem>
-              <DropdownMenuItem asChild className="h-12 rounded-xl font-bold">
-                <Link href="/challenges">Challenges</Link>
+              <DropdownMenuSeparator className="bg-white/5" />
+              <DropdownMenuItem asChild className="h-12 rounded-xl font-bold text-white/60">
+                <Link href="/terms">Terms of Service</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild className="h-12 rounded-xl font-bold text-white/60">
+                <Link href="/privacy">Privacy Policy</Link>
               </DropdownMenuItem>
               {isAdmin && (
-                <DropdownMenuItem asChild className="h-12 rounded-xl font-bold text-primary">
-                  <Link href="/admin">Admin Portal</Link>
-                </DropdownMenuItem>
-              )}
-              {!user ? (
-                <DropdownMenuItem onClick={handleGoogleSignIn} className="h-12 rounded-xl font-bold">
-                  Sign in with Google
-                </DropdownMenuItem>
-              ) : (
-                <DropdownMenuItem onClick={handleLogout} className="text-red-500 h-12 rounded-xl font-bold">
-                  <LogOut className="mr-3 h-4 w-4" /> Logout
-                </DropdownMenuItem>
+                <>
+                  <DropdownMenuSeparator className="bg-white/5" />
+                  <DropdownMenuItem asChild className="h-12 rounded-xl font-bold text-primary">
+                    <Link href="/admin">Arena Portal</Link>
+                  </DropdownMenuItem>
+                </>
               )}
             </DropdownMenuContent>
           </DropdownMenu>

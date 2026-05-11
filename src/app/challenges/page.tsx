@@ -104,36 +104,36 @@ export default function ChallengesPage() {
     <div className="flex min-h-screen flex-col bg-black selection:bg-primary selection:text-black">
       <Navbar />
       
-      <main className="flex-1 pt-44 pb-32">
+      <main className="flex-1 pt-32 md:pt-44 pb-32">
         <div className="mx-auto max-w-7xl px-4">
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-20 gap-8">
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 md:mb-20 gap-8">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-              <div className="inline-flex items-center gap-2 mb-6 bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-[0.4em] px-5 py-2 rounded-full">
+              <div className="inline-flex items-center gap-2 mb-4 md:mb-6 bg-primary/10 border border-primary/20 text-primary text-[9px] md:text-[10px] font-black uppercase tracking-[0.4em] px-4 md:px-5 py-2 rounded-full">
                 <ShieldAlert className="h-3 w-3" />
                 LIVE MATCH FEED
               </div>
-              <h1 className="font-headline text-6xl md:text-8xl font-black tracking-tighter uppercase italic leading-none text-white">
+              <h1 className="font-headline text-5xl md:text-8xl font-black tracking-tighter uppercase italic leading-none text-white">
                 OPEN <span className="text-primary">CHALLENGES</span>
               </h1>
-              <p className="text-xl text-white/40 font-medium max-w-xl mt-6">
+              <p className="text-base md:text-xl text-white/40 font-medium max-w-xl mt-4 md:mt-6">
                 Active match requests across Mysuru. Accept a challenge and hit the pitch.
               </p>
             </motion.div>
 
             <Dialog open={showPostDialog} onOpenChange={setShowPostDialog}>
               <DialogTrigger asChild>
-                <Button className="h-16 px-10 bg-primary text-black font-black uppercase tracking-widest text-xs rounded-2xl shadow-2xl hover:scale-[1.02] transition-transform">
-                  <Plus className="mr-2 h-5 w-5" /> ISSUE CHALLENGE
+                <Button className="h-14 md:h-16 px-8 md:px-10 bg-primary text-black font-black uppercase tracking-widest text-[10px] md:text-xs rounded-2xl shadow-2xl hover:scale-[1.02] transition-transform">
+                  <Plus className="mr-2 h-4 w-4 md:h-5 md:w-5" /> ISSUE CHALLENGE
                 </Button>
               </DialogTrigger>
-              <DialogContent className="glass-card border-white/10 bg-black/90 text-white rounded-[2.5rem] max-w-2xl">
+              <DialogContent className="glass-card border-white/10 bg-black/90 text-white rounded-[2.5rem] max-w-2xl p-0">
                 {!user ? (
                   <div className="p-12 text-center space-y-6">
                     <DialogHeader>
                       <Zap className="h-16 w-16 text-primary mx-auto mb-4" />
                       <DialogTitle className="text-3xl font-black uppercase italic text-center">Identity Required</DialogTitle>
                     </DialogHeader>
-                    <p className="text-white/40 text-center">Sign in via Google to post challenges.</p>
+                    <p className="text-white/40 text-center">Sign in via the profile tab to post challenges.</p>
                   </div>
                 ) : !myTeams || myTeams.length === 0 ? (
                   <div className="p-12 text-center space-y-6">
@@ -149,12 +149,12 @@ export default function ChallengesPage() {
                     </div>
                   </div>
                 ) : (
-                  <form onSubmit={handlePostChallenge} className="p-8 space-y-8">
+                  <form onSubmit={handlePostChallenge} className="p-8 md:p-12 space-y-8">
                     <DialogHeader>
                       <DialogTitle className="text-4xl font-black italic uppercase text-primary">Post Match</DialogTitle>
                     </DialogHeader>
                     
-                    <div className="grid grid-cols-2 gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                       <div className="space-y-2">
                         <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Preferred Date</Label>
                         <Input 
@@ -177,7 +177,7 @@ export default function ChallengesPage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                       <div className="space-y-2">
                         <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Target Arena (Turf)</Label>
                         <Input 
@@ -223,17 +223,17 @@ export default function ChallengesPage() {
               <p className="text-[10px] font-black uppercase tracking-widest text-primary/40">Monitoring Live Circuits...</p>
             </div>
           ) : challenges && challenges.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10">
               {challenges.map((challenge, idx) => (
                 <ChallengeCard key={challenge.id} challenge={challenge as any} />
               ))}
             </div>
           ) : (
-            <div className="text-center py-40 glass-card rounded-[5rem] border-dashed border-white/10 max-w-3xl mx-auto flex flex-col items-center gap-8">
-              <Zap className="h-16 w-16 text-white/5" />
+            <div className="text-center py-40 glass-card rounded-[3rem] md:rounded-[5rem] border-dashed border-white/10 max-w-3xl mx-auto flex flex-col items-center gap-8">
+              <Zap className="h-12 w-12 md:h-16 md:w-16 text-white/5" />
               <div>
-                <h3 className="text-3xl font-black text-white/10 uppercase italic">Circuit is Quiet</h3>
-                <p className="text-white/20 mt-4 max-w-xs mx-auto">No match requests found. Post a challenge and wake up the city.</p>
+                <h3 className="text-2xl md:text-3xl font-black text-white/10 uppercase italic">Circuit is Quiet</h3>
+                <p className="text-white/20 mt-4 max-w-[200px] md:max-w-xs mx-auto text-xs md:text-sm">No match requests found. Post a challenge and wake up the city.</p>
               </div>
             </div>
           )}
@@ -252,60 +252,60 @@ function ChallengeCard({ challenge }: { challenge: any }) {
     <motion.div 
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="glass-card rounded-[3rem] overflow-hidden border-white/5 bg-[#0a0a0a] flex flex-col group"
+      className="glass-card rounded-[2.5rem] md:rounded-[3rem] overflow-hidden border-white/5 bg-[#0a0a0a] flex flex-col group"
     >
-      <div className="p-10 pb-6">
-        <div className="flex items-center justify-between mb-8">
-          <div className="px-5 py-2 bg-primary/10 border border-primary/20 text-primary rounded-full text-[9px] font-black uppercase tracking-[0.3em]">
+      <div className="p-8 md:p-10 pb-4 md:pb-6">
+        <div className="flex items-center justify-between mb-6 md:mb-8">
+          <div className="px-4 md:px-5 py-1.5 md:py-2 bg-primary/10 border border-primary/20 text-primary rounded-full text-[8px] md:text-[9px] font-black uppercase tracking-[0.3em]">
             LIVE CHALLENGE
           </div>
-          <Zap className="h-5 w-5 text-primary animate-pulse" />
+          <Zap className="h-4 w-4 md:h-5 md:w-5 text-primary animate-pulse" />
         </div>
         
-        <h3 className="text-4xl font-black italic uppercase tracking-tighter leading-none mb-6 text-white">{challenge.teamName}</h3>
+        <h3 className="text-3xl md:text-4xl font-black italic uppercase tracking-tighter leading-none mb-6 text-white truncate">{challenge.teamName}</h3>
         
-        <div className="flex flex-wrap gap-4">
-          <div className="flex items-center gap-2 text-[10px] font-black uppercase text-white/40 tracking-widest">
-            <Trophy className="h-4 w-4 text-primary" />
+        <div className="flex flex-wrap gap-3 md:gap-4">
+          <div className="flex items-center gap-1.5 md:gap-2 text-[9px] md:text-[10px] font-black uppercase text-white/40 tracking-widest">
+            <Trophy className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary" />
             {challenge.sport}
           </div>
-          <div className="flex items-center gap-2 text-[10px] font-black uppercase text-white/40 tracking-widest">
-            <MapPin className="h-4 w-4 text-primary" />
+          <div className="flex items-center gap-1.5 md:gap-2 text-[9px] md:text-[10px] font-black uppercase text-white/40 tracking-widest">
+            <MapPin className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary" />
             {challenge.area}
           </div>
         </div>
       </div>
 
-      <div className="p-10 pt-4 flex-1 space-y-8">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-white/5 p-6 rounded-3xl border border-white/5">
-            <div className="flex items-center gap-3 mb-2 opacity-40">
+      <div className="p-8 md:p-10 pt-2 md:pt-4 flex-1 space-y-6 md:space-y-8">
+        <div className="grid grid-cols-2 gap-3 md:gap-4">
+          <div className="bg-white/5 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-white/5">
+            <div className="flex items-center gap-2 mb-1.5 md:mb-2 opacity-40">
               <Calendar className="h-3 w-3" />
-              <span className="text-[8px] font-black uppercase tracking-widest">Date</span>
+              <span className="text-[7px] md:text-[8px] font-black uppercase tracking-widest">Date</span>
             </div>
-            <p className="text-sm font-bold text-white">{challenge.date}</p>
+            <p className="text-xs md:text-sm font-bold text-white">{challenge.date}</p>
           </div>
-          <div className="bg-white/5 p-6 rounded-3xl border border-white/5">
-            <div className="flex items-center gap-3 mb-2 opacity-40">
+          <div className="bg-white/5 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-white/5">
+            <div className="flex items-center gap-2 mb-1.5 md:mb-2 opacity-40">
               <Clock className="h-3 w-3" />
-              <span className="text-[8px] font-black uppercase tracking-widest">Time</span>
+              <span className="text-[7px] md:text-[8px] font-black uppercase tracking-widest">Time</span>
             </div>
-            <p className="text-sm font-bold text-white">{challenge.time}</p>
+            <p className="text-xs md:text-sm font-bold text-white">{challenge.time}</p>
           </div>
         </div>
 
         {challenge.notes && (
-          <div className="p-6 bg-primary/5 border border-primary/10 rounded-3xl">
-            <p className="text-[9px] font-black text-primary/60 uppercase tracking-widest mb-2 italic">Notes</p>
-            <p className="text-xs text-white/60 font-medium leading-relaxed italic truncate">"{challenge.notes}"</p>
+          <div className="p-4 md:p-6 bg-primary/5 border border-primary/10 rounded-2xl md:rounded-3xl">
+            <p className="text-[8px] md:text-[9px] font-black text-primary/60 uppercase tracking-widest mb-2 italic">Notes</p>
+            <p className="text-[10px] md:text-xs text-white/60 font-medium leading-relaxed italic truncate">"{challenge.notes}"</p>
           </div>
         )}
       </div>
 
-      <div className="p-10 pt-0">
-        <Button asChild className="w-full h-16 bg-primary text-black font-black uppercase tracking-widest text-xs rounded-2xl shadow-xl hover:scale-[1.02] transition-transform border-none">
+      <div className="p-8 md:p-10 pt-0">
+        <Button asChild className="w-full h-14 md:h-16 bg-primary text-black font-black uppercase tracking-widest text-[10px] md:text-xs rounded-2xl shadow-xl hover:scale-[1.02] transition-transform border-none">
           <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
-            ACCEPT CHALLENGE <ArrowRight className="ml-3 h-4 w-4" />
+            ACCEPT CHALLENGE <ArrowRight className="ml-2 md:ml-3 h-3 w-3 md:h-4 md:w-4" />
           </a>
         </Button>
       </div>

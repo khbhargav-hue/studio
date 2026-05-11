@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useParams, useRouter } from "next/navigation"
@@ -9,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { 
   ArrowLeft, 
+  ArrowRight,
   MapPin, 
   Phone, 
   MessageCircle, 

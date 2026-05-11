@@ -95,7 +95,7 @@ export function TurfCard({ turf }: TurfCardProps) {
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/10 to-transparent" />
         
         <div className="absolute left-6 top-6 flex items-center gap-2">
-          <Badge className="bg-primary text-black font-black px-4 py-1.5 text-[10px] rounded-xl shadow-2xl border-none">
+          <Badge className="bg-black/60 backdrop-blur-md text-[hsl(var(--rating))] border border-white/10 font-black px-4 py-1.5 text-[10px] rounded-xl shadow-2xl">
             {turf.rating || 4.5} <Star className="ml-1.5 h-3.5 w-3.5 fill-current" />
           </Badge>
           {turf.isPopular && (

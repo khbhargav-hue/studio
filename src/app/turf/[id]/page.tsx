@@ -217,7 +217,7 @@ export default function TurfDetail() {
                     priority 
                   />
                   <div className="absolute bottom-10 left-10 flex items-center gap-3">
-                    <Badge className="bg-primary text-black font-black px-4 py-1.5 text-xs rounded-xl shadow-2xl border-none">
+                    <Badge className="bg-black/60 backdrop-blur-md text-[hsl(var(--rating))] border border-white/10 font-black px-4 py-1.5 text-xs rounded-xl shadow-2xl">
                       {turf.rating || 4.5} <Star className="ml-1 h-3 w-3 fill-current" />
                     </Badge>
                     <Badge className="bg-black/60 backdrop-blur-md text-white border-white/10 text-[9px] font-black uppercase tracking-widest px-4 py-1.5 rounded-xl">

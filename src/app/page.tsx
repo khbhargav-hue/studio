@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useMemo } from "react"
@@ -177,7 +176,7 @@ export default function Home() {
       <section className="px-4 py-24 bg-[#050505] border-t border-white/5">
         <div className="mx-auto max-w-7xl">
           <div className="flex items-center gap-4 mb-16">
-            <Trophy className="h-10 w-10 text-primary" />
+            <Trophy className="h-10 w-10 text-[hsl(var(--rating))]" />
             <h2 className="text-3xl font-black italic uppercase tracking-tighter">
               TOP <span className="text-white/40">RATED</span>
             </h2>

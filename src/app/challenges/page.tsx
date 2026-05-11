@@ -129,18 +129,24 @@ export default function ChallengesPage() {
               <DialogContent className="glass-card border-white/10 bg-black/90 text-white rounded-[2.5rem] max-w-2xl">
                 {!user ? (
                   <div className="p-12 text-center space-y-6">
-                    <Zap className="h-16 w-16 text-primary mx-auto" />
-                    <h2 className="text-3xl font-black uppercase italic">Identity Required</h2>
-                    <p className="text-white/40">Sign in via Google to post challenges.</p>
+                    <DialogHeader>
+                      <Zap className="h-16 w-16 text-primary mx-auto mb-4" />
+                      <DialogTitle className="text-3xl font-black uppercase italic text-center">Identity Required</DialogTitle>
+                    </DialogHeader>
+                    <p className="text-white/40 text-center">Sign in via Google to post challenges.</p>
                   </div>
                 ) : !myTeams || myTeams.length === 0 ? (
                   <div className="p-12 text-center space-y-6">
-                    <Trophy className="h-16 w-16 text-primary mx-auto" />
-                    <h2 className="text-3xl font-black uppercase italic">No Squad Detected</h2>
-                    <p className="text-white/40 mb-8">You need to form a team before issuing challenges.</p>
-                    <Button asChild variant="outline" className="h-14 rounded-xl border-primary text-primary">
-                      <a href="/teams">Create a Team Now</a>
-                    </Button>
+                    <DialogHeader>
+                      <Trophy className="h-16 w-16 text-primary mx-auto mb-4" />
+                      <DialogTitle className="text-3xl font-black uppercase italic text-center">No Squad Detected</DialogTitle>
+                    </DialogHeader>
+                    <p className="text-white/40 mb-8 text-center">You need to form a team before issuing challenges.</p>
+                    <div className="flex justify-center">
+                      <Button asChild variant="outline" className="h-14 rounded-xl border-primary text-primary">
+                        <a href="/teams">Create a Team Now</a>
+                      </Button>
+                    </div>
                   </div>
                 ) : (
                   <form onSubmit={handlePostChallenge} className="p-8 space-y-8">

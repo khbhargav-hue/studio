@@ -128,9 +128,11 @@ export default function TeamsPage() {
               <DialogContent className="glass-card border-white/10 bg-black/90 text-white rounded-[2.5rem] max-w-2xl max-h-[90vh] overflow-y-auto">
                 {!user ? (
                   <div className="p-12 text-center space-y-6">
-                    <Zap className="h-16 w-16 text-primary mx-auto animate-pulse" />
-                    <h2 className="text-3xl font-black uppercase italic">Identity Required</h2>
-                    <p className="text-white/40">You must sign in via the navbar to create and manage teams.</p>
+                    <DialogHeader>
+                      <Zap className="h-16 w-16 text-primary mx-auto animate-pulse mb-4" />
+                      <DialogTitle className="text-3xl font-black uppercase italic text-center">Identity Required</DialogTitle>
+                    </DialogHeader>
+                    <p className="text-white/40 text-center">You must sign in via the navbar to create and manage teams.</p>
                   </div>
                 ) : (
                   <form onSubmit={handleCreateTeam} className="p-8 space-y-8">

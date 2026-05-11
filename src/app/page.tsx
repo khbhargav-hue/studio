@@ -1,23 +1,13 @@
 
 "use client"
 
-import { useState, useMemo } from "react"
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { TurfCard } from "@/components/turf-card"
-import { Zap, Trophy, ShieldCheck, Target, Loader2, ArrowRight, Star, SlidersHorizontal } from "lucide-react"
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select"
+import { Zap, Trophy, Loader2, ArrowRight, Star } from "lucide-react"
 import { useCollection, useFirestore, useMemoFirebase, useDoc } from "@/firebase"
 import { collection, query, orderBy, doc, where, limit } from "firebase/firestore"
 import Link from "next/link"
-
-const PREDEFINED_AREAS = ["Bogadi", "Vijaynagar", "Kuvempunagar", "Srirampura", "Bannimantap"];
 
 export default function Home() {
   const db = useFirestore()
@@ -41,36 +31,6 @@ export default function Home() {
   const { data: turfs, loading } = useCollection(turfsQuery)
   const { data: featuredTurfs, loading: featuredLoading } = useCollection(featuredQuery)
   const { data: branding } = useDoc(brandingRef)
-
-  // Filters State
-  const [sportFilter, setSportFilter] = useState("all")
-  const [areaFilter, setAreaFilter] = useState("all")
-  const [sortBy, setSortBy] = useState("price-asc")
-
-  const areas = useMemo(() => {
-    if (!turfs) return PREDEFINED_AREAS;
-    const uniqueAreas = Array.from(new Set([...PREDEFINED_AREAS, ...turfs.map(t => t.area)]))
-      .filter(Boolean)
-      .sort();
-    return uniqueAreas;
-  }, [turfs])
-
-  const filteredTurfs = useMemo(() => {
-    if (!turfs) return []
-    let result = turfs.filter(turf => {
-      const matchesSport = sportFilter === "all" || 
-                          turf.sportTypes?.some((s: string) => s.toLowerCase() === sportFilter.toLowerCase())
-      const matchesArea = areaFilter === "all" || turf.area === areaFilter
-      return matchesSport && matchesArea
-    })
-
-    // Sorting
-    if (sortBy === "price-asc") result.sort((a, b) => a.pricePerHour - b.pricePerHour)
-    if (sortBy === "price-desc") result.sort((a, b) => b.pricePerHour - a.pricePerHour)
-    if (sortBy === "rating") result.sort((a, b) => (b.rating || 0) - (a.rating || 0))
-
-    return result
-  }, [turfs, sportFilter, areaFilter, sortBy])
 
   return (
     <div className="flex min-h-screen flex-col bg-black">
@@ -97,60 +57,9 @@ export default function Home() {
             </h2>
           </div>
           
-          <p className="text-lg md:text-xl text-white/40 max-w-lg font-medium mb-16 animate-in fade-in duration-1000 delay-300">
+          <p className="text-lg md:text-xl text-white/40 max-w-lg font-medium animate-in fade-in duration-1000 delay-300">
             {branding?.heroDescription || "Discover and book Mysuru’s most premium sports arenas with zero friction."}
           </p>
-
-          {/* Compact Minimal Filters */}
-          <div className="w-full max-w-4xl animate-in fade-in zoom-in duration-1000 delay-500">
-            <div className="glass-card p-2 rounded-3xl border-white/5 flex flex-col sm:flex-row items-center gap-2 bg-white/[0.03] backdrop-blur-2xl shadow-2xl">
-              <div className="flex items-center gap-3 px-5 py-3 border-r border-white/5 hidden sm:flex">
-                <SlidersHorizontal className="h-4 w-4 text-primary" />
-                <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Filters</span>
-              </div>
-              
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 w-full">
-                <Select value={sportFilter} onValueChange={setSportFilter}>
-                  <SelectTrigger className="h-12 bg-white/5 border-none text-white font-bold text-[10px] uppercase tracking-widest rounded-2xl hover:bg-white/10 transition-all">
-                    <SelectValue placeholder="Sport" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-black border-white/10">
-                    <SelectItem value="all">All Sports</SelectItem>
-                    <SelectItem value="football">Football</SelectItem>
-                    <SelectItem value="cricket">Cricket</SelectItem>
-                    <SelectItem value="pickleball">Pickleball</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Select value={areaFilter} onValueChange={setAreaFilter}>
-                  <SelectTrigger className="h-12 bg-white/5 border-none text-white font-bold text-[10px] uppercase tracking-widest rounded-2xl hover:bg-white/10 transition-all">
-                    <SelectValue placeholder="Area" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-black border-white/10">
-                    <SelectItem value="all">All Areas</SelectItem>
-                    {areas.map(area => (
-                      <SelectItem key={area} value={area}>{area}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="h-12 bg-white/5 border-none text-white font-bold text-[10px] uppercase tracking-widest rounded-2xl hover:bg-white/10 transition-all">
-                    <SelectValue placeholder="Sort By" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-black border-white/10">
-                    <SelectItem value="price-asc">Price: Low to High</SelectItem>
-                    <SelectItem value="price-desc">Price: High to Low</SelectItem>
-                    <SelectItem value="rating">Top Rated</SelectItem>
-                  </SelectContent>
-                </Select>
-                
-                <div className="flex items-center justify-center h-12 bg-primary/10 rounded-2xl border border-primary/20 text-primary">
-                  <span className="text-[10px] font-black uppercase tracking-widest">{filteredTurfs.length} Venues</span>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 
@@ -203,9 +112,9 @@ export default function Home() {
               <Loader2 className="h-12 w-12 animate-spin text-primary opacity-20" />
               <p className="text-[10px] font-black uppercase tracking-widest text-white/20">Syncing database...</p>
             </div>
-          ) : filteredTurfs.length > 0 ? (
+          ) : (turfs && turfs.length > 0) ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
-              {filteredTurfs.map((turf) => (
+              {turfs.map((turf) => (
                 <TurfCard key={turf.id} turf={turf as any} />
               ))}
             </div>
@@ -213,7 +122,7 @@ export default function Home() {
             <div className="text-center py-40 glass-card rounded-[4rem] border-dashed border-white/10">
               <Star className="h-16 w-16 mx-auto mb-8 text-white/5" />
               <h3 className="text-3xl font-black text-white/10 uppercase italic">No Venues Found</h3>
-              <p className="text-white/20 max-w-xs mx-auto text-sm font-medium mt-4">Refine your filters to discover more arenas.</p>
+              <p className="text-white/20 max-w-xs mx-auto text-sm font-medium mt-4">We are expanding our network. Check back soon!</p>
             </div>
           )}
         </div>

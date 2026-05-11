@@ -36,6 +36,18 @@ service cloud.firestore {
       allow write, delete: if isAdmin();
     }
 
+    // Rules for booking leads
+    match /leads/{leadId} {
+      // Only admin can see the lead list
+      allow read: if isAdmin();
+      
+      // Public can create leads (when clicking WhatsApp buttons)
+      allow create: if true;
+      
+      // Only admin can update or delete leads
+      allow update, delete: if isAdmin();
+    }
+
     // Rules for branding and settings
     match /settings/branding {
       allow read: if true;

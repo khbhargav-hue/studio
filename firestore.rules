@@ -11,41 +11,50 @@ service cloud.firestore {
       // Anyone can see the venues
       allow read: if true;
       
-      // Anyone can increment view counts or clicks
-      // We allow updates to these specific fields for any user
-      allow update: if request.resource.data.diff(resource.data).affectedKeys()
-        .hasOnly(['views', 'whatsappClicks', 'updatedAt']) || isAdmin();
+      // Public can update specific stats with strict validation
+      allow update: if (
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views', 'whatsappClicks', 'updatedAt']) &&
+        // Prevent spam: only allow incrementing or keeping same
+        (request.resource.data.views >= resource.data.views && request.resource.data.views <= resource.data.views + 1) &&
+        (request.resource.data.whatsappClicks >= resource.data.whatsappClicks && request.resource.data.whatsappClicks <= resource.data.whatsappClicks + 1)
+      ) || isAdmin();
       
-      // Allow creation of these fields if the doc is being initialized via public interaction
-      allow create: if request.resource.data.keys().hasAny(['views', 'whatsappClicks']) || isAdmin();
-      
-      // Admin has full control for everything else
-      allow delete: if isAdmin();
+      // Only admin can manage listings
+      allow create, delete: if isAdmin();
       allow write: if isAdmin();
     }
 
     // Rules for global analytics
     match /analytics/{docId} {
-      // Public can see nothing, but only admin can read the full stats
+      // Only admin can see full platform performance
       allow read: if isAdmin();
       
-      // Anyone can update counters
-      allow create, update: if true;
-      
-      // Admin can manage analytics documents fully
-      allow write, delete: if isAdmin();
+      // Anyone can update counters, but restricted to increment operations
+      allow create, update: if (
+        request.resource.data.diff(resource.data).affectedKeys().hasAny(['totalViews', 'totalWhatsAppClicks'])
+      ) || isAdmin();
     }
 
     // Rules for booking leads
     match /leads/{leadId} {
-      // Only admin can see the lead list
+      // Only admin can see the lead intelligence
       allow read: if isAdmin();
       
-      // Public can create leads (when clicking WhatsApp buttons)
-      allow create: if true;
+      // Public can create leads with validation
+      allow create: if (
+        request.resource.data.keys().hasAll(['turfId', 'turfName', 'timestamp', 'deviceInfo']) &&
+        request.resource.data.turfId is string &&
+        request.resource.data.timestamp == request.time
+      );
       
       // Only admin can update or delete leads
       allow update, delete: if isAdmin();
+    }
+
+    // Rules for administrative activity logs
+    match /logs/{logId} {
+      allow create: if true; // Allow logging login attempts
+      allow read, update, delete: if isAdmin();
     }
 
     // Rules for branding and settings

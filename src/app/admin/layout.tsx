@@ -1,11 +1,10 @@
-
 'use client';
 
-import { ReactNode, useEffect } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser, useAuth } from '@/firebase';
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from '@/components/ui/sidebar';
-import { LayoutDashboard, PlusCircle, LogOut, Loader2, Palette } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, LogOut, Loader2, Palette, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
 import { signOut } from 'firebase/auth';
 import { TurfistaLogo } from '@/components/brand-logo';
@@ -16,19 +15,21 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const { user, loading } = useUser();
   const auth = useAuth();
   const router = useRouter();
+  const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
-    // If loading is finished and there's no user or user is not admin, redirect to login
     if (!loading) {
       if (!user) {
         router.replace('/login');
       } else if (user.email !== ADMIN_EMAIL) {
-        // Logged in but not an admin - sign out and go to login
+        // Logged in but not an admin - clear session and redirect
         if (auth) {
           signOut(auth).then(() => {
             router.replace('/login?error=unauthorized');
           });
         }
+      } else {
+        setIsAuthorized(true);
       }
     }
   }, [user, loading, router, auth]);
@@ -49,15 +50,20 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       <div className="flex h-screen items-center justify-center bg-black">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-12 w-12 animate-spin text-primary" />
-          <p className="text-[10px] font-black text-primary uppercase tracking-[0.4em]">Authenticating...</p>
+          <p className="text-[10px] font-black text-primary uppercase tracking-[0.4em]">Verifying Identity...</p>
         </div>
       </div>
     );
   }
 
-  // Double check admin status before rendering children
-  if (!user || user.email !== ADMIN_EMAIL) {
-    return null;
+  if (!isAuthorized) {
+    return (
+      <div className="flex h-screen flex-col items-center justify-center bg-black gap-6">
+        <ShieldAlert className="h-16 w-16 text-destructive animate-pulse" />
+        <h1 className="text-2xl font-black italic uppercase">Access Restricted</h1>
+        <p className="text-white/40 text-xs font-medium uppercase tracking-widest">Unauthorized Admin Session Detected</p>
+      </div>
+    );
   }
 
   return (

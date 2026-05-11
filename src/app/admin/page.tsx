@@ -42,12 +42,12 @@ import {
   Calendar,
   Phone,
   LayoutDashboard,
-  MessageSquare
+  MessageSquare,
+  ShieldCheck,
+  History
 } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 import { useMemo, useState } from 'react';
 import {
   Bar,
@@ -59,14 +59,12 @@ import {
   Tooltip as RechartsTooltip,
   Cell
 } from "recharts";
-import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 
 export default function AdminDashboard() {
   const db = useFirestore();
   const { toast } = useToast();
-  const [isSeeding, setIsSeeding] = useState(false);
 
   // Data Queries
   const turfsQuery = useMemoFirebase(() => {
@@ -79,6 +77,11 @@ export default function AdminDashboard() {
     return query(collection(db, 'leads'), orderBy('timestamp', 'desc'), limit(50));
   }, [db]);
 
+  const logsQuery = useMemoFirebase(() => {
+    if (!db) return null;
+    return query(collection(db, 'logs'), orderBy('timestamp', 'desc'), limit(20));
+  }, [db]);
+
   const statsRef = useMemoFirebase(() => {
     if (!db) return null;
     return doc(db, 'analytics', 'stats');
@@ -86,6 +89,7 @@ export default function AdminDashboard() {
 
   const { data: turfs, loading: turfsLoading } = useCollection(turfsQuery);
   const { data: leads, loading: leadsLoading } = useCollection(leadsQuery);
+  const { data: logs } = useCollection(logsQuery);
   const { data: stats } = useDoc(statsRef);
 
   // Analytics Processing
@@ -123,7 +127,7 @@ export default function AdminDashboard() {
 
   const handleExportLeads = () => {
     if (!leads) return;
-    const headers = ["Date", "Turf", "Area", "Sport", "Device", "Name", "Phone"];
+    const headers = ["Date", "Turf", "Area", "Sport", "Device"];
     const csvContent = [
       headers.join(","),
       ...leads.map(l => [
@@ -131,9 +135,7 @@ export default function AdminDashboard() {
         `"${l.turfName}"`,
         `"${l.area}"`,
         `"${l.sportType}"`,
-        `"${l.deviceInfo}"`,
-        `"${l.customerName || 'N/A'}"`,
-        `"${l.customerPhone || 'N/A'}"`
+        `"${l.deviceInfo}"`
       ].join(","))
     ].join("\n");
 
@@ -146,14 +148,14 @@ export default function AdminDashboard() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    toast({ title: "Leads Exported", description: "CSV file generated successfully." });
+    toast({ title: "Intelligence Exported" });
   };
 
   const handleDelete = (id: string, name: string) => {
     if (!db) return;
     const turfRef = doc(db, 'turfs', id);
     deleteDoc(turfRef).then(() => {
-      toast({ title: 'Listing Deleted', description: `${name} has been removed.` });
+      toast({ title: 'Listing Terminated', description: `${name} has been removed from rotation.` });
     });
   };
 
@@ -166,11 +168,14 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="space-y-12 animate-in fade-in duration-700">
+    <div className="space-y-12 animate-in fade-in duration-700 pb-20">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
         <div>
-          <h1 className="text-5xl font-black tracking-tighter italic uppercase">Platform <span className="text-primary">Control</span></h1>
-          <p className="text-muted-foreground mt-2 text-lg font-medium">Analytics, inventory and lead intelligence.</p>
+          <div className="flex items-center gap-3 mb-2">
+             <ShieldCheck className="h-6 w-6 text-primary" />
+             <h1 className="text-5xl font-black tracking-tighter italic uppercase">Admin <span className="text-primary">Shield</span></h1>
+          </div>
+          <p className="text-muted-foreground text-lg font-medium">Secure command center for Mysuru's elite network.</p>
         </div>
         <div className="flex items-center gap-4">
           <Button 
@@ -178,11 +183,11 @@ export default function AdminDashboard() {
             onClick={handleExportLeads}
             className="h-14 rounded-2xl border-white/5 bg-white/5 font-bold uppercase tracking-widest text-[10px]"
           >
-            <Download className="h-4 w-4 mr-2" /> Export Leads
+            <Download className="h-4 w-4 mr-2" /> Data Export
           </Button>
           <Button asChild className="bg-primary text-black font-black uppercase tracking-widest text-xs rounded-2xl h-14 px-8 shadow-2xl shadow-primary/20 hover:scale-[1.02] transition-transform">
             <Link href="/admin/new">
-              <Plus className="mr-2 h-5 w-5" /> Add Arena
+              <Plus className="mr-2 h-5 w-5" /> Deploy Arena
             </Link>
           </Button>
         </div>
@@ -199,15 +204,18 @@ export default function AdminDashboard() {
           <TabsTrigger value="leads" className="px-8 h-full rounded-xl font-bold uppercase tracking-widest text-[10px] data-[state=active]:bg-primary data-[state=active]:text-black">
             <MessageSquare className="h-4 w-4 mr-2" /> Leads
           </TabsTrigger>
+          <TabsTrigger value="logs" className="px-8 h-full rounded-xl font-bold uppercase tracking-widest text-[10px] data-[state=active]:bg-primary data-[state=active]:text-black">
+            <History className="h-4 w-4 mr-2" /> Security Logs
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-10">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { label: "Platform Views", val: stats?.totalViews, icon: Eye, color: "text-primary" },
-              { label: "Total Leads", val: stats?.totalWhatsAppClicks, icon: MousePointerClick, color: "text-primary" },
+              { label: "Reach Intensity", val: stats?.totalViews, icon: Eye, color: "text-primary" },
+              { label: "Verified Leads", val: stats?.totalWhatsAppClicks, icon: MousePointerClick, color: "text-primary" },
               { label: "Active Pitches", val: turfs?.length, icon: Trophy, color: "text-primary" },
-              { label: "Hot Zone", val: processedAnalytics.topArea, icon: TrendingUp, color: "text-primary" }
+              { label: "Regional MVP", val: processedAnalytics.topArea, icon: TrendingUp, color: "text-primary" }
             ].map((item, i) => (
               <Card key={i} className="glass-card border-white/5 rounded-3xl overflow-hidden group">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -227,7 +235,7 @@ export default function AdminDashboard() {
             <Card className="lg:col-span-8 glass-card border-white/5 rounded-[2.5rem] overflow-hidden">
               <CardHeader className="p-8">
                 <CardTitle className="text-2xl font-black italic uppercase">Regional <span className="text-primary">Traffic</span></CardTitle>
-                <CardDescription className="text-xs font-bold uppercase text-white/40 tracking-widest">Views distribution across Mysuru zones</CardDescription>
+                <CardDescription className="text-xs font-bold uppercase text-white/40 tracking-widest">Visibility distribution across city zones</CardDescription>
               </CardHeader>
               <CardContent className="h-[400px] p-8">
                 {processedAnalytics.areaStats.length > 0 ? (
@@ -281,22 +289,7 @@ export default function AdminDashboard() {
                         </div>
                       </div>
                     </div>
-                  ) : <p className="text-center text-white/20 py-20 font-black uppercase text-[10px]">No MVP Active</p>}
-                </CardContent>
-              </Card>
-
-              <Card className="glass-card border-white/5 rounded-[2.5rem] overflow-hidden">
-                <CardHeader className="p-8 pb-4">
-                  <CardTitle className="text-xl font-black italic uppercase">Daily Traffic</CardTitle>
-                </CardHeader>
-                <CardContent className="p-8 pt-0 space-y-4">
-                   <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-white/40">Real-time Users</span>
-                      <span className="text-xl font-black italic text-primary">LIVE</span>
-                   </div>
-                   <p className="text-[9px] text-white/20 font-medium leading-relaxed italic">
-                     Analytics system is syncing every 60 seconds. Traffic data includes unique mobile and desktop sessions.
-                   </p>
+                  ) : <p className="text-center text-white/20 py-20 font-black uppercase text-[10px]">Discovery pending...</p>}
                 </CardContent>
               </Card>
             </div>
@@ -305,7 +298,7 @@ export default function AdminDashboard() {
 
         <TabsContent value="inventory" className="glass-card border-white/5 rounded-[2.5rem] overflow-hidden">
           <div className="p-8 border-b border-white/5 bg-white/5 flex items-center justify-between">
-            <h2 className="text-2xl font-black italic uppercase">Inventory <span className="text-primary">Control</span></h2>
+            <h2 className="text-2xl font-black italic uppercase">Arena <span className="text-primary">Inventory</span></h2>
             <Badge className="bg-primary/20 text-primary px-4 py-1.5 rounded-full font-black text-[10px] uppercase tracking-widest border-none">
               {turfs?.length || 0} TOTAL UNITS
             </Badge>
@@ -317,8 +310,8 @@ export default function AdminDashboard() {
                   <TableHead className="py-6 font-black uppercase tracking-widest text-[10px]">Arena</TableHead>
                   <TableHead className="font-black uppercase tracking-widest text-[10px]">Area</TableHead>
                   <TableHead className="font-black uppercase tracking-widest text-[10px]">Base Rate</TableHead>
-                  <TableHead className="font-black uppercase tracking-widest text-[10px] text-center">Views</TableHead>
-                  <TableHead className="font-black uppercase tracking-widest text-[10px] text-center">Inquiries</TableHead>
+                  <TableHead className="font-black uppercase tracking-widest text-[10px] text-center">Reach</TableHead>
+                  <TableHead className="font-black uppercase tracking-widest text-[10px] text-center">Conversions</TableHead>
                   <TableHead className="text-right font-black uppercase tracking-widest text-[10px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -365,8 +358,8 @@ export default function AdminDashboard() {
 
         <TabsContent value="leads" className="glass-card border-white/5 rounded-[2.5rem] overflow-hidden">
           <div className="p-8 border-b border-white/5 bg-white/5 flex items-center justify-between">
-            <h2 className="text-2xl font-black italic uppercase">Booking <span className="text-primary">Intelligence</span></h2>
-            <p className="text-[10px] font-black text-white/30 uppercase tracking-widest">Recent inquiries via WhatsApp</p>
+            <h2 className="text-2xl font-black italic uppercase">Lead <span className="text-primary">Intelligence</span></h2>
+            <p className="text-[10px] font-black text-white/30 uppercase tracking-widest">Inquiries via secure WhatsApp relay</p>
           </div>
           <div className="overflow-x-auto">
             <Table>
@@ -374,9 +367,9 @@ export default function AdminDashboard() {
                 <TableRow className="border-white/5">
                   <TableHead className="py-6 font-black uppercase tracking-widest text-[10px]">Timestamp</TableHead>
                   <TableHead className="font-black uppercase tracking-widest text-[10px]">Turf</TableHead>
-                  <TableHead className="font-black uppercase tracking-widest text-[10px]">Sport</TableHead>
                   <TableHead className="font-black uppercase tracking-widest text-[10px]">Area</TableHead>
-                  <TableHead className="font-black uppercase tracking-widest text-[10px]">Device Profile</TableHead>
+                  <TableHead className="font-black uppercase tracking-widest text-[10px]">Sport</TableHead>
+                  <TableHead className="font-black uppercase tracking-widest text-[10px]">Device Fingerprint</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -385,23 +378,63 @@ export default function AdminDashboard() {
                     <TableCell className="py-5 font-mono text-xs text-white/60">
                       {lead.timestamp?.toDate() ? format(lead.timestamp.toDate(), "MMM dd, HH:mm") : 'N/A'}
                     </TableCell>
-                    <TableCell className="font-bold text-white">{lead.turfName}</TableCell>
+                    <TableCell className="font-bold text-white uppercase italic">{lead.turfName}</TableCell>
+                    <TableCell className="text-white/40 text-xs font-bold uppercase">{lead.area}</TableCell>
                     <TableCell>
                       <Badge className="bg-white/10 text-white/60 border-none px-3 py-1 text-[9px] uppercase tracking-widest">{lead.sportType}</Badge>
                     </TableCell>
-                    <TableCell className="text-white/40 text-xs font-bold uppercase">{lead.area}</TableCell>
-                    <TableCell className="text-xs text-white/20 italic truncate max-w-[200px]">{lead.deviceInfo}</TableCell>
+                    <TableCell className="text-[10px] text-white/20 italic truncate max-w-[200px]">{lead.deviceInfo}</TableCell>
                   </TableRow>
                 ))}
                 {(!leads || leads.length === 0) && (
                   <TableRow>
                     <TableCell colSpan={5} className="py-20 text-center opacity-20">
-                      <Calendar className="h-10 w-10 mx-auto mb-4" />
-                      <p className="font-black uppercase tracking-widest text-[10px]">No inquiries logged yet</p>
+                      <MessageSquare className="h-10 w-10 mx-auto mb-4" />
+                      <p className="font-black uppercase tracking-widest text-[10px]">Lead generation pending...</p>
                     </TableCell>
                   </TableRow>
                 )}
               </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="logs" className="glass-card border-white/5 rounded-[2.5rem] overflow-hidden">
+          <div className="p-8 border-b border-white/5 bg-white/5 flex items-center justify-between">
+             <h2 className="text-2xl font-black italic uppercase">Security <span className="text-primary">Audit</span></h2>
+             <p className="text-[10px] font-black text-white/30 uppercase tracking-widest">Administrative Activity History</p>
+          </div>
+          <div className="overflow-x-auto">
+            <Table>
+               <TableHeader className="bg-white/5">
+                  <TableRow className="border-white/5">
+                     <TableHead className="py-6 font-black uppercase tracking-widest text-[10px]">Timestamp</TableHead>
+                     <TableHead className="font-black uppercase tracking-widest text-[10px]">Action / Event</TableHead>
+                     <TableHead className="font-black uppercase tracking-widest text-[10px]">Identity</TableHead>
+                     <TableHead className="font-black uppercase tracking-widest text-[10px]">Status</TableHead>
+                  </TableRow>
+               </TableHeader>
+               <TableBody>
+                  {logs?.map((log) => (
+                    <TableRow key={log.id} className="border-white/5 hover:bg-white/5 transition-colors">
+                       <TableCell className="py-4 font-mono text-xs text-white/40">
+                          {log.timestamp?.toDate() ? format(log.timestamp.toDate(), "MMM dd, HH:mm:ss") : 'N/A'}
+                       </TableCell>
+                       <TableCell className="text-xs font-bold uppercase tracking-widest">
+                          {log.type === "ADMIN_LOGIN_ATTEMPT" ? "Auth Entry Attempt" : log.type}
+                       </TableCell>
+                       <TableCell className="text-xs text-white/60">{log.email}</TableCell>
+                       <TableCell>
+                          <Badge className={cn(
+                            "px-3 py-1 text-[8px] uppercase font-black tracking-widest border-none",
+                            log.success ? "bg-primary/20 text-primary" : "bg-destructive/20 text-destructive"
+                          )}>
+                             {log.success ? "SECURE ACCESS" : `DENIED (${log.error})`}
+                          </Badge>
+                       </TableCell>
+                    </TableRow>
+                  ))}
+               </TableBody>
             </Table>
           </div>
         </TabsContent>

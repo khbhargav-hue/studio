@@ -1,4 +1,3 @@
-
 "use client"
 
 import Image from "next/image"
@@ -10,7 +9,8 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Turf } from "@/lib/types"
 import { useFirestore } from "@/firebase"
 import { doc, setDoc, increment, collection, addDoc, serverTimestamp } from "firebase/firestore"
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
+import { useToast } from "@/hooks/use-toast"
 
 interface TurfCardProps {
   turf: Turf
@@ -18,28 +18,39 @@ interface TurfCardProps {
 
 export function TurfCard({ turf }: TurfCardProps) {
   const db = useFirestore()
+  const { toast } = useToast()
+  const [isThrottled, setIsThrottled] = useState(false)
 
   const handleWhatsAppClick = async (e: React.MouseEvent) => {
     if (!db || !turf.id) return
+    
+    // Prevent spam clicks
+    if (isThrottled) return
+    setIsThrottled(true)
+    setTimeout(() => setIsThrottled(false), 5000) // 5 second cooldown
 
-    // Track lead information
+    // Track lead information securely
     const leadData = {
       turfId: turf.id,
       turfName: turf.name,
       area: turf.area,
       sportType: turf.sportTypes?.[0] || 'Unknown',
       timestamp: serverTimestamp(),
-      deviceInfo: typeof navigator !== 'undefined' ? navigator.userAgent : 'Unknown',
+      deviceInfo: typeof navigator !== 'undefined' ? navigator.userAgent.slice(0, 150) : 'Unknown',
     }
 
-    // Fire and forget - don't block the user experience
-    addDoc(collection(db, "leads"), leadData).catch(console.error)
-    
-    const turfRef = doc(db, "turfs", turf.id)
-    const statsRef = doc(db, "analytics", "stats")
-    
-    setDoc(turfRef, { whatsappClicks: increment(1) }, { merge: true }).catch(() => {});
-    setDoc(statsRef, { totalWhatsAppClicks: increment(1) }, { merge: true }).catch(() => {});
+    try {
+      await addDoc(collection(db, "leads"), leadData)
+      
+      const turfRef = doc(db, "turfs", turf.id)
+      const statsRef = doc(db, "analytics", "stats")
+      
+      setDoc(turfRef, { whatsappClicks: increment(1) }, { merge: true }).catch(() => {});
+      setDoc(statsRef, { totalWhatsAppClicks: increment(1) }, { merge: true }).catch(() => {});
+    } catch (err) {
+      console.error("Lead capture failed:", err)
+      // We don't block the user from WhatsApp if lead tracking fails silently
+    }
   }
 
   const pricingDetails = useMemo(() => {

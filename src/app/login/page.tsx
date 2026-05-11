@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, Suspense } from "react";
@@ -8,9 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Trophy, Loader2, LogIn, AlertCircle } from "lucide-react";
-import { useAuth, useUser } from "@/firebase";
+import { Trophy, Loader2, LogIn, AlertCircle, ShieldCheck } from "lucide-react";
+import { useAuth, useUser, useFirestore } from "@/firebase";
 import { signInWithEmailAndPassword, signOut } from "firebase/auth";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -21,13 +21,13 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const auth = useAuth();
+  const db = useFirestore();
   const { user, loading } = useUser();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Check if an error was passed in URL (e.g. from middleware/layout)
   useEffect(() => {
     const errorParam = searchParams.get('error');
     if (errorParam === 'unauthorized') {
@@ -35,7 +35,6 @@ function LoginForm() {
     }
   }, [searchParams]);
 
-  // If already logged in as admin, redirect to admin dashboard
   useEffect(() => {
     if (!loading && user) {
       if (user.email === ADMIN_EMAIL) {
@@ -43,6 +42,22 @@ function LoginForm() {
       }
     }
   }, [user, loading, router]);
+
+  const logActivity = async (success: boolean, userEmail: string, errorMsg?: string) => {
+    if (!db) return;
+    try {
+      await addDoc(collection(db, "logs"), {
+        type: "ADMIN_LOGIN_ATTEMPT",
+        email: userEmail,
+        success,
+        error: errorMsg || null,
+        timestamp: serverTimestamp(),
+        device: typeof navigator !== 'undefined' ? navigator.userAgent : 'Unknown'
+      });
+    } catch (e) {
+      console.warn("Could not log activity:", e);
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,12 +70,14 @@ function LoginForm() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
       if (userCredential.user.email !== ADMIN_EMAIL) {
+        await logActivity(false, email, "Unauthorized email attempt");
         await signOut(auth);
         setError("Unauthorized access. Admin credentials required.");
         setIsLoggingIn(false);
         return;
       }
 
+      await logActivity(true, email);
       toast({
         title: "Access Granted",
         description: "Welcome to the Turfista command center.",
@@ -69,13 +86,16 @@ function LoginForm() {
     } catch (err: any) {
       console.error("Login error:", err);
       let message = "Failed to login. Please check your credentials.";
+      
       if (err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
         message = "Invalid email or password.";
       } else if (err.code === 'auth/invalid-email') {
         message = "Please enter a valid email address.";
       } else if (err.code === 'auth/too-many-requests') {
-        message = "Too many failed attempts. Please try again later.";
+        message = "Security lock active. Too many failed attempts. Try later.";
       }
+
+      await logActivity(false, email, err.code);
       setError(message);
       setIsLoggingIn(false);
     }
@@ -117,8 +137,8 @@ function LoginForm() {
                 {error && (
                   <Alert variant="destructive" className="bg-destructive/10 border-destructive/20 text-destructive rounded-2xl animate-in fade-in zoom-in duration-300">
                     <AlertCircle className="h-4 w-4" />
-                    <AlertTitle className="font-bold">Entry Denied</AlertTitle>
-                    <AlertDescription className="text-xs">{error}</AlertDescription>
+                    <AlertTitle className="font-bold uppercase text-[10px]">Entry Denied</AlertTitle>
+                    <AlertDescription className="text-xs font-medium leading-relaxed">{error}</AlertDescription>
                   </Alert>
                 )}
                 
@@ -165,12 +185,11 @@ function LoginForm() {
             
             <CardFooter className="flex flex-col gap-4 pb-10 pt-4">
               <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-tighter">
-                <div className="h-[1px] w-8 bg-white/10" />
-                Security Layer Active
-                <div className="h-[1px] w-8 bg-white/10" />
+                <ShieldCheck className="h-3 w-3 text-primary" />
+                Security Protocol Active
               </div>
-              <p className="text-[10px] text-center text-muted-foreground/50 max-w-[200px] mx-auto leading-tight">
-                This area is monitored. Unauthorized login attempts are logged for security.
+              <p className="text-[10px] text-center text-muted-foreground/50 max-w-[200px] mx-auto leading-tight italic">
+                All login attempts are logged for platform security. 
               </p>
             </CardFooter>
           </Card>

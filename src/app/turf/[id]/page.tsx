@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useParams, useRouter } from "next/navigation"
@@ -33,6 +32,7 @@ export default function TurfDetail() {
   const db = useFirestore()
   const hasIncremented = useRef(false)
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
+  const [isThrottled, setIsThrottled] = useState(false)
 
   const turfDocRef = useMemoFirebase(() => {
     if (!db || !id) return null
@@ -43,17 +43,29 @@ export default function TurfDetail() {
 
   useEffect(() => {
     if (db && id && turf && !hasIncremented.current) {
-      hasIncremented.current = true;
-      const statsRef = doc(db, "analytics", "stats")
-      const turfRef = doc(db, "turfs", id)
+      // Robust view counting with local storage to prevent session spam
+      const viewedKey = `turf_viewed_${id}`;
+      const alreadyViewed = localStorage.getItem(viewedKey);
       
-      setDoc(turfRef, { views: increment(1) }, { merge: true }).catch(() => {});
-      setDoc(statsRef, { totalViews: increment(1) }, { merge: true }).catch(() => {});
+      if (!alreadyViewed) {
+        hasIncremented.current = true;
+        const statsRef = doc(db, "analytics", "stats")
+        const turfRef = doc(db, "turfs", id)
+        
+        setDoc(turfRef, { views: increment(1) }, { merge: true }).catch(() => {});
+        setDoc(statsRef, { totalViews: increment(1) }, { merge: true }).catch(() => {});
+        
+        // Mark as viewed for this browser session to prevent double counting
+        localStorage.setItem(viewedKey, Date.now().toString());
+      }
     }
   }, [db, id, turf])
 
   const handleWhatsAppClick = () => {
-    if (db && id) {
+    if (db && id && !isThrottled) {
+      setIsThrottled(true)
+      setTimeout(() => setIsThrottled(false), 5000)
+
       const turfRef = doc(db, "turfs", id)
       const statsRef = doc(db, "analytics", "stats")
       setDoc(turfRef, { whatsappClicks: increment(1) }, { merge: true }).catch(() => {});
@@ -119,34 +131,6 @@ export default function TurfDetail() {
 
   return (
     <div className="flex flex-col min-h-screen bg-black selection:bg-primary selection:text-black">
-      {/* Structured Data for SEO */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "SportsActivityLocation",
-            "name": name,
-            "description": description,
-            "image": allImages[0],
-            "priceRange": `₹${minPrice}`,
-            "address": {
-              "@type": "PostalAddress",
-              "addressLocality": area,
-              "addressRegion": "Karnataka",
-              "addressCountry": "IN",
-              "streetAddress": location
-            },
-            "geo": {
-              "@type": "GeoCoordinates",
-              "addressCountry": "IN",
-              "addressRegion": "Karnataka"
-            },
-            "openingHours": openingHours
-          })
-        }}
-      />
-
       <Navbar />
       
       <main className="flex-1 pb-32 pt-24">
@@ -161,7 +145,7 @@ export default function TurfDetail() {
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
             <div className="lg:col-span-8 space-y-16">
-              {/* Cinematic Gallery Section */}
+              {/* cinematic visual gallery */}
               <section className="space-y-6">
                 <motion.div 
                   initial={{ opacity: 0, scale: 0.98 }}
@@ -170,12 +154,11 @@ export default function TurfDetail() {
                 >
                   <Image 
                     src={selectedImage || allImages[0]} 
-                    alt={`Exterior view of ${name} in ${area}, Mysuru`} 
+                    alt={name} 
                     fill 
                     className="object-cover rounded-[2rem] grayscale-[0.2] hover:grayscale-0 transition-all duration-1000" 
                     priority 
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60 pointer-events-none" />
                 </motion.div>
 
                 {allImages.length > 1 && (
@@ -196,7 +179,7 @@ export default function TurfDetail() {
                 )}
               </section>
 
-              {/* Information Section */}
+              {/* information grid */}
               <section className="glass-card rounded-[3.5rem] p-10 md:p-20 relative overflow-hidden border-white/5 shadow-2xl">
                 <div className="flex flex-wrap items-center gap-6 mb-12">
                   <div className="px-6 py-2 bg-primary/10 border border-primary/20 rounded-full flex items-center gap-2">
@@ -297,8 +280,9 @@ export default function TurfDetail() {
                       asChild 
                       className="w-full h-20 text-xl font-black bg-primary hover:bg-primary/90 text-black rounded-2xl shadow-2xl shadow-primary/20 hover:scale-[1.02] transition-all border-none" 
                       onClick={handleWhatsAppClick}
+                      disabled={isThrottled}
                     >
-                      <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
+                      <a href={isThrottled ? "#" : whatsappUrl} target="_blank" rel="noopener noreferrer">
                         <MessageCircle className="mr-3 h-6 w-6" />
                         INSTANT BOOK
                       </a>
@@ -316,7 +300,6 @@ export default function TurfDetail() {
                     <div 
                       className="glass-card p-10 rounded-3xl bg-white/5 relative group cursor-pointer overflow-hidden hover:border-primary/20 transition-all" 
                       onClick={() => window.open(googleMapsUrl, '_blank')}
-                      aria-label="Open in Google Maps"
                     >
                       <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform duration-1000">
                         <Navigation className="h-20 w-20 text-primary" />

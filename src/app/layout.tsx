@@ -4,6 +4,8 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { FirebaseClientProvider } from "@/firebase"
 import GoogleAnalytics from '@/components/google-analytics';
+import { Analytics } from "@vercel/analytics/react"
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 export const viewport: Viewport = {
   themeColor: '#39FF14',
@@ -91,6 +93,8 @@ export default function RootLayout({
           </main>
           <Toaster />
         </FirebaseClientProvider>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

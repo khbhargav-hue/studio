@@ -27,14 +27,14 @@ export const metadata: Metadata = {
     address: true,
     telephone: true,
   },
-  metadataBase: new URL('https://turfista.vercel.app'),
+  metadataBase: new URL('https://turfista.in'),
   alternates: {
     canonical: '/',
   },
   openGraph: {
     title: 'Turfista | Premium Sports Turf Discovery in Mysuru',
     description: 'The elite platform to discover and book sports arenas in Mysuru. Play more, book easy.',
-    url: 'https://turfista.vercel.app',
+    url: 'https://turfista.in',
     siteName: 'Turfista',
     images: [
       {

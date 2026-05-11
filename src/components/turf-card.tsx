@@ -1,3 +1,4 @@
+
 "use client"
 
 import Image from "next/image"
@@ -11,6 +12,7 @@ import { useFirestore } from "@/firebase"
 import { doc, setDoc, increment, collection, addDoc, serverTimestamp } from "firebase/firestore"
 import { useMemo, useState } from "react"
 import { useToast } from "@/hooks/use-toast"
+import * as gtag from "@/lib/gtag"
 
 interface TurfCardProps {
   turf: Turf
@@ -24,6 +26,14 @@ export function TurfCard({ turf }: TurfCardProps) {
   const handleWhatsAppClick = async (e: React.MouseEvent) => {
     if (!db || !turf.id) return
     
+    // Track Google Analytics Event
+    gtag.event({
+      action: 'generate_lead',
+      category: 'Booking',
+      label: turf.name,
+      value: 1
+    })
+
     // Prevent spam clicks
     if (isThrottled) return
     setIsThrottled(true)
@@ -49,7 +59,6 @@ export function TurfCard({ turf }: TurfCardProps) {
       setDoc(statsRef, { totalWhatsAppClicks: increment(1) }, { merge: true }).catch(() => {});
     } catch (err) {
       console.error("Lead capture failed:", err)
-      // We don't block the user from WhatsApp if lead tracking fails silently
     }
   }
 

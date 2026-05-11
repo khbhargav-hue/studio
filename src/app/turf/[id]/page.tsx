@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useParams, useRouter } from "next/navigation"
@@ -24,6 +25,7 @@ import { doc, increment, setDoc } from "firebase/firestore"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
+import * as gtag from "@/lib/gtag"
 
 export default function TurfDetail() {
   const params = useParams()
@@ -43,7 +45,6 @@ export default function TurfDetail() {
 
   useEffect(() => {
     if (db && id && turf && !hasIncremented.current) {
-      // Robust view counting with local storage to prevent session spam
       const viewedKey = `turf_viewed_${id}`;
       const alreadyViewed = localStorage.getItem(viewedKey);
       
@@ -55,14 +56,29 @@ export default function TurfDetail() {
         setDoc(turfRef, { views: increment(1) }, { merge: true }).catch(() => {});
         setDoc(statsRef, { totalViews: increment(1) }, { merge: true }).catch(() => {});
         
-        // Mark as viewed for this browser session to prevent double counting
         localStorage.setItem(viewedKey, Date.now().toString());
+
+        // Track GA view
+        gtag.event({
+          action: 'view_item',
+          category: 'Engagement',
+          label: turf.name,
+          value: 1
+        })
       }
     }
   }, [db, id, turf])
 
   const handleWhatsAppClick = () => {
     if (db && id && !isThrottled) {
+      // Track GA conversion
+      gtag.event({
+        action: 'generate_lead',
+        category: 'Booking',
+        label: turf?.name || id,
+        value: 1
+      })
+
       setIsThrottled(true)
       setTimeout(() => setIsThrottled(false), 5000)
 
@@ -119,7 +135,7 @@ export default function TurfDetail() {
   const name = turf?.name || "Premium Arena";
   const area = turf?.area || "Mysuru";
   const location = turf?.location || "Mysuru, Karnataka";
-  const description = turf?.description || "Experience top-tier sports at Turfista. This venue features professional-grade surfaces and excellent facilities for football and cricket enthusiasts.";
+  const description = turf?.description || "";
   const openingHours = turf?.openingHours || "Check schedule via manager";
   const amenities = Array.isArray(turf?.amenities) ? turf.amenities : [];
   const courtPricing = (turf?.courtPricing && typeof turf.courtPricing === 'object') ? turf.courtPricing as Record<string, number> : {};
@@ -145,7 +161,6 @@ export default function TurfDetail() {
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
             <div className="lg:col-span-8 space-y-16">
-              {/* cinematic visual gallery */}
               <section className="space-y-6">
                 <motion.div 
                   initial={{ opacity: 0, scale: 0.98 }}
@@ -179,7 +194,6 @@ export default function TurfDetail() {
                 )}
               </section>
 
-              {/* information grid */}
               <section className="glass-card rounded-[3.5rem] p-10 md:p-20 relative overflow-hidden border-white/5 shadow-2xl">
                 <div className="flex flex-wrap items-center gap-6 mb-12">
                   <div className="px-6 py-2 bg-primary/10 border border-primary/20 rounded-full flex items-center gap-2">

@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { FirebaseClientProvider } from "@/firebase"
+import GoogleAnalytics from '@/components/google-analytics';
 
 export const viewport: Viewport = {
   themeColor: '#39FF14',
@@ -82,6 +83,7 @@ export default function RootLayout({
         <link rel="icon" href="/favicon.ico" sizes="any" />
       </head>
       <body className="font-body bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
+        <GoogleAnalytics />
         <FirebaseClientProvider>
           <main className="min-h-screen">
             {children}

@@ -18,10 +18,11 @@ import {
   Navigation,
   Trophy,
   Clock,
-  ShieldCheck
+  ShieldCheck,
+  Share2
 } from "lucide-react"
 import { useDoc, useFirestore, useMemoFirebase } from "@/firebase"
-import { doc, increment, setDoc } from "firebase/firestore"
+import { doc, increment, setDoc, addDoc, serverTimestamp, collection } from "firebase/firestore"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
@@ -69,7 +70,7 @@ export default function TurfDetail() {
     }
   }, [db, id, turf])
 
-  const handleWhatsAppClick = () => {
+  const handleWhatsAppClick = async () => {
     if (db && id && !isThrottled) {
       // Track GA conversion
       gtag.event({
@@ -82,10 +83,22 @@ export default function TurfDetail() {
       setIsThrottled(true)
       setTimeout(() => setIsThrottled(false), 5000)
 
-      const turfRef = doc(db, "turfs", id)
-      const statsRef = doc(db, "analytics", "stats")
-      setDoc(turfRef, { whatsappClicks: increment(1) }, { merge: true }).catch(() => {});
-      setDoc(statsRef, { totalWhatsAppClicks: increment(1) }, { merge: true }).catch(() => {});
+      const leadData = {
+        turfId: id,
+        turfName: turf?.name || 'Unknown',
+        area: turf?.area || 'Unknown',
+        sportType: turf?.sportTypes?.[0] || 'Unknown',
+        timestamp: serverTimestamp(),
+        deviceInfo: typeof navigator !== 'undefined' ? navigator.userAgent.slice(0, 150) : 'Unknown',
+      };
+
+      try {
+        await addDoc(collection(db, "leads"), leadData);
+        const turfRef = doc(db, "turfs", id)
+        const statsRef = doc(db, "analytics", "stats")
+        setDoc(turfRef, { whatsappClicks: increment(1) }, { merge: true }).catch(() => {});
+        setDoc(statsRef, { totalWhatsAppClicks: increment(1) }, { merge: true }).catch(() => {});
+      } catch (err) {}
     }
   }
 
@@ -106,11 +119,35 @@ export default function TurfDetail() {
     return turf?.pricePerHour || 0;
   }, [turf?.courtPricing, turf?.pricePerHour]);
 
+  // Schema.org Structured Data
+  const structuredData = useMemo(() => {
+    if (!turf) return null;
+    return {
+      "@context": "https://schema.org",
+      "@type": "SportsActivityLocation",
+      "name": turf.name,
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": turf.location,
+        "addressLocality": "Mysuru",
+        "addressRegion": "KA",
+        "addressCountry": "IN"
+      },
+      "telephone": turf.contactNumber,
+      "image": turf.mainImage,
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": turf.rating || 4.5,
+        "reviewCount": turf.reviewCount || 10
+      }
+    };
+  }, [turf]);
+
   if (loading) {
     return (
       <div className="flex h-screen flex-col items-center justify-center bg-black gap-4">
         <Loader2 className="h-10 w-10 animate-spin text-primary opacity-40" />
-        <p className="text-[10px] font-black text-primary/40 uppercase tracking-[0.5em]">Syncing Arena Intel...</p>
+        <p className="text-[10px] font-black text-primary/40 uppercase tracking-[0.5em]">Fetching Venue Data...</p>
       </div>
     )
   }
@@ -123,8 +160,8 @@ export default function TurfDetail() {
           <div className="glass-card p-16 rounded-[3rem] text-center border-white/5 max-w-lg">
             <Zap className="h-16 w-16 text-primary opacity-20 mx-auto mb-8" />
             <h1 className="text-4xl mb-4 font-black italic tracking-tighter uppercase">ARENA <span className="text-primary">NOT FOUND</span></h1>
-            <p className="text-white/40 mb-10 font-medium leading-relaxed">The requested pitch is either unavailable or has been removed from our active rotation.</p>
-            <Button onClick={() => router.push("/")} className="bg-primary text-black font-black uppercase tracking-widest h-14 px-10 rounded-2xl shadow-xl shadow-primary/20 hover:scale-105 transition-all">Back to Discovery</Button>
+            <p className="text-white/40 mb-10 font-medium">The pitch you are looking for is currently offline.</p>
+            <Button onClick={() => router.push("/")} className="bg-primary text-black font-black uppercase tracking-widest h-14 px-10 rounded-2xl">Back to Discovery</Button>
           </div>
         </div>
         <Footer />
@@ -132,32 +169,36 @@ export default function TurfDetail() {
     )
   }
 
-  const name = turf?.name || "Premium Arena";
-  const area = turf?.area || "Mysuru";
-  const location = turf?.location || "Mysuru, Karnataka";
-  const description = turf?.description || "";
-  const openingHours = turf?.openingHours || "Check schedule via manager";
-  const amenities = Array.isArray(turf?.amenities) ? turf.amenities : [];
-  const courtPricing = (turf?.courtPricing && typeof turf.courtPricing === 'object') ? turf.courtPricing as Record<string, number> : {};
-  const contactNumber = turf?.contactNumber || "";
-  const whatsappNumber = turf?.whatsappNumber || "";
-  
-  const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`Hi, I'm interested in booking ${name} in ${area}. Found you on Turfista!`)}`
-  const googleMapsUrl = turf?.mapUrl || `https://maps.google.com/?q=${encodeURIComponent(location + ' ' + name + ' Mysuru')}`
+  const { name, area, location, description, openingHours, amenities, courtPricing, contactNumber, whatsappNumber } = turf;
+  const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`Hi, I'm interested in booking ${name} in ${area}. Found you on Turfista!`)}`;
+  const googleMapsUrl = turf.mapUrl || `https://maps.google.com/?q=${encodeURIComponent(location + ' ' + name + ' Mysuru')}`;
 
   return (
     <div className="flex flex-col min-h-screen bg-black selection:bg-primary selection:text-black">
       <Navbar />
       
+      {/* Schema.org */}
+      {structuredData && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        />
+      )}
+      
       <main className="flex-1 pb-32 pt-24">
         <div className="max-w-7xl mx-auto px-4">
-          <Button 
-            variant="ghost" 
-            onClick={() => router.back()} 
-            className="mb-12 hover:bg-white/5 rounded-xl font-black text-[10px] uppercase tracking-[0.3em] text-white/40 group h-12"
-          >
-            <ArrowLeft className="mr-3 h-4 w-4 group-hover:-translate-x-1 transition-transform" /> BACK TO DISCOVERY
-          </Button>
+          <div className="flex items-center justify-between mb-12">
+            <Button 
+              variant="ghost" 
+              onClick={() => router.back()} 
+              className="hover:bg-white/5 rounded-xl font-black text-[10px] uppercase tracking-[0.3em] text-white/40 group h-12"
+            >
+              <ArrowLeft className="mr-3 h-4 w-4 group-hover:-translate-x-1 transition-transform" /> BACK
+            </Button>
+            <Button variant="outline" className="h-12 border-white/5 bg-white/5 rounded-xl px-6 text-[10px] font-black uppercase tracking-widest hover:bg-primary hover:text-black transition-all">
+              <Share2 className="h-4 w-4 mr-2" /> Share Pitch
+            </Button>
+          </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
             <div className="lg:col-span-8 space-y-16">
@@ -174,6 +215,14 @@ export default function TurfDetail() {
                     className="object-cover rounded-[2rem] grayscale-[0.2] hover:grayscale-0 transition-all duration-1000" 
                     priority 
                   />
+                  <div className="absolute bottom-10 left-10 flex items-center gap-3">
+                    <Badge className="bg-primary text-black font-black px-4 py-1.5 text-xs rounded-xl shadow-2xl border-none">
+                      {turf.rating || 4.5} <Star className="ml-1 h-3 w-3 fill-current" />
+                    </Badge>
+                    <Badge className="bg-black/60 backdrop-blur-md text-white border-white/10 text-[9px] font-black uppercase tracking-widest px-4 py-1.5 rounded-xl">
+                      {turf.reviewCount || 0} REVIEWS
+                    </Badge>
+                  </div>
                 </motion.div>
 
                 {allImages.length > 1 && (
@@ -187,78 +236,59 @@ export default function TurfDetail() {
                           (selectedImage || allImages[0]) === img ? "border-primary shadow-[0_0_15px_rgba(57,255,20,0.3)]" : "border-white/5 opacity-40 hover:opacity-100"
                         )}
                       >
-                        <Image src={img} alt={`${name} gallery photo ${idx + 1}`} fill className="object-cover" />
+                        <Image src={img} alt={`${name} ${idx}`} fill className="object-cover" />
                       </button>
                     ))}
                   </div>
                 )}
               </section>
 
-              <section className="glass-card rounded-[3.5rem] p-10 md:p-20 relative overflow-hidden border-white/5 shadow-2xl">
+              <section className="glass-card rounded-[3.5rem] p-10 md:p-16 border-white/5 shadow-2xl bg-[#080808]">
                 <div className="flex flex-wrap items-center gap-6 mb-12">
                   <div className="px-6 py-2 bg-primary/10 border border-primary/20 rounded-full flex items-center gap-2">
                     <ShieldCheck className="h-3 w-3 text-primary" />
-                    <span className="text-[9px] font-black text-primary uppercase tracking-[0.4em]">Verified Partner</span>
+                    <span className="text-[9px] font-black text-primary uppercase tracking-[0.4em]">Verified Arena</span>
                   </div>
-                  <div className="flex items-center gap-2 px-6 py-2 bg-white/5 border border-white/10 rounded-full backdrop-blur-md">
-                    <Star className="h-3 w-3 text-primary fill-current" />
-                    <span className="text-[10px] font-black text-white/60 uppercase tracking-widest">{turf?.rating || 4.5} Quality Rating</span>
+                  <div className="px-6 py-2 bg-white/5 border border-white/10 rounded-full flex items-center gap-2">
+                    <div className="h-1.5 w-1.5 bg-green-500 rounded-full animate-pulse" />
+                    <span className="text-[9px] font-black text-white/40 uppercase tracking-[0.4em]">{openingHours.toLowerCase().includes('open') ? 'Operational' : 'Restricted'}</span>
                   </div>
                 </div>
                 
-                <h1 className="text-5xl md:text-7xl lg:text-8xl mb-12 tracking-tighter italic leading-[0.9] uppercase font-black">
-                  {(name || "").split(' ').map((word, i) => (
-                    <span key={i} className={cn("block", i === 0 ? "text-white" : "text-primary drop-shadow-[0_0_20px_rgba(57,255,20,0.4)]")}>
-                      {word}
-                    </span>
-                  ))}
+                <h1 className="text-5xl md:text-7xl mb-12 tracking-tighter italic leading-tight uppercase font-black text-white">
+                  {name}
                 </h1>
                 
                 <div className="flex items-center gap-4 text-white/40 mb-16">
-                  <div className="h-10 w-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-                    <MapPin className="h-5 w-5 text-primary" />
-                  </div>
+                  <MapPin className="h-6 w-6 text-primary" />
                   <span className="font-black uppercase tracking-[0.2em] text-lg italic">{area}, MYSURU</span>
                 </div>
 
-                <div className="space-y-24">
-                  <article className="max-w-3xl">
-                    <h3 className="text-[10px] text-primary/60 font-black uppercase tracking-[0.5em] mb-8 flex items-center gap-2">
-                      <Zap className="h-3 w-3" />
-                      Arena Description
-                    </h3>
-                    <p className="text-white/70 leading-relaxed text-xl md:text-2xl font-medium italic whitespace-pre-wrap border-l-4 border-primary/20 pl-8">
+                <div className="space-y-16">
+                  <article>
+                    <h3 className="text-[10px] text-primary/60 font-black uppercase tracking-[0.5em] mb-8">About this Pitch</h3>
+                    <p className="text-white/60 leading-relaxed text-lg md:text-xl font-medium italic border-l-2 border-primary/20 pl-6">
                       {description}
                     </p>
                   </article>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
-                    <div className="space-y-10">
-                      <h3 className="text-[10px] font-black text-primary/60 uppercase tracking-[0.4em] flex items-center gap-2">
-                        <Trophy className="h-3 w-3" />
-                        Key Amenities
-                      </h3>
+                    <div className="space-y-8">
+                      <h3 className="text-[10px] font-black text-primary/60 uppercase tracking-[0.4em]">Amenities</h3>
                       <div className="grid grid-cols-1 gap-4">
-                        {amenities.length > 0 ? (
-                          amenities.map((item) => (
-                            <div key={item} className="flex items-center gap-4 text-white/60 font-bold uppercase tracking-widest text-xs">
-                              <div className="h-2 w-2 bg-primary rounded-full shadow-[0_0_10px_rgba(57,255,20,0.8)]" />
-                              {item}
-                            </div>
-                          ))
-                        ) : (
-                          <span className="text-xs text-white/20 uppercase tracking-widest italic">Standard facilities available</span>
-                        )}
+                        {amenities.map((item: string) => (
+                          <div key={item} className="flex items-center gap-4 text-white/60 font-bold uppercase tracking-widest text-xs">
+                            <div className="h-1 w-1 bg-primary rounded-full shadow-[0_0_5px_rgba(57,255,20,1)]" />
+                            {item}
+                          </div>
+                        ))}
                       </div>
                     </div>
-                    <div className="space-y-10">
-                      <h3 className="text-[10px] font-black text-primary/60 uppercase tracking-[0.4em] flex items-center gap-2">
-                        <Clock className="h-3 w-3" />
-                        Timings
-                      </h3>
-                      <div className="glass-card p-10 rounded-3xl border-white/5 bg-white/5">
-                        <p className="text-[9px] font-black text-white/20 mb-3 uppercase tracking-[0.5em]">Active Status</p>
-                        <p className="text-3xl font-black italic uppercase text-white leading-tight">{openingHours}</p>
+                    <div className="space-y-8">
+                      <h3 className="text-[10px] font-black text-primary/60 uppercase tracking-[0.4em]">Availability</h3>
+                      <div className="glass-card p-8 rounded-3xl border-white/5 bg-white/5">
+                        <Clock className="h-5 w-5 text-primary mb-4" />
+                        <p className="text-2xl font-black italic uppercase text-white">{openingHours}</p>
                       </div>
                     </div>
                   </div>
@@ -267,68 +297,57 @@ export default function TurfDetail() {
             </div>
 
             <div className="lg:col-span-4">
-              <aside className="sticky top-32 space-y-10">
-                <div className="glass-card rounded-[3rem] p-10 border-primary/10 shadow-[0_0_80px_rgba(57,255,20,0.05)] bg-black/40 backdrop-blur-2xl">
-                  <div className="text-center mb-12">
-                    <p className="text-white/40 text-[9px] font-black uppercase tracking-[0.6em] mb-6">Starting Intensity</p>
-                    <div className="flex items-center justify-center gap-3">
-                      <span className="text-7xl font-black text-primary italic leading-none drop-shadow-[0_0_30px_rgba(57,255,20,0.4)]">₹{minPrice}</span>
-                      <span className="text-white/20 font-black mt-8 text-[10px] uppercase tracking-[0.3em]">/ HR</span>
+              <aside className="sticky top-32 space-y-8">
+                <div className="glass-card rounded-[3rem] p-10 border-primary/10 bg-[#0a0a0a]">
+                  <div className="text-center mb-10">
+                    <p className="text-white/40 text-[9px] font-black uppercase tracking-[0.6em] mb-4">Starts at</p>
+                    <div className="flex items-center justify-center gap-2">
+                      <span className="text-6xl font-black text-primary italic">₹{minPrice}</span>
+                      <span className="text-white/20 font-black mt-6 text-[10px] uppercase tracking-widest">/ HR</span>
                     </div>
                   </div>
 
-                  {Object.keys(courtPricing).length > 0 && (
-                    <div className="space-y-4 mb-6">
-                      <p className="text-[9px] font-black uppercase tracking-[0.4em] text-primary/40 mb-8">Format Pricing</p>
-                      {Object.entries(courtPricing).map(([type, price]) => (
-                        <div key={type} className="flex items-center justify-between p-5 bg-white/5 rounded-2xl border border-white/5 hover:border-primary/20 transition-all group">
-                          <span className="text-[10px] font-black uppercase tracking-widest text-white/40 group-hover:text-white/80 transition-colors">{type}</span>
-                          <span className="font-black text-primary italic text-lg">₹{price}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <p className="text-[10px] text-white/30 font-medium italic mb-10 text-center">
-                    * Prices may vary. Please confirm with the turf owner.
-                  </p>
+                  <div className="space-y-3 mb-10">
+                    {courtPricing && Object.entries(courtPricing).map(([type, price]) => (
+                      <div key={type} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-white/40">{type}</span>
+                        <span className="font-black text-primary italic text-lg">₹{price}</span>
+                      </div>
+                    ))}
+                    <p className="text-[9px] text-white/20 font-medium italic mt-4 text-center">
+                      Prices may vary. Please confirm with the turf owner.
+                    </p>
+                  </div>
 
                   <div className="space-y-4">
                     <Button 
                       asChild 
-                      className="w-full h-20 text-xl font-black bg-primary hover:bg-primary/90 text-black rounded-2xl shadow-2xl shadow-primary/20 hover:scale-[1.02] transition-all border-none" 
+                      className="w-full h-16 text-lg font-black bg-primary hover:bg-primary/90 text-black rounded-2xl shadow-xl shadow-primary/20 transition-all" 
                       onClick={handleWhatsAppClick}
                       disabled={isThrottled}
                     >
                       <a href={isThrottled ? "#" : whatsappUrl} target="_blank" rel="noopener noreferrer">
-                        <MessageCircle className="mr-3 h-6 w-6" />
-                        INSTANT BOOK
+                        <MessageCircle className="mr-2 h-5 w-5" />
+                        Book Now
                       </a>
                     </Button>
                     
-                    <Button variant="outline" asChild className="w-full h-14 border-white/10 hover:bg-white/5 rounded-2xl font-black text-[10px] uppercase tracking-[0.4em]">
+                    <Button variant="outline" asChild className="w-full h-14 border-white/10 hover:bg-white/5 rounded-2xl font-black text-[10px] uppercase tracking-widest">
                       <a href={`tel:${contactNumber}`}>
-                        <Phone className="mr-3 h-4 w-4" /> CONTACT ARENA
+                        <Phone className="mr-2 h-4 w-4" /> Contact Manager
                       </a>
                     </Button>
                   </div>
 
-                  <div className="pt-12 mt-12 border-t border-white/5">
-                    <h4 className="text-[9px] font-black uppercase tracking-[0.5em] text-white/40 mb-8">Navigation</h4>
+                  <div className="pt-10 mt-10 border-t border-white/5">
                     <div 
-                      className="glass-card p-10 rounded-3xl bg-white/5 relative group cursor-pointer overflow-hidden hover:border-primary/20 transition-all" 
+                      className="glass-card p-8 rounded-3xl bg-white/5 cursor-pointer hover:border-primary/20 transition-all" 
                       onClick={() => window.open(googleMapsUrl, '_blank')}
                     >
-                      <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform duration-1000">
-                        <Navigation className="h-20 w-20 text-primary" />
-                      </div>
-                      <div className="relative z-10">
-                        <p className="text-[10px] font-black text-primary uppercase tracking-[0.3em] mb-3">{area}</p>
-                        <p className="text-sm font-medium text-white/40 leading-relaxed mb-8 italic line-clamp-2">{location}</p>
-                        <div className="flex items-center gap-3 text-primary font-black text-[9px] uppercase tracking-[0.4em] group-hover:translate-x-2 transition-transform">
-                          <Navigation className="h-4 w-4" />
-                          LAUNCH MAPS
-                        </div>
+                      <Navigation className="h-5 w-5 text-primary mb-4" />
+                      <p className="text-sm font-medium text-white/40 mb-4 italic line-clamp-2">{location}</p>
+                      <div className="flex items-center gap-2 text-primary font-black text-[9px] uppercase tracking-[0.4em]">
+                        NAVIGATE TO ARENA <ArrowRight className="h-3 w-3" />
                       </div>
                     </div>
                   </div>

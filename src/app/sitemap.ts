@@ -1,5 +1,6 @@
 
 import { MetadataRoute } from 'next';
+import { MOCK_TURFS } from '@/lib/data';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://turfista.vercel.app';
@@ -21,10 +22,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: route === '' ? 1 : 0.8,
   }));
 
-  // Note: For dynamic turfs in production, you would fetch all IDs from Firestore here.
-  // Example: 
-  // const turfs = await getTurfsFromFirestore();
-  // const turfRoutes = turfs.map(t => ({ url: `${baseUrl}/turf/${t.id}`, ... }));
+  const turfRoutes = MOCK_TURFS.map(t => ({
+    url: `${baseUrl}/turf/${t.id}`,
+    lastModified: new Date().toISOString(),
+    changeFrequency: 'weekly' as const,
+    priority: 0.9,
+  }));
 
-  return [...routes];
+  return [...routes, ...turfRoutes];
 }

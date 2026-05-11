@@ -6,7 +6,6 @@ import Image from "next/image"
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { 
   ArrowLeft, 
   MapPin, 
@@ -16,13 +15,16 @@ import {
   Loader2,
   Zap,
   IndianRupee,
-  Navigation
+  Navigation,
+  Trophy,
+  Clock,
+  ShieldCheck
 } from "lucide-react"
 import { useDoc, useFirestore, useMemoFirebase } from "@/firebase"
 import { doc, increment, setDoc } from "firebase/firestore"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 
 export default function TurfDetail() {
   const params = useParams()
@@ -80,7 +82,7 @@ export default function TurfDetail() {
     return (
       <div className="flex h-screen flex-col items-center justify-center bg-black gap-4">
         <Loader2 className="h-10 w-10 animate-spin text-primary opacity-40" />
-        <p className="text-[10px] font-black text-primary/40 uppercase tracking-[0.5em]">Loading Arena...</p>
+        <p className="text-[10px] font-black text-primary/40 uppercase tracking-[0.5em]">Syncing Arena Intel...</p>
       </div>
     )
   }
@@ -94,7 +96,7 @@ export default function TurfDetail() {
             <Zap className="h-16 w-16 text-primary opacity-20 mx-auto mb-8" />
             <h1 className="text-4xl mb-4 font-black italic tracking-tighter uppercase">ARENA <span className="text-primary">NOT FOUND</span></h1>
             <p className="text-white/40 mb-10 font-medium leading-relaxed">The requested pitch is either unavailable or has been removed from our active rotation.</p>
-            <Button onClick={() => router.push("/")} className="bg-primary text-black font-black uppercase tracking-widest h-14 px-10 rounded-2xl shadow-xl shadow-primary/20 hover:scale-105 transition-all">Back to HQ</Button>
+            <Button onClick={() => router.push("/")} className="bg-primary text-black font-black uppercase tracking-widest h-14 px-10 rounded-2xl shadow-xl shadow-primary/20 hover:scale-105 transition-all">Back to Discovery</Button>
           </div>
         </div>
         <Footer />
@@ -102,9 +104,9 @@ export default function TurfDetail() {
     )
   }
 
-  const name = turf?.name || "Unnamed Arena";
+  const name = turf?.name || "Premium Arena";
   const area = turf?.area || "Mysuru";
-  const location = turf?.location || "Location not specified";
+  const location = turf?.location || "Mysuru, Karnataka";
   const description = turf?.description || "Experience top-tier sports at Turfista. This venue features professional-grade surfaces and excellent facilities for football and cricket enthusiasts.";
   const openingHours = turf?.openingHours || "Check schedule via manager";
   const amenities = Array.isArray(turf?.amenities) ? turf.amenities : [];
@@ -112,14 +114,42 @@ export default function TurfDetail() {
   const contactNumber = turf?.contactNumber || "";
   const whatsappNumber = turf?.whatsappNumber || "";
   
-  const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`Hi, I'm interested in booking ${name} in ${area}.`)}`
+  const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`Hi, I'm interested in booking ${name} in ${area}. Found you on Turfista!`)}`
   const googleMapsUrl = turf?.mapUrl || `https://maps.google.com/?q=${encodeURIComponent(location + ' ' + name + ' Mysuru')}`
 
   return (
     <div className="flex flex-col min-h-screen bg-black selection:bg-primary selection:text-black">
+      {/* Structured Data for SEO */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "SportsActivityLocation",
+            "name": name,
+            "description": description,
+            "image": allImages[0],
+            "priceRange": `₹${minPrice}`,
+            "address": {
+              "@type": "PostalAddress",
+              "addressLocality": area,
+              "addressRegion": "Karnataka",
+              "addressCountry": "IN",
+              "streetAddress": location
+            },
+            "geo": {
+              "@type": "GeoCoordinates",
+              "addressCountry": "IN",
+              "addressRegion": "Karnataka"
+            },
+            "openingHours": openingHours
+          })
+        }}
+      />
+
       <Navbar />
       
-      <div className="flex-1 pb-32 pt-24">
+      <main className="flex-1 pb-32 pt-24">
         <div className="max-w-7xl mx-auto px-4">
           <Button 
             variant="ghost" 
@@ -134,18 +164,18 @@ export default function TurfDetail() {
               {/* Cinematic Gallery Section */}
               <section className="space-y-6">
                 <motion.div 
-                  initial={{ opacity: 0, scale: 0.95 }}
+                  initial={{ opacity: 0, scale: 0.98 }}
                   animate={{ opacity: 1, scale: 1 }}
                   className="relative aspect-video w-full rounded-[2.5rem] overflow-hidden glass-card p-2 border-white/5 shadow-2xl group"
                 >
                   <Image 
                     src={selectedImage || allImages[0]} 
-                    alt={name} 
+                    alt={`Exterior view of ${name} in ${area}, Mysuru`} 
                     fill 
                     className="object-cover rounded-[2rem] grayscale-[0.2] hover:grayscale-0 transition-all duration-1000" 
                     priority 
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60 pointer-events-none" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60 pointer-events-none" />
                 </motion.div>
 
                 {allImages.length > 1 && (
@@ -155,11 +185,11 @@ export default function TurfDetail() {
                         key={idx} 
                         onClick={() => setSelectedImage(img)}
                         className={cn(
-                          "relative h-24 w-36 shrink-0 rounded-2xl overflow-hidden border-2 transition-all duration-300",
+                          "relative h-24 w-40 shrink-0 rounded-2xl overflow-hidden border-2 transition-all duration-300",
                           (selectedImage || allImages[0]) === img ? "border-primary shadow-[0_0_15px_rgba(57,255,20,0.3)]" : "border-white/5 opacity-40 hover:opacity-100"
                         )}
                       >
-                        <Image src={img} alt={`${name} gallery ${idx}`} fill className="object-cover" />
+                        <Image src={img} alt={`${name} gallery photo ${idx + 1}`} fill className="object-cover" />
                       </button>
                     ))}
                   </div>
@@ -169,16 +199,17 @@ export default function TurfDetail() {
               {/* Information Section */}
               <section className="glass-card rounded-[3.5rem] p-10 md:p-20 relative overflow-hidden border-white/5 shadow-2xl">
                 <div className="flex flex-wrap items-center gap-6 mb-12">
-                  <div className="px-6 py-2 bg-primary/10 border border-primary/20 rounded-full">
-                    <span className="text-[9px] font-black text-primary uppercase tracking-[0.4em]">Verified Sports Arena</span>
+                  <div className="px-6 py-2 bg-primary/10 border border-primary/20 rounded-full flex items-center gap-2">
+                    <ShieldCheck className="h-3 w-3 text-primary" />
+                    <span className="text-[9px] font-black text-primary uppercase tracking-[0.4em]">Verified Partner</span>
                   </div>
                   <div className="flex items-center gap-2 px-6 py-2 bg-white/5 border border-white/10 rounded-full backdrop-blur-md">
                     <Star className="h-3 w-3 text-primary fill-current" />
-                    <span className="text-[10px] font-black text-white/60 uppercase tracking-widest">{turf?.rating || 4.5} Quality Score</span>
+                    <span className="text-[10px] font-black text-white/60 uppercase tracking-widest">{turf?.rating || 4.5} Quality Rating</span>
                   </div>
                 </div>
                 
-                <h1 className="text-5xl md:text-8xl mb-12 tracking-tighter italic leading-[0.9] uppercase font-black">
+                <h1 className="text-5xl md:text-7xl lg:text-8xl mb-12 tracking-tighter italic leading-[0.9] uppercase font-black">
                   {(name || "").split(' ').map((word, i) => (
                     <span key={i} className={cn("block", i === 0 ? "text-white" : "text-primary drop-shadow-[0_0_20px_rgba(57,255,20,0.4)]")}>
                       {word}
@@ -194,16 +225,22 @@ export default function TurfDetail() {
                 </div>
 
                 <div className="space-y-24">
-                  <div className="max-w-3xl">
-                    <h3 className="text-[10px] text-primary/60 font-black uppercase tracking-[0.5em] mb-8">Executive Summary</h3>
+                  <article className="max-w-3xl">
+                    <h3 className="text-[10px] text-primary/60 font-black uppercase tracking-[0.5em] mb-8 flex items-center gap-2">
+                      <Zap className="h-3 w-3" />
+                      Arena Description
+                    </h3>
                     <p className="text-white/70 leading-relaxed text-xl md:text-2xl font-medium italic whitespace-pre-wrap border-l-4 border-primary/20 pl-8">
                       {description}
                     </p>
-                  </div>
+                  </article>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
                     <div className="space-y-10">
-                      <h3 className="text-[10px] font-black text-primary/60 uppercase tracking-[0.4em]">Integrated Amenities</h3>
+                      <h3 className="text-[10px] font-black text-primary/60 uppercase tracking-[0.4em] flex items-center gap-2">
+                        <Trophy className="h-3 w-3" />
+                        Key Amenities
+                      </h3>
                       <div className="grid grid-cols-1 gap-4">
                         {amenities.length > 0 ? (
                           amenities.map((item) => (
@@ -213,14 +250,17 @@ export default function TurfDetail() {
                             </div>
                           ))
                         ) : (
-                          <span className="text-xs text-white/20 uppercase tracking-widest">General facilities available</span>
+                          <span className="text-xs text-white/20 uppercase tracking-widest italic">Standard facilities available</span>
                         )}
                       </div>
                     </div>
                     <div className="space-y-10">
-                      <h3 className="text-[10px] font-black text-primary/60 uppercase tracking-[0.4em]">Operations Window</h3>
-                      <div className="glass-card p-10 rounded-3xl border-white/5 bg-white/5 hover:border-primary/20 transition-all">
-                        <p className="text-[9px] font-black text-white/20 mb-3 uppercase tracking-[0.5em]">Live Schedule</p>
+                      <h3 className="text-[10px] font-black text-primary/60 uppercase tracking-[0.4em] flex items-center gap-2">
+                        <Clock className="h-3 w-3" />
+                        Timings
+                      </h3>
+                      <div className="glass-card p-10 rounded-3xl border-white/5 bg-white/5">
+                        <p className="text-[9px] font-black text-white/20 mb-3 uppercase tracking-[0.5em]">Active Status</p>
                         <p className="text-3xl font-black italic uppercase text-white leading-tight">{openingHours}</p>
                       </div>
                     </div>
@@ -233,7 +273,7 @@ export default function TurfDetail() {
               <aside className="sticky top-32 space-y-10">
                 <div className="glass-card rounded-[3rem] p-10 border-primary/10 shadow-[0_0_80px_rgba(57,255,20,0.05)] bg-black/40 backdrop-blur-2xl">
                   <div className="text-center mb-12">
-                    <p className="text-white/40 text-[9px] font-black uppercase tracking-[0.6em] mb-6">Starting Intensity Rate</p>
+                    <p className="text-white/40 text-[9px] font-black uppercase tracking-[0.6em] mb-6">Starting Intensity</p>
                     <div className="flex items-center justify-center gap-3">
                       <span className="text-7xl font-black text-primary italic leading-none drop-shadow-[0_0_30px_rgba(57,255,20,0.4)]">₹{minPrice}</span>
                       <span className="text-white/20 font-black mt-8 text-[10px] uppercase tracking-[0.3em]">/ HR</span>
@@ -242,7 +282,7 @@ export default function TurfDetail() {
 
                   {Object.keys(courtPricing).length > 0 && (
                     <div className="space-y-4 mb-12">
-                      <p className="text-[9px] font-black uppercase tracking-[0.4em] text-primary/40 mb-8">Unit Price Breakdown</p>
+                      <p className="text-[9px] font-black uppercase tracking-[0.4em] text-primary/40 mb-8">Format Pricing</p>
                       {Object.entries(courtPricing).map(([type, price]) => (
                         <div key={type} className="flex items-center justify-between p-5 bg-white/5 rounded-2xl border border-white/5 hover:border-primary/20 transition-all group">
                           <span className="text-[10px] font-black uppercase tracking-widest text-white/40 group-hover:text-white/80 transition-colors">{type}</span>
@@ -260,20 +300,24 @@ export default function TurfDetail() {
                     >
                       <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
                         <MessageCircle className="mr-3 h-6 w-6" />
-                        SECURE SLOT
+                        INSTANT BOOK
                       </a>
                     </Button>
                     
                     <Button variant="outline" asChild className="w-full h-14 border-white/10 hover:bg-white/5 rounded-2xl font-black text-[10px] uppercase tracking-[0.4em]">
                       <a href={`tel:${contactNumber}`}>
-                        <Phone className="mr-3 h-4 w-4" /> CONTACT MANAGER
+                        <Phone className="mr-3 h-4 w-4" /> CONTACT ARENA
                       </a>
                     </Button>
                   </div>
 
                   <div className="pt-12 mt-12 border-t border-white/5">
-                    <h4 className="text-[9px] font-black uppercase tracking-[0.5em] text-white/40 mb-8">Arena Coordinates</h4>
-                    <div className="glass-card p-10 rounded-3xl bg-white/5 relative group cursor-pointer overflow-hidden hover:border-primary/20 transition-all" onClick={() => window.open(googleMapsUrl, '_blank')}>
+                    <h4 className="text-[9px] font-black uppercase tracking-[0.5em] text-white/40 mb-8">Navigation</h4>
+                    <div 
+                      className="glass-card p-10 rounded-3xl bg-white/5 relative group cursor-pointer overflow-hidden hover:border-primary/20 transition-all" 
+                      onClick={() => window.open(googleMapsUrl, '_blank')}
+                      aria-label="Open in Google Maps"
+                    >
                       <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform duration-1000">
                         <Navigation className="h-20 w-20 text-primary" />
                       </div>
@@ -282,7 +326,7 @@ export default function TurfDetail() {
                         <p className="text-sm font-medium text-white/40 leading-relaxed mb-8 italic line-clamp-2">{location}</p>
                         <div className="flex items-center gap-3 text-primary font-black text-[9px] uppercase tracking-[0.4em] group-hover:translate-x-2 transition-transform">
                           <Navigation className="h-4 w-4" />
-                          LAUNCH NAVIGATION
+                          LAUNCH MAPS
                         </div>
                       </div>
                     </div>
@@ -292,7 +336,7 @@ export default function TurfDetail() {
             </div>
           </div>
         </div>
-      </div>
+      </main>
 
       <Footer />
     </div>

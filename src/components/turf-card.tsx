@@ -109,7 +109,7 @@ export function TurfCard({ turf }: TurfCardProps) {
       <CardContent className="p-8 flex-1 flex flex-col">
         <div className="mb-6">
           <Link href={`/turf/${turf.id}`}>
-            <h3 className="text-3xl mb-2 group-hover:text-primary transition-colors italic font-black uppercase tracking-tighter leading-none">
+            <h3 className="text-3xl mb-2 group-hover:text-primary transition-colors italic font-black uppercase tracking-tighter leading-none text-white">
               {turf.name}
             </h3>
             <div className="flex items-center text-white/30 text-[10px] font-black uppercase tracking-widest gap-2">
@@ -119,19 +119,34 @@ export function TurfCard({ turf }: TurfCardProps) {
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          <div className="bg-white/5 p-4 rounded-2xl border border-white/5 group-hover:bg-white/10 transition-colors">
-            <p className="text-[9px] text-white/30 font-black uppercase tracking-[0.1em] mb-1">Half Court</p>
-            <p className="text-2xl font-black italic text-white leading-none">
-              ₹{pricingDetails.half || pricingDetails.default}
-            </p>
-          </div>
-          <div className="bg-primary/5 p-4 rounded-2xl border border-primary/20 group-hover:bg-primary/10 transition-colors">
-            <p className="text-[9px] text-primary/60 font-black uppercase tracking-[0.1em] mb-1">Full Court</p>
-            <p className="text-2xl font-black italic text-primary leading-none">
-              ₹{pricingDetails.full ? pricingDetails.full : (pricingDetails.default + 400)}
-            </p>
-          </div>
+        <div className={cn(
+          "grid gap-3 mb-4",
+          pricingDetails.half && pricingDetails.full ? "grid-cols-2" : "grid-cols-1"
+        )}>
+          {pricingDetails.half && (
+            <div className="bg-white/5 p-4 rounded-2xl border border-white/5 group-hover:bg-white/10 transition-colors">
+              <p className="text-[9px] text-white/30 font-black uppercase tracking-[0.1em] mb-1">Half Court</p>
+              <p className="text-2xl font-black italic text-white leading-none">
+                ₹{pricingDetails.half}
+              </p>
+            </div>
+          )}
+          {pricingDetails.full && (
+            <div className="bg-primary/5 p-4 rounded-2xl border border-primary/20 group-hover:bg-primary/10 transition-colors">
+              <p className="text-[9px] text-primary/60 font-black uppercase tracking-[0.1em] mb-1">Full Court</p>
+              <p className="text-2xl font-black italic text-primary leading-none">
+                ₹{pricingDetails.full}
+              </p>
+            </div>
+          )}
+          {!pricingDetails.half && !pricingDetails.full && (
+            <div className="bg-white/5 p-4 rounded-2xl border border-white/5 group-hover:bg-white/10 transition-colors">
+              <p className="text-[9px] text-white/30 font-black uppercase tracking-[0.1em] mb-1">Standard Rate</p>
+              <p className="text-2xl font-black italic text-white leading-none">
+                ₹{pricingDetails.default}
+              </p>
+            </div>
+          )}
         </div>
 
         <p className="text-[9px] text-white/20 font-medium italic mb-6">

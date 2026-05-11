@@ -1,4 +1,3 @@
-
 "use client"
 
 import Link from "next/link"
@@ -16,6 +15,8 @@ import { signOut } from "firebase/auth"
 import { useRouter } from "next/navigation"
 import { TurfistaLogo } from "./brand-logo"
 
+const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'khbhargav@gmail.com';
+
 export function Navbar() {
   const { user } = useUser()
   const auth = useAuth()
@@ -28,7 +29,7 @@ export function Navbar() {
     }
   }
 
-  const isAdmin = user?.email === "khbhargav@gmail.com"
+  const isAdmin = user?.email === ADMIN_EMAIL
 
   return (
     <nav className="absolute top-0 z-50 w-full px-4 py-6 md:px-12">

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { ReactNode, useEffect } from 'react';
@@ -11,7 +10,7 @@ import { useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { TurfistaLogo } from '@/components/brand-logo';
 
-const ADMIN_EMAIL = 'khbhargav@gmail.com';
+const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'khbhargav@gmail.com';
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const { user, loading } = useUser();

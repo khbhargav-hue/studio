@@ -13,7 +13,7 @@ import { signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-const ADMIN_EMAIL = "khbhargav@gmail.com";
+const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'khbhargav@gmail.com';
 
 export default function LoginPage() {
   const router = useRouter();

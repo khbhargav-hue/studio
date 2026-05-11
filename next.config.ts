@@ -37,6 +37,21 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: '/:path*',
+        has: [
+          {
+            type: 'host',
+            value: 'turfista.vercel.app',
+          },
+        ],
+        destination: 'https://turfista.in/:path*',
+        permanent: true,
+      },
+    ]
+  },
 };
 
 export default nextConfig;

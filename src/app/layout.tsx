@@ -13,6 +13,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://turfista.in'),
   title: {
     default: 'Turfista | Book Football & Cricket Turfs in Mysuru',
     template: '%s | Turfista'
@@ -27,7 +28,6 @@ export const metadata: Metadata = {
     address: true,
     telephone: true,
   },
-  metadataBase: new URL('https://turfista.in'),
   alternates: {
     canonical: '/',
   },
@@ -81,6 +81,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="canonical" href="https://turfista.in/" />
       </head>
       <body className="font-body bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
         <GoogleAnalytics />

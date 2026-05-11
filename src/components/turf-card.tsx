@@ -101,7 +101,7 @@ export function TurfCard({ turf }: TurfCardProps) {
       </Link>
 
       <CardContent className="p-8 flex-1 flex flex-col">
-        <div className="mb-8">
+        <div className="mb-6">
           <Link href={`/turf/${turf.id}`}>
             <h3 className="text-3xl mb-2 group-hover:text-primary transition-colors italic font-black uppercase tracking-tighter leading-none">
               {turf.name}
@@ -113,20 +113,24 @@ export function TurfCard({ turf }: TurfCardProps) {
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 mb-8">
+        <div className="grid grid-cols-2 gap-3 mb-4">
           <div className="bg-white/5 p-4 rounded-2xl border border-white/5 group-hover:bg-white/10 transition-colors">
-            <p className="text-[9px] text-white/30 font-black uppercase tracking-widest mb-1">Base Price</p>
+            <p className="text-[9px] text-white/30 font-black uppercase tracking-[0.1em] mb-1">Half Court</p>
             <p className="text-2xl font-black italic text-white leading-none">
               ₹{pricingDetails.half || pricingDetails.default}
             </p>
           </div>
           <div className="bg-primary/5 p-4 rounded-2xl border border-primary/20 group-hover:bg-primary/10 transition-colors">
-            <p className="text-[9px] text-primary/60 font-black uppercase tracking-widest mb-1">Peak Rate</p>
+            <p className="text-[9px] text-primary/60 font-black uppercase tracking-[0.1em] mb-1">Full Court</p>
             <p className="text-2xl font-black italic text-primary leading-none">
               ₹{pricingDetails.full ? pricingDetails.full : (pricingDetails.default + 400)}
             </p>
           </div>
         </div>
+
+        <p className="text-[9px] text-white/20 font-medium italic mb-6">
+          * Prices may vary. Please confirm with the turf owner.
+        </p>
 
         <div className="flex items-center gap-2 text-[9px] font-black text-white/20 uppercase tracking-[0.2em] mt-auto">
           <Clock className="h-3.5 w-3.5 text-primary" />

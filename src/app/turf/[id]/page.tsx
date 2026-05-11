@@ -264,7 +264,7 @@ export default function TurfDetail() {
                   </div>
 
                   {Object.keys(courtPricing).length > 0 && (
-                    <div className="space-y-4 mb-12">
+                    <div className="space-y-4 mb-6">
                       <p className="text-[9px] font-black uppercase tracking-[0.4em] text-primary/40 mb-8">Format Pricing</p>
                       {Object.entries(courtPricing).map(([type, price]) => (
                         <div key={type} className="flex items-center justify-between p-5 bg-white/5 rounded-2xl border border-white/5 hover:border-primary/20 transition-all group">
@@ -274,6 +274,10 @@ export default function TurfDetail() {
                       ))}
                     </div>
                   )}
+
+                  <p className="text-[10px] text-white/30 font-medium italic mb-10 text-center">
+                    * Prices may vary. Please confirm with the turf owner.
+                  </p>
 
                   <div className="space-y-4">
                     <Button 

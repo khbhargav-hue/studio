@@ -1,7 +1,7 @@
 'use client';
 
 import { useCollection, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, doc, deleteDoc, setDoc, serverTimestamp, limit } from 'firebase/firestore';
+import { collection, query, orderBy, doc, deleteDoc, setDoc, serverTimestamp, limit, updateDoc } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -65,6 +65,7 @@ import { format } from "date-fns";
 export default function AdminDashboard() {
   const db = useFirestore();
   const { toast } = useToast();
+  const [isToggling, setIsToggling] = useState<string | null>(null);
 
   // Data Queries
   const turfsQuery = useMemoFirebase(() => {
@@ -91,6 +92,23 @@ export default function AdminDashboard() {
   const { data: leads, loading: leadsLoading } = useCollection(leadsQuery);
   const { data: logs } = useCollection(logsQuery);
   const { data: stats } = useDoc(statsRef);
+
+  const handleToggleFeatured = async (id: string, currentStatus: boolean, name: string) => {
+    if (!db) return;
+    setIsToggling(id);
+    const turfRef = doc(db, 'turfs', id);
+    try {
+      await updateDoc(turfRef, { isPopular: !currentStatus });
+      toast({ 
+        title: !currentStatus ? 'Venue Promoted' : 'Promotion Revoked',
+        description: `${name} status updated successfully.`
+      });
+    } catch (e) {
+      toast({ title: 'Update Failed', variant: 'destructive' });
+    } finally {
+      setIsToggling(null);
+    }
+  };
 
   // Analytics Processing
   const processedAnalytics = useMemo(() => {
@@ -309,7 +327,7 @@ export default function AdminDashboard() {
                 <TableRow className="border-white/5 hover:bg-transparent">
                   <TableHead className="py-6 font-black uppercase tracking-widest text-[10px]">Arena</TableHead>
                   <TableHead className="font-black uppercase tracking-widest text-[10px]">Area</TableHead>
-                  <TableHead className="font-black uppercase tracking-widest text-[10px]">Base Rate</TableHead>
+                  <TableHead className="font-black uppercase tracking-widest text-[10px]">Featured</TableHead>
                   <TableHead className="font-black uppercase tracking-widest text-[10px] text-center">Reach</TableHead>
                   <TableHead className="font-black uppercase tracking-widest text-[10px] text-center">Conversions</TableHead>
                   <TableHead className="text-right font-black uppercase tracking-widest text-[10px]">Actions</TableHead>
@@ -320,7 +338,20 @@ export default function AdminDashboard() {
                   <TableRow key={turf.id} className="border-white/5 hover:bg-white/5 transition-colors">
                     <TableCell className="font-black text-xl italic tracking-tighter text-white py-6">{turf.name}</TableCell>
                     <TableCell className="text-white/40 font-bold uppercase tracking-widest text-xs">{turf.area}</TableCell>
-                    <TableCell className="font-black text-primary italic">₹{turf.pricePerHour}</TableCell>
+                    <TableCell>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => handleToggleFeatured(turf.id, turf.isPopular || false, turf.name)}
+                        disabled={isToggling === turf.id}
+                        className={cn(
+                          "rounded-full h-8 w-8 p-0 transition-all",
+                          turf.isPopular ? "text-primary bg-primary/10 shadow-[0_0_10px_rgba(57,255,20,0.3)]" : "text-white/20 hover:text-white"
+                        )}
+                      >
+                        {isToggling === turf.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Star className={cn("h-4 w-4", turf.isPopular && "fill-current")} />}
+                      </Button>
+                    </TableCell>
                     <TableCell className="text-center font-mono font-bold text-white/40">{turf.views || 0}</TableCell>
                     <TableCell className="text-center font-mono font-bold text-primary">{turf.whatsappClicks || 0}</TableCell>
                     <TableCell className="text-right">

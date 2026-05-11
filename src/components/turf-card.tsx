@@ -1,30 +1,30 @@
+'use client';
 
-"use client"
-
-import Image from "next/image"
-import Link from "next/link"
-import { Star, MapPin, MessageCircle, Clock, Zap } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter } from "@/components/ui/card"
-import { Turf } from "@/lib/types"
-import { useFirestore } from "@/firebase"
-import { doc, setDoc, increment, collection, addDoc, serverTimestamp } from "firebase/firestore"
-import { useMemo, useState } from "react"
-import { useToast } from "@/hooks/use-toast"
-import * as gtag from "@/lib/gtag"
+import Image from "next/image";
+import Link from "next/link";
+import { Star, MapPin, MessageCircle, Clock, Zap } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Turf } from "@/lib/types";
+import { useFirestore } from "@/firebase";
+import { doc, setDoc, increment, collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { useMemo, useState } from "react";
+import { useToast } from "@/hooks/use-toast";
+import * as gtag from "@/lib/gtag";
+import { cn } from "@/lib/utils";
 
 interface TurfCardProps {
   turf: Turf
 }
 
 export function TurfCard({ turf }: TurfCardProps) {
-  const db = useFirestore()
-  const { toast } = useToast()
-  const [isThrottled, setIsThrottled] = useState(false)
+  const db = useFirestore();
+  const { toast } = useToast();
+  const [isThrottled, setIsThrottled] = useState(false);
 
   const handleWhatsAppClick = async (e: React.MouseEvent) => {
-    if (!db || !turf.id) return
+    if (!db || !turf.id) return;
     
     // Track Google Analytics Event
     gtag.event({
@@ -32,12 +32,12 @@ export function TurfCard({ turf }: TurfCardProps) {
       category: 'Booking',
       label: turf.name,
       value: 1
-    })
+    });
 
     // Prevent spam clicks
-    if (isThrottled) return
-    setIsThrottled(true)
-    setTimeout(() => setIsThrottled(false), 5000) // 5 second cooldown
+    if (isThrottled) return;
+    setIsThrottled(true);
+    setTimeout(() => setIsThrottled(false), 5000); // 5 second cooldown
 
     // Track lead information securely
     const leadData = {
@@ -47,20 +47,20 @@ export function TurfCard({ turf }: TurfCardProps) {
       sportType: turf.sportTypes?.[0] || 'Unknown',
       timestamp: serverTimestamp(),
       deviceInfo: typeof navigator !== 'undefined' ? navigator.userAgent.slice(0, 150) : 'Unknown',
-    }
+    };
 
     try {
-      await addDoc(collection(db, "leads"), leadData)
+      await addDoc(collection(db, "leads"), leadData);
       
-      const turfRef = doc(db, "turfs", turf.id)
-      const statsRef = doc(db, "analytics", "stats")
+      const turfRef = doc(db, "turfs", turf.id);
+      const statsRef = doc(db, "analytics", "stats");
       
       setDoc(turfRef, { whatsappClicks: increment(1) }, { merge: true }).catch(() => {});
       setDoc(statsRef, { totalWhatsAppClicks: increment(1) }, { merge: true }).catch(() => {});
     } catch (err) {
-      console.error("Lead capture failed:", err)
+      console.error("Lead capture failed:", err);
     }
-  }
+  };
 
   const pricingDetails = useMemo(() => {
     const pricing = turf.courtPricing || {};
@@ -74,8 +74,8 @@ export function TurfCard({ turf }: TurfCardProps) {
     };
   }, [turf.courtPricing, turf.pricePerHour]);
 
-  const message = `Hi, I found ${turf.name} in ${turf.area} on Turfista and would like to inquire about booking a slot.`
-  const whatsappUrl = `https://wa.me/${turf.whatsappNumber}?text=${encodeURIComponent(message)}`
+  const message = `Hi, I found ${turf.name} in ${turf.area} on Turfista and would like to inquire about booking a slot.`;
+  const whatsappUrl = `https://wa.me/${turf.whatsappNumber}?text=${encodeURIComponent(message)}`;
 
   const rawImage = turf.mainImage || (turf.galleryImages && turf.galleryImages[0]) || "https://picsum.photos/seed/turf-placeholder/800/600";
   const displayImage = rawImage.includes('cloudinary.com') 
@@ -94,16 +94,13 @@ export function TurfCard({ turf }: TurfCardProps) {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/10 to-transparent" />
         
-        <div className="absolute left-6 top-6">
+        <div className="absolute left-6 top-6 flex items-center gap-2">
           <Badge className="bg-primary text-black font-black px-4 py-1.5 text-[10px] rounded-xl shadow-2xl border-none">
             {turf.rating || 4.5} <Star className="ml-1.5 h-3.5 w-3.5 fill-current" />
           </Badge>
-        </div>
-
-        <div className="absolute bottom-6 left-6 flex flex-wrap gap-2">
           {turf.isPopular && (
-            <Badge className="bg-primary/20 text-primary border-primary/30 text-[8px] font-black uppercase tracking-widest px-3 py-1 backdrop-blur-md">
-              <Zap className="h-3 w-3 mr-1 fill-current" /> Featured
+            <Badge className="bg-black/60 backdrop-blur-md text-primary border-primary/20 text-[8px] font-black uppercase tracking-[0.2em] px-4 py-1.5 rounded-xl shadow-2xl">
+              <Star className="h-3 w-3 mr-1.5 fill-current animate-pulse" /> FEATURED
             </Badge>
           )}
         </div>
@@ -160,5 +157,5 @@ export function TurfCard({ turf }: TurfCardProps) {
         </Button>
       </CardFooter>
     </Card>
-  )
+  );
 }

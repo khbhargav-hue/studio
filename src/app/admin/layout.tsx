@@ -1,12 +1,12 @@
+
 'use client';
 
 import { ReactNode, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useUser } from '@/firebase';
+import { useUser, useAuth } from '@/firebase';
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from '@/components/ui/sidebar';
 import { LayoutDashboard, PlusCircle, LogOut, Loader2, Palette } from 'lucide-react';
 import Link from 'next/link';
-import { useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { TurfistaLogo } from '@/components/brand-logo';
 
@@ -18,27 +18,47 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && (!user || user.email !== ADMIN_EMAIL)) {
-      router.push('/login');
+    // If loading is finished and there's no user or user is not admin, redirect to login
+    if (!loading) {
+      if (!user) {
+        router.replace('/login');
+      } else if (user.email !== ADMIN_EMAIL) {
+        // Logged in but not an admin - sign out and go to login
+        if (auth) {
+          signOut(auth).then(() => {
+            router.replace('/login?error=unauthorized');
+          });
+        }
+      }
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, auth]);
 
   const handleLogout = async () => {
     if (auth) {
-      await signOut(auth);
-      router.push('/login');
+      try {
+        await signOut(auth);
+        router.push('/login');
+      } catch (error) {
+        console.error("Logout failed", error);
+      }
     }
   };
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-background">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      <div className="flex h-screen items-center justify-center bg-black">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          <p className="text-[10px] font-black text-primary uppercase tracking-[0.4em]">Authenticating...</p>
+        </div>
       </div>
     );
   }
 
-  if (!user || user.email !== ADMIN_EMAIL) return null;
+  // Double check admin status before rendering children
+  if (!user || user.email !== ADMIN_EMAIL) {
+    return null;
+  }
 
   return (
     <SidebarProvider>

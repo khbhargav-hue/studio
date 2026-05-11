@@ -1,7 +1,8 @@
+
 'use client';
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Navbar } from "@/components/navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,8 +16,9 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'khbhargav@gmail.com';
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const auth = useAuth();
   const { user, loading } = useUser();
@@ -25,16 +27,22 @@ export default function LoginPage() {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Check if an error was passed in URL (e.g. from middleware/layout)
+  useEffect(() => {
+    const errorParam = searchParams.get('error');
+    if (errorParam === 'unauthorized') {
+      setError("Unauthorized access. Admin credentials required.");
+    }
+  }, [searchParams]);
+
+  // If already logged in as admin, redirect to admin dashboard
   useEffect(() => {
     if (!loading && user) {
       if (user.email === ADMIN_EMAIL) {
-        router.push("/admin");
-      } else {
-        if (auth) signOut(auth);
-        setError("Access denied. This portal is for administrators only.");
+        router.replace("/admin");
       }
     }
-  }, [user, loading, router, auth]);
+  }, [user, loading, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,11 +67,14 @@ export default function LoginPage() {
       });
       router.push("/admin");
     } catch (err: any) {
+      console.error("Login error:", err);
       let message = "Failed to login. Please check your credentials.";
       if (err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
         message = "Invalid email or password.";
       } else if (err.code === 'auth/invalid-email') {
         message = "Please enter a valid email address.";
+      } else if (err.code === 'auth/too-many-requests') {
+        message = "Too many failed attempts. Please try again later.";
       }
       setError(message);
       setIsLoggingIn(false);
@@ -82,7 +93,7 @@ export default function LoginPage() {
     <div className="flex flex-col min-h-screen bg-background selection:bg-primary selection:text-primary-foreground">
       <Navbar />
       
-      <div className="flex-1 flex items-center justify-center p-4">
+      <div className="flex-1 flex items-center justify-center p-4 pt-32">
         <div className="relative w-full max-w-md">
           <div className="absolute -inset-1 bg-gradient-to-r from-primary to-accent rounded-3xl blur opacity-20 animate-pulse" />
           
@@ -129,6 +140,7 @@ export default function LoginPage() {
                   <Input 
                     id="password" 
                     type="password" 
+                    placeholder="••••••••"
                     className="bg-background/40 border-white/5 h-14 rounded-2xl focus:border-primary/50 transition-all"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -165,5 +177,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="flex h-screen items-center justify-center bg-background"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>}>
+      <LoginForm />
+    </Suspense>
   );
 }

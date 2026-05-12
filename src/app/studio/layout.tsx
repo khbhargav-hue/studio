@@ -4,7 +4,7 @@ import { ReactNode, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser, useAuth } from '@/firebase';
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from '@/components/ui/sidebar';
-import { LayoutDashboard, PlusCircle, LogOut, Loader2, Palette, ShieldAlert } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, LogOut, Loader2, Palette, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import { signOut } from 'firebase/auth';
 import { TurfistaLogo } from '@/components/brand-logo';
@@ -53,7 +53,7 @@ export default function StudioLayout({ children }: { children: ReactNode }) {
   }
 
   if (!isAuthorized) {
-    return null; // Layout check will redirect
+    return null;
   }
 
   return (

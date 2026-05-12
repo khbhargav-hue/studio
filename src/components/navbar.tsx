@@ -1,8 +1,8 @@
-
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
-import { User, Menu, LogOut, ShieldCheck, MapPinned, Users, Trophy, UserCircle } from "lucide-react"
+import { User, Menu, LogOut, ShieldCheck, MapPinned, Users, Trophy, UserCircle, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { 
   DropdownMenu, 
@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu"
 import { useUser, useAuth } from "@/firebase"
-import { signOut, GoogleAuthProvider, signInWithPopup } from "firebase/auth"
+import { signOut, GoogleAuthProvider, signInWithPopup, signInWithRedirect } from "firebase/auth"
 import { useRouter } from "next/navigation"
 import { TurfistaLogo } from "./brand-logo"
 import { useToast } from "@/hooks/use-toast"
@@ -24,33 +24,45 @@ export function Navbar() {
   const auth = useAuth()
   const router = useRouter()
   const { toast } = useToast()
+  const [isSigningIn, setIsSigningIn] = useState(false)
 
   const handleLogout = async () => {
     if (auth) {
       await signOut(auth)
       router.push("/")
+      toast({ title: "Logged Out", description: "See you on the pitch soon!" })
     }
   }
 
   const handleGoogleSignIn = async () => {
     if (!auth) return;
+    setIsSigningIn(true);
     const provider = new GoogleAuthProvider();
+    
     try {
-      await signInWithPopup(auth, provider);
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      if (isMobile) {
+        await signInWithRedirect(auth, provider);
+      } else {
+        await signInWithPopup(auth, provider);
+      }
     } catch (error: any) {
+      console.error("Sign-in error:", error);
       if (error.code === 'auth/unauthorized-domain') {
         toast({
           variant: "destructive",
-          title: "Domain Not Authorized",
-          description: "This domain is not authorized for Firebase Auth. Please add it to your Authorized Domains in the Firebase Console.",
+          title: "Setup Required",
+          description: "Your domain must be added to 'Authorized Domains' in the Firebase Console.",
         });
-      } else {
+      } else if (error.code !== 'auth/popup-closed-by-user') {
         toast({
           variant: "destructive",
-          title: "Sign-in Failed",
-          description: error.message || "An unexpected error occurred during sign-in.",
+          title: "Error",
+          description: "Could not complete sign-in. Please try again.",
         });
       }
+    } finally {
+      setIsSigningIn(false);
     }
   }
 
@@ -63,7 +75,7 @@ export function Navbar() {
           <TurfistaLogo size="md" />
         </Link>
 
-        {/* Desktop Links - Secondary priority on mobile */}
+        {/* Desktop Links */}
         <div className="hidden md:flex items-center gap-10">
           <Link href="/" className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 hover:text-primary transition-all">Find Turfs</Link>
           <Link href="/teams" className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 hover:text-primary transition-all">Teams</Link>
@@ -76,9 +88,11 @@ export function Navbar() {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 h-12 w-12 rounded-2xl border border-white/5 bg-white/5">
-                {user?.photoURL ? (
-                   <img src={user.photoURL} className="h-7 w-7 rounded-lg object-cover" />
+              <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 h-12 w-12 rounded-2xl border border-white/5 bg-white/5 relative overflow-hidden">
+                {isSigningIn ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : user?.photoURL ? (
+                   <img src={user.photoURL} className="h-7 w-7 rounded-lg object-cover" alt="Profile" />
                 ) : (
                    <UserCircle className="h-6 w-6" />
                 )}
@@ -87,8 +101,9 @@ export function Navbar() {
             <DropdownMenuContent align="end" className="bg-black/95 border-white/10 w-72 rounded-[2rem] p-3 backdrop-blur-2xl shadow-2xl mt-4">
               {!user ? (
                 <div className="p-2 space-y-3">
-                  <DropdownMenuItem onClick={handleGoogleSignIn} className="rounded-2xl h-14 focus:bg-primary focus:text-black font-black uppercase tracking-widest text-[10px] cursor-pointer flex items-center justify-center gap-3 bg-white/5 border border-white/5">
-                    <UserCircle className="h-5 w-5" /> Sign in with Google
+                  <DropdownMenuItem onClick={handleGoogleSignIn} disabled={isSigningIn} className="rounded-2xl h-14 focus:bg-primary focus:text-black font-black uppercase tracking-widest text-[10px] cursor-pointer flex items-center justify-center gap-3 bg-white/5 border border-white/5">
+                    {isSigningIn ? <Loader2 className="h-5 w-5 animate-spin" /> : <UserCircle className="h-5 w-5" />}
+                    Sign in with Google
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-white/10" />
                   <DropdownMenuItem asChild className="rounded-2xl h-12 focus:bg-white/10 font-bold text-[10px] uppercase tracking-widest cursor-pointer flex justify-center">
@@ -100,7 +115,7 @@ export function Navbar() {
                   <div className="px-4 py-6 text-center">
                     <p className="text-[9px] font-black uppercase tracking-[0.3em] text-white/20 mb-3">Athletic Identity</p>
                     <div className="flex flex-col items-center gap-3">
-                      <p className="text-lg font-black italic uppercase text-primary leading-none">{user.displayName?.split(' ')[0] || user.email}</p>
+                      <p className="text-lg font-black italic uppercase text-primary leading-none truncate max-w-full">{user.displayName?.split(' ')[0] || user.email}</p>
                       {isAdmin && (
                          <div className="flex items-center gap-2 px-3 py-1 bg-primary/10 border border-primary/20 rounded-full">
                             <ShieldCheck className="h-3 w-3 text-primary" />
@@ -150,12 +165,12 @@ export function Navbar() {
                    <Link href="/contact">Support & Contact</Link>
                  </DropdownMenuItem>
                  <DropdownMenuSeparator className="bg-white/5" />
-                 <DropdownMenuItem asChild className="h-12 rounded-2xl font-bold uppercase tracking-[0.2em] text-[9px] text-white/30">
-                   <Link href="/privacy">Privacy Policy</Link>
-                 </DropdownMenuItem>
-                 <DropdownMenuItem asChild className="h-12 rounded-2xl font-bold uppercase tracking-[0.2em] text-[9px] text-white/30">
-                   <Link href="/terms">Terms of Service</Link>
-                 </DropdownMenuItem>
+                 {!user && (
+                   <DropdownMenuItem onClick={handleGoogleSignIn} className="h-14 rounded-2xl font-black uppercase text-xs text-primary bg-primary/10">
+                     {isSigningIn ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <UserCircle className="h-4 w-4 mr-2" />}
+                     Sign in with Google
+                   </DropdownMenuItem>
+                 )}
               </div>
             </DropdownMenuContent>
           </DropdownMenu>

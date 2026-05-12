@@ -1,11 +1,11 @@
-
 'use client';
 
+import { useEffect, useState } from "react";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { Button } from "@/components/ui/button";
 import { useUser, useAuth, useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
+import { GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut } from "firebase/auth";
 import { query, collection, where } from "firebase/firestore";
 import { 
   UserCircle, 
@@ -16,20 +16,34 @@ import {
   Zap, 
   ChevronRight,
   Loader2,
-  Settings,
   Mail,
-  Calendar,
-  MessageSquare
+  Calendar
 } from "lucide-react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 
 export default function ProfilePage() {
-  const { user, loading } = useUser();
+  const { user, loading: userLoading } = useUser();
   const auth = useAuth();
   const db = useFirestore();
   const { toast } = useToast();
+  const [isSigningIn, setIsSigningIn] = useState(false);
+
+  // Handle Redirect Result for Mobile
+  useEffect(() => {
+    if (!auth) return;
+    getRedirectResult(auth).catch((error: any) => {
+      console.error("Redirect auth error:", error);
+      if (error.code === 'auth/unauthorized-domain') {
+        toast({
+          variant: "destructive",
+          title: "Domain Not Authorized",
+          description: "Please add this domain to 'Authorized Domains' in your Firebase Auth settings.",
+        });
+      }
+    });
+  }, [auth, toast]);
 
   const myTeamsQuery = useMemoFirebase(() => {
     if (!db || !user) return null;
@@ -46,33 +60,46 @@ export default function ProfilePage() {
 
   const handleGoogleSignIn = async () => {
     if (!auth) return;
+    setIsSigningIn(true);
     const provider = new GoogleAuthProvider();
+    
     try {
-      await signInWithPopup(auth, provider);
+      // Use popup for desktop, fallback to redirect if it fails or if on mobile
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      
+      if (isMobile) {
+        await signInWithRedirect(auth, provider);
+      } else {
+        await signInWithPopup(auth, provider);
+      }
     } catch (error: any) {
+      console.error("Sign-in error:", error);
       if (error.code === 'auth/unauthorized-domain') {
         toast({
           variant: "destructive",
           title: "Domain Not Authorized",
-          description: "This domain is not authorized for Firebase Auth. Please add it to your Authorized Domains in the Firebase Console.",
+          description: "Add this domain (e.g. localhost, turfista.in) to your Firebase Console under Auth > Settings.",
         });
-      } else {
+      } else if (error.code !== 'auth/popup-closed-by-user') {
         toast({
           variant: "destructive",
           title: "Sign-in Failed",
-          description: error.message || "An unexpected error occurred during sign-in.",
+          description: error.message || "An unexpected error occurred.",
         });
       }
+    } finally {
+      setIsSigningIn(false);
     }
   };
 
   const handleLogout = async () => {
     if (auth) {
       await signOut(auth);
+      toast({ title: "Session Terminated", description: "You have been securely logged out." });
     }
   };
 
-  if (loading) {
+  if (userLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-black">
         <Loader2 className="h-10 w-10 animate-spin text-primary opacity-40" />
@@ -99,9 +126,10 @@ export default function ProfilePage() {
               <p className="text-white/40 mb-10 font-medium">Join the Mysuru sports network to build your squad, track stats, and issue challenges.</p>
               <Button 
                 onClick={handleGoogleSignIn}
+                disabled={isSigningIn}
                 className="w-full h-18 bg-primary text-black font-black uppercase tracking-widest text-xs rounded-2xl shadow-[0_20px_40px_-10px_rgba(57,255,20,0.3)] hover:scale-[1.02] transition-transform"
               >
-                SIGN IN WITH GOOGLE
+                {isSigningIn ? <Loader2 className="h-5 w-5 animate-spin" /> : "SIGN IN WITH GOOGLE"}
               </Button>
             </motion.div>
           ) : (
@@ -190,14 +218,6 @@ export default function ProfilePage() {
                 >
                   <LogOut className="mr-3 h-5 w-5" /> End Secure Athlete Session
                 </Button>
-                <div className="flex flex-col items-center gap-2">
-                   <p className="text-[8px] font-black uppercase tracking-[0.4em] text-white/10 italic">Platform Security Version 2.0.4</p>
-                   <div className="flex gap-4 opacity-20">
-                      <div className="h-1 w-1 bg-white rounded-full" />
-                      <div className="h-1 w-1 bg-white rounded-full" />
-                      <div className="h-1 w-1 bg-white rounded-full" />
-                   </div>
-                </div>
               </div>
             </div>
           )}

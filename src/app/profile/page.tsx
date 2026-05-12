@@ -39,7 +39,7 @@ export default function ProfilePage() {
         toast({
           variant: "destructive",
           title: "Domain Not Authorized",
-          description: "Please add this domain to 'Authorized Domains' in your Firebase Auth settings.",
+          description: "Add this domain to 'Authorized Domains' in Firebase Console (Auth > Settings).",
         });
       }
     });
@@ -64,9 +64,7 @@ export default function ProfilePage() {
     const provider = new GoogleAuthProvider();
     
     try {
-      // Use popup for desktop, fallback to redirect if it fails or if on mobile
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      
       if (isMobile) {
         await signInWithRedirect(auth, provider);
       } else {
@@ -78,7 +76,7 @@ export default function ProfilePage() {
         toast({
           variant: "destructive",
           title: "Domain Not Authorized",
-          description: "Add this domain (e.g. localhost, turfista.in) to your Firebase Console under Auth > Settings.",
+          description: "Add this domain to 'Authorized Domains' in Firebase Console (Auth > Settings).",
         });
       } else if (error.code !== 'auth/popup-closed-by-user') {
         toast({
@@ -134,7 +132,6 @@ export default function ProfilePage() {
             </motion.div>
           ) : (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-              {/* Profile Header */}
               <section className="glass-card rounded-[3rem] p-10 border-white/5 relative overflow-hidden bg-white/[0.02]">
                 <div className="absolute top-0 right-0 p-8 opacity-5">
                   <ShieldCheck className="h-32 w-32 text-primary" />
@@ -162,7 +159,6 @@ export default function ProfilePage() {
                 </div>
               </section>
 
-              {/* Stats Grid */}
               <div className="grid grid-cols-2 gap-4">
                  <div className="glass-card p-8 rounded-[2.5rem] border-white/5 bg-white/[0.01]">
                     <Users className="h-5 w-5 text-primary mb-3" />
@@ -176,7 +172,6 @@ export default function ProfilePage() {
                  </div>
               </div>
 
-              {/* Action Menu */}
               <div className="grid gap-3">
                 {[
                   { label: "My Squads", icon: Users, href: "/teams", sub: "Manage rosters & tactics", count: myTeams?.length },
@@ -209,7 +204,6 @@ export default function ProfilePage() {
                 ))}
               </div>
 
-              {/* Secondary Actions */}
               <div className="pt-8 border-t border-white/5 space-y-4">
                 <Button 
                   onClick={handleLogout}

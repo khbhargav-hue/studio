@@ -52,7 +52,7 @@ export function Navbar() {
         toast({
           variant: "destructive",
           title: "Setup Required",
-          description: "Your domain must be added to 'Authorized Domains' in the Firebase Console.",
+          description: "Add this domain to 'Authorized Domains' in Firebase Console (Auth > Settings).",
         });
       } else if (error.code !== 'auth/popup-closed-by-user') {
         toast({

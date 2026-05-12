@@ -87,7 +87,14 @@ function LoginForm() {
       console.error("Login error:", err);
       let message = "Failed to login. Please check your credentials.";
       
-      if (err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+      if (err.code === 'auth/unauthorized-domain') {
+        toast({
+          variant: "destructive",
+          title: "Domain Not Authorized",
+          description: "This domain is not authorized in Firebase Console (Auth > Settings > Authorized Domains).",
+        });
+        message = "Security error: Domain not authorized.";
+      } else if (err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
         message = "Invalid email or password.";
       } else if (err.code === 'auth/invalid-email') {
         message = "Please enter a valid email address.";

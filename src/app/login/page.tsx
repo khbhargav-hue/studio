@@ -93,7 +93,7 @@ function LoginForm() {
           title: "Domain Not Authorized",
           description: "This domain is not authorized in Firebase Console (Auth > Settings > Authorized Domains).",
         });
-        message = "Security error: Domain not authorized.";
+        message = "Security error: This domain must be whitelisted in your Firebase Console (Authentication > Settings > Authorized Domains) before you can sign in.";
       } else if (err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
         message = "Invalid email or password.";
       } else if (err.code === 'auth/invalid-email') {
@@ -143,9 +143,11 @@ function LoginForm() {
               <form onSubmit={handleLogin} className="space-y-5">
                 {error && (
                   <Alert variant="destructive" className="bg-destructive/10 border-destructive/20 text-destructive rounded-2xl animate-in fade-in zoom-in duration-300">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle className="font-bold uppercase text-[10px]">Entry Denied</AlertTitle>
-                    <AlertDescription className="text-xs font-medium leading-relaxed">{error}</AlertDescription>
+                    <AlertCircle className="h-4 w-4 shrink-0" />
+                    <div className="space-y-1">
+                      <AlertTitle className="font-bold uppercase text-[10px]">Entry Denied</AlertTitle>
+                      <AlertDescription className="text-xs font-medium leading-relaxed">{error}</AlertDescription>
+                    </div>
                   </Alert>
                 )}
                 

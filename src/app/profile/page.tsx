@@ -17,11 +17,13 @@ import {
   ChevronRight,
   Loader2,
   Mail,
-  Calendar
+  Calendar,
+  AlertCircle
 } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function ProfilePage() {
   const { user, loading: userLoading } = useUser();
@@ -29,20 +31,23 @@ export default function ProfilePage() {
   const db = useFirestore();
   const { toast } = useToast();
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   // Handle Redirect Result for Mobile
   useEffect(() => {
     if (!auth) return;
-    getRedirectResult(auth).catch((error: any) => {
-      console.error("Redirect auth error:", error);
-      if (error.code === 'auth/unauthorized-domain') {
-        toast({
-          variant: "destructive",
-          title: "Domain Not Authorized",
-          description: "Add this domain to 'Authorized Domains' in Firebase Console (Auth > Settings).",
-        });
-      }
-    });
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result) {
+          toast({ title: "Welcome Back", description: "Successfully signed in via Google." });
+        }
+      })
+      .catch((error: any) => {
+        console.error("Redirect auth error:", error);
+        if (error.code === 'auth/unauthorized-domain') {
+          setAuthError("Domain Authorization Required: This domain is not whitelisted in your Firebase Console (Auth > Settings > Authorized Domains).");
+        }
+      });
   }, [auth, toast]);
 
   const myTeamsQuery = useMemoFirebase(() => {
@@ -61,6 +66,7 @@ export default function ProfilePage() {
   const handleGoogleSignIn = async () => {
     if (!auth) return;
     setIsSigningIn(true);
+    setAuthError(null);
     const provider = new GoogleAuthProvider();
     
     try {
@@ -73,10 +79,11 @@ export default function ProfilePage() {
     } catch (error: any) {
       console.error("Sign-in error:", error);
       if (error.code === 'auth/unauthorized-domain') {
+        setAuthError("Setup Required: Add this domain to 'Authorized Domains' in Firebase Console (Authentication > Settings).");
         toast({
           variant: "destructive",
           title: "Domain Not Authorized",
-          description: "Add this domain to 'Authorized Domains' in Firebase Console (Auth > Settings).",
+          description: "Please whitelist this URL in the Firebase Console.",
         });
       } else if (error.code !== 'auth/popup-closed-by-user') {
         toast({
@@ -93,6 +100,7 @@ export default function ProfilePage() {
   const handleLogout = async () => {
     if (auth) {
       await signOut(auth);
+      setAuthError(null);
       toast({ title: "Session Terminated", description: "You have been securely logged out." });
     }
   };
@@ -111,6 +119,16 @@ export default function ProfilePage() {
       
       <main className="flex-1 pt-32 pb-32">
         <div className="mx-auto max-w-xl px-4">
+          {authError && (
+            <Alert variant="destructive" className="bg-destructive/10 border-destructive/20 text-destructive rounded-[2rem] p-8 mb-8 animate-in fade-in slide-in-from-top-4 duration-500">
+              <AlertCircle className="h-6 w-6" />
+              <AlertTitle className="font-black uppercase italic tracking-widest text-sm mb-2">Security Block Detected</AlertTitle>
+              <AlertDescription className="text-xs font-medium leading-relaxed opacity-80">
+                {authError}
+              </AlertDescription>
+            </Alert>
+          )}
+
           {!user ? (
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
@@ -145,15 +163,15 @@ export default function ProfilePage() {
                       <UserCircle className="h-12 w-12 text-primary" />
                     )}
                   </div>
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <div className="inline-block bg-primary/20 text-primary text-[8px] font-black uppercase tracking-[0.3em] px-3 py-1 rounded-full mb-3">
                       VERIFIED ATHLETE
                     </div>
-                    <h2 className="text-4xl font-black italic uppercase tracking-tighter text-white truncate max-w-[200px] leading-none mb-2">
+                    <h2 className="text-4xl font-black italic uppercase tracking-tighter text-white truncate leading-none mb-2">
                       {user.displayName?.split(' ')[0] || user.email?.split('@')[0]}
                     </h2>
-                    <p className="text-white/30 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
-                      <Mail className="h-3 w-3" /> {user.email}
+                    <p className="text-white/30 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 truncate">
+                      <Mail className="h-3 w-3 shrink-0" /> {user.email}
                     </p>
                   </div>
                 </div>

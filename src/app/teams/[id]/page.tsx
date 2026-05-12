@@ -14,7 +14,8 @@ import {
   MessageCircle, 
   ShieldCheck, 
   Star,
-  Loader2
+  Loader2,
+  User
 } from "lucide-react"
 import { useDoc, useFirestore, useMemoFirebase } from "@/firebase"
 import { doc } from "firebase/firestore"
@@ -66,7 +67,7 @@ export default function TeamDetailPage() {
       <Navbar />
       
       <main className="flex-1 pb-32 pt-44">
-        <div className="max-w-7xl mx-auto px-4">
+        <div className="max-w-7xl auto px-4">
           <Button 
             variant="ghost" 
             onClick={() => router.back()} 

@@ -2,7 +2,6 @@
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
-  /* config options here */
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -36,22 +35,7 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
     ],
-  },
-  async redirects() {
-    return [
-      {
-        source: '/:path*',
-        has: [
-          {
-            type: 'host',
-            value: 'turfista.vercel.app',
-          },
-        ],
-        destination: 'https://turfista.in/:path*',
-        permanent: true,
-      },
-    ]
-  },
+  }
 };
 
 export default nextConfig;

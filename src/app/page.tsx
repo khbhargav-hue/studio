@@ -2,6 +2,7 @@
 "use client"
 
 import { useState, useMemo } from "react"
+import Image from "next/image"
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { TurfCard } from "@/components/turf-card"
@@ -192,7 +193,12 @@ export default function Home() {
                      </Button>
                   </div>
                   <div className="relative z-10 w-full md:w-1/3 aspect-[4/3] rounded-[2rem] overflow-hidden border border-white/10 shadow-2xl">
-                     <img src={featuredTurfs[0].mainImage} className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 transition-all duration-700" />
+                     <Image 
+                        src={featuredTurfs[0].mainImage} 
+                        alt={featuredTurfs[0].name}
+                        fill
+                        className="object-cover grayscale-[0.2] group-hover:grayscale-0 transition-all duration-700" 
+                     />
                   </div>
                </div>
             </div>

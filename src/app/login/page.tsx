@@ -31,14 +31,14 @@ function LoginForm() {
   useEffect(() => {
     const errorParam = searchParams.get('error');
     if (errorParam === 'unauthorized') {
-      setError("Unauthorized access. Admin credentials required.");
+      setError("Unauthorized access. Identification required.");
     }
   }, [searchParams]);
 
   useEffect(() => {
     if (!loading && user) {
       if (user.email === ADMIN_EMAIL) {
-        router.replace("/admin");
+        router.replace("/studio");
       }
     }
   }, [user, loading, router]);
@@ -47,7 +47,7 @@ function LoginForm() {
     if (!db) return;
     try {
       await addDoc(collection(db, "logs"), {
-        type: "ADMIN_LOGIN_ATTEMPT",
+        type: "STUDIO_LOGIN_ATTEMPT",
         email: userEmail,
         success,
         error: errorMsg || null,
@@ -70,36 +70,27 @@ function LoginForm() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
       if (userCredential.user.email !== ADMIN_EMAIL) {
-        await logActivity(false, email, "Unauthorized email attempt");
+        await logActivity(false, email, "Unauthorized identity attempt");
         await signOut(auth);
-        setError("Unauthorized access. Admin credentials required.");
+        setError("Identification failed. Secure zone restricted.");
         setIsLoggingIn(false);
         return;
       }
 
       await logActivity(true, email);
       toast({
-        title: "Access Granted",
-        description: "Welcome to the Turfista command center.",
+        title: "Identity Verified",
+        description: "Welcome to the Studio command center.",
       });
-      router.push("/admin");
+      router.push("/studio");
     } catch (err: any) {
       console.error("Login error:", err);
-      let message = "Failed to login. Please check your credentials.";
+      let message = "Verification failed. Check credentials.";
       
       if (err.code === 'auth/unauthorized-domain') {
-        toast({
-          variant: "destructive",
-          title: "Domain Not Authorized",
-          description: "This domain is not authorized in Firebase Console (Auth > Settings > Authorized Domains).",
-        });
-        message = "Security error: This domain must be whitelisted in your Firebase Console (Authentication > Settings > Authorized Domains) before you can sign in.";
+        message = "Security error: This domain must be whitelisted in your Firebase Console.";
       } else if (err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
-        message = "Invalid email or password.";
-      } else if (err.code === 'auth/invalid-email') {
-        message = "Please enter a valid email address.";
-      } else if (err.code === 'auth/too-many-requests') {
-        message = "Security lock active. Too many failed attempts. Try later.";
+        message = "Invalid identity or passcode.";
       }
 
       await logActivity(false, email, err.code);
@@ -132,32 +123,29 @@ function LoginForm() {
                 <Trophy className="h-12 w-12 text-primary" />
               </div>
               <CardTitle className="font-headline text-3xl font-bold tracking-tighter uppercase italic">
-                Admin <span className="text-primary">Control</span>
+                Studio <span className="text-primary">Access</span>
               </CardTitle>
               <CardDescription className="text-muted-foreground font-medium">
-                Identify yourself to manage the pitch
+                Identify yourself to enter the management circuit
               </CardDescription>
             </CardHeader>
             
             <CardContent className="pt-4">
               <form onSubmit={handleLogin} className="space-y-5">
                 {error && (
-                  <Alert variant="destructive" className="bg-destructive/10 border-destructive/20 text-destructive rounded-2xl animate-in fade-in zoom-in duration-300">
+                  <Alert variant="destructive" className="bg-destructive/10 border-destructive/20 text-destructive rounded-2xl">
                     <AlertCircle className="h-4 w-4 shrink-0" />
-                    <div className="space-y-1">
-                      <AlertTitle className="font-bold uppercase text-[10px]">Entry Denied</AlertTitle>
-                      <AlertDescription className="text-xs font-medium leading-relaxed">{error}</AlertDescription>
-                    </div>
+                    <AlertDescription className="text-xs font-medium leading-relaxed">{error}</AlertDescription>
                   </Alert>
                 )}
                 
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Admin Email</Label>
+                  <Label htmlFor="email" className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Identity (Email)</Label>
                   <Input 
                     id="email" 
                     type="email" 
                     placeholder="khbhargav@gmail.com" 
-                    className="bg-background/40 border-white/5 h-14 rounded-2xl focus:border-primary/50 transition-all text-base"
+                    className="bg-background/40 border-white/5 h-14 rounded-2xl focus:border-primary/50 text-base"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -165,12 +153,12 @@ function LoginForm() {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="password" title="Enter Password" className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Password</Label>
+                  <Label htmlFor="password" className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Passcode</Label>
                   <Input 
                     id="password" 
                     type="password" 
                     placeholder="••••••••"
-                    className="bg-background/40 border-white/5 h-14 rounded-2xl focus:border-primary/50 transition-all"
+                    className="bg-background/40 border-white/5 h-14 rounded-2xl focus:border-primary/50 text-base"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
@@ -179,15 +167,11 @@ function LoginForm() {
                 
                 <Button 
                   type="submit" 
-                  className="w-full h-14 bg-primary text-primary-foreground font-black text-xl rounded-2xl shadow-[0_10px_30px_-5px_rgba(26,255,115,0.4)] hover:shadow-[0_15px_35px_-5px_rgba(26,255,115,0.5)] transition-all hover:scale-[1.01] active:scale-[0.98]"
+                  className="w-full h-14 bg-primary text-primary-foreground font-black text-xl rounded-2xl shadow-xl hover:scale-[1.01] transition-all"
                   disabled={isLoggingIn}
                 >
-                  {isLoggingIn ? (
-                    <Loader2 className="mr-2 h-6 w-6 animate-spin" />
-                  ) : (
-                    <LogIn className="mr-2 h-6 w-6" />
-                  )}
-                  ENTER ARENA
+                  {isLoggingIn ? <Loader2 className="h-6 w-6 animate-spin" /> : <LogIn className="h-6 w-6 mr-2" />}
+                  VERIFY IDENTITY
                 </Button>
               </form>
             </CardContent>
@@ -195,11 +179,8 @@ function LoginForm() {
             <CardFooter className="flex flex-col gap-4 pb-10 pt-4">
               <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-tighter">
                 <ShieldCheck className="h-3 w-3 text-primary" />
-                Security Protocol Active
+                Security Circuit Engaged
               </div>
-              <p className="text-[10px] text-center text-muted-foreground/50 max-w-[200px] mx-auto leading-tight italic">
-                All login attempts are logged for platform security. 
-              </p>
             </CardFooter>
           </Card>
         </div>

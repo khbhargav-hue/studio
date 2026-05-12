@@ -17,8 +17,6 @@ import { useRouter } from "next/navigation"
 import { TurfistaLogo } from "./brand-logo"
 import { useToast } from "@/hooks/use-toast"
 
-const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'khbhargav@gmail.com';
-
 export function Navbar() {
   const { user } = useUser()
   const auth = useAuth()
@@ -66,8 +64,6 @@ export function Navbar() {
     }
   }
 
-  const isAdmin = user?.email === ADMIN_EMAIL
-
   return (
     <nav className="absolute top-0 z-50 w-full px-4 py-6 md:px-12 bg-gradient-to-b from-black/80 to-transparent backdrop-blur-[2px]">
       <div className="mx-auto flex max-w-7xl items-center justify-between">
@@ -81,10 +77,6 @@ export function Navbar() {
           <Link href="/teams" className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 hover:text-primary transition-all">Teams</Link>
           <Link href="/challenges" className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 hover:text-primary transition-all">Challenges</Link>
           <Link href="/mysuru" className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 hover:text-primary transition-all">Mysuru Guide</Link>
-          
-          {isAdmin && (
-            <Link href="/admin" className="text-[10px] font-black uppercase tracking-[0.2em] text-primary hover:opacity-80 px-4 py-2 bg-primary/10 rounded-full border border-primary/20 transition-all">Admin Portal</Link>
-          )}
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -105,10 +97,6 @@ export function Navbar() {
                     {isSigningIn ? <Loader2 className="h-5 w-5 animate-spin" /> : <UserCircle className="h-5 w-5" />}
                     Sign in with Google
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator className="bg-white/10" />
-                  <DropdownMenuItem asChild className="rounded-2xl h-12 focus:bg-white/10 font-bold text-[10px] uppercase tracking-widest cursor-pointer flex justify-center">
-                    <Link href="/login">Admin Control</Link>
-                  </DropdownMenuItem>
                 </div>
               ) : (
                 <>
@@ -116,12 +104,6 @@ export function Navbar() {
                     <p className="text-[9px] font-black uppercase tracking-[0.3em] text-white/20 mb-3">Athletic Identity</p>
                     <div className="flex flex-col items-center gap-3">
                       <p className="text-lg font-black italic uppercase text-primary leading-none truncate max-w-full">{user.displayName?.split(' ')[0] || user.email}</p>
-                      {isAdmin && (
-                         <div className="flex items-center gap-2 px-3 py-1 bg-primary/10 border border-primary/20 rounded-full">
-                            <ShieldCheck className="h-3 w-3 text-primary" />
-                            <span className="text-[8px] font-black text-primary uppercase">Platform Admin</span>
-                         </div>
-                      )}
                     </div>
                   </div>
                   <DropdownMenuSeparator className="bg-white/10 mx-2" />
@@ -141,11 +123,6 @@ export function Navbar() {
 
         {/* Mobile Header Icons */}
         <div className="md:hidden flex items-center gap-4">
-           {isAdmin && (
-              <Link href="/admin" className="h-10 w-10 bg-primary/10 border border-primary/20 rounded-xl flex items-center justify-center text-primary">
-                 <ShieldCheck className="h-5 w-5" />
-              </Link>
-           )}
            <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="h-10 w-10 text-white bg-white/5 border border-white/10 rounded-xl">

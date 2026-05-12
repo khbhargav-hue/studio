@@ -23,11 +23,13 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import { useToast } from "@/hooks/use-toast";
 
 export default function ProfilePage() {
   const { user, loading } = useUser();
   const auth = useAuth();
   const db = useFirestore();
+  const { toast } = useToast();
 
   const myTeamsQuery = useMemoFirebase(() => {
     if (!db || !user) return null;
@@ -47,8 +49,20 @@ export default function ProfilePage() {
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
-    } catch (error) {
-      console.error("Sign-in failed", error);
+    } catch (error: any) {
+      if (error.code === 'auth/unauthorized-domain') {
+        toast({
+          variant: "destructive",
+          title: "Domain Not Authorized",
+          description: "This domain is not authorized for Firebase Auth. Please add it to your Authorized Domains in the Firebase Console.",
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Sign-in Failed",
+          description: error.message || "An unexpected error occurred during sign-in.",
+        });
+      }
     }
   };
 

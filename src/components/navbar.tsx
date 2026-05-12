@@ -15,6 +15,7 @@ import { useUser, useAuth } from "@/firebase"
 import { signOut, GoogleAuthProvider, signInWithPopup } from "firebase/auth"
 import { useRouter } from "next/navigation"
 import { TurfistaLogo } from "./brand-logo"
+import { useToast } from "@/hooks/use-toast"
 
 const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'khbhargav@gmail.com';
 
@@ -22,6 +23,7 @@ export function Navbar() {
   const { user } = useUser()
   const auth = useAuth()
   const router = useRouter()
+  const { toast } = useToast()
 
   const handleLogout = async () => {
     if (auth) {
@@ -35,8 +37,20 @@ export function Navbar() {
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
-    } catch (error) {
-      console.error("Google Sign-in failed", error);
+    } catch (error: any) {
+      if (error.code === 'auth/unauthorized-domain') {
+        toast({
+          variant: "destructive",
+          title: "Domain Not Authorized",
+          description: "This domain is not authorized for Firebase Auth. Please add it to your Authorized Domains in the Firebase Console.",
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Sign-in Failed",
+          description: error.message || "An unexpected error occurred during sign-in.",
+        });
+      }
     }
   }
 

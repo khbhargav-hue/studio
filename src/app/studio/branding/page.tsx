@@ -140,7 +140,7 @@ export default function BrandingStudioPage() {
           
           let friendlyMsg = "Verify Cloudinary Cloud Name & Unsigned Preset.";
           if (errorMsg.includes("Upload preset not found")) {
-            friendlyMsg = `The preset "${CLOUDINARY_UPLOAD_PRESET}" was not found. Please create an 'Unsigned' preset in Cloudinary Settings > Upload.`;
+            friendlyMsg = `The preset "${CLOUDINARY_UPLOAD_PRESET}" was not found. Please create an 'Unsigned' preset in Cloudinary Dashboard Settings > Upload.`;
           }
 
           toast({ 
@@ -274,7 +274,7 @@ export default function BrandingStudioPage() {
             <AlertTitle className="font-black uppercase tracking-widest text-xs mb-2">Media Bridge Diagnostic</AlertTitle>
             <AlertDescription className="text-xs opacity-80 leading-relaxed font-medium">
               Cloud Name: <span className="font-bold">{CLOUDINARY_CLOUD_NAME}</span> • Active Preset: <span className="font-bold underline">{CLOUDINARY_UPLOAD_PRESET}</span>
-              <p className="mt-2 text-[10px] opacity-60">Note: Ensure this preset is 'Unsigned' in your Cloudinary Dashboard Settings > Upload.</p>
+              <p className="mt-2 text-[10px] opacity-60">Note: Ensure this preset is 'Unsigned' in your Cloudinary Dashboard Settings &gt; Upload.</p>
             </AlertDescription>
           </Alert>
         )}

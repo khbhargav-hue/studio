@@ -83,7 +83,7 @@ export default function StudioLayout({ children }: { children: ReactNode }) {
                     <PlusCircle className="h-5 w-5 mr-3" />
                     <span>Deploy Arena</span>
                   </Link>
-                </SidebarMenuItem>
+                </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild tooltip="Branding" className="h-16 rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[10px] px-6 transition-all hover:bg-primary/5 hover:text-primary">
@@ -91,7 +91,7 @@ export default function StudioLayout({ children }: { children: ReactNode }) {
                     <Palette className="h-5 w-5 mr-3" />
                     <span>Visual Identity</span>
                   </Link>
-                </SidebarMenuItem>
+                </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild tooltip="Media Vault" className="h-16 rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[10px] px-6 transition-all hover:bg-primary/5 hover:text-primary">
@@ -99,7 +99,7 @@ export default function StudioLayout({ children }: { children: ReactNode }) {
                     <Database className="h-5 w-5 mr-3" />
                     <span>Media Vault</span>
                   </Link>
-                </SidebarMenuItem>
+                </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarContent>

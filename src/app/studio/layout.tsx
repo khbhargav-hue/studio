@@ -1,3 +1,4 @@
+
 'use client';
 
 import { ReactNode, useEffect, useState } from 'react';
@@ -5,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useUser, useAuth } from '@/firebase';
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { LayoutDashboard, PlusCircle, LogOut, Loader2, Palette, ShieldCheck, Globe } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, LogOut, Loader2, Palette, ShieldCheck, Globe, Database } from 'lucide-react';
 import Link from 'next/link';
 import { signOut } from 'firebase/auth';
 import { TurfistaLogo } from '@/components/brand-logo';
@@ -82,15 +83,23 @@ export default function StudioLayout({ children }: { children: ReactNode }) {
                     <PlusCircle className="h-5 w-5 mr-3" />
                     <span>Deploy Arena</span>
                   </Link>
-                </SidebarMenuButton>
+                </SidebarMenuItem>
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild tooltip="Branding" className="h-16 rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[10px] px-6 transition-all hover:bg-primary/5 hover:text-primary">
                   <Link href="/studio/branding">
                     <Palette className="h-5 w-5 mr-3" />
-                    <span>Visual Assets</span>
+                    <span>Visual Identity</span>
                   </Link>
-                </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild tooltip="Media Vault" className="h-16 rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[10px] px-6 transition-all hover:bg-primary/5 hover:text-primary">
+                  <Link href="/studio/media">
+                    <Database className="h-5 w-5 mr-3" />
+                    <span>Media Vault</span>
+                  </Link>
+                </SidebarMenuItem>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarContent>

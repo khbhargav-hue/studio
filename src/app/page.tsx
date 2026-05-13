@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useMemo } from "react"
@@ -18,8 +19,8 @@ import {
   Calendar,
   MousePointerClick
 } from "lucide-react"
-import { useCollection, useFirestore, useMemoFirebase } from "@/firebase"
-import { collection, query, orderBy, where, limit } from "firebase/firestore"
+import { useCollection, useFirestore, useMemoFirebase, useDoc } from "@/firebase"
+import { collection, query, orderBy, doc } from "firebase/firestore"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
@@ -34,7 +35,7 @@ const FEATURE_CHIPS = [
   { label: "Play & Connect", icon: Users }
 ]
 
-const CHALLENGE_CATEGORIES = [
+const DEFAULT_CHALLENGES = [
   { name: "Football", sub: "5v5 Challenge", icon: Zap, image: "https://picsum.photos/seed/ball1/400/400" },
   { name: "Cricket", sub: "Match Challenge", icon: Target, image: "https://picsum.photos/seed/bat1/400/400" },
   { name: "Badminton", sub: "Doubles Challenge", icon: Wind, image: "https://picsum.photos/seed/shuttle1/400/400" },
@@ -45,6 +46,13 @@ export default function Home() {
   const db = useFirestore()
   const [activeFilter, setActiveFilter] = useState("All")
   
+  const brandingRef = useMemoFirebase(() => {
+    if (!db) return null
+    return doc(db, "settings", "branding")
+  }, [db])
+
+  const { data: branding } = useDoc(brandingRef)
+
   const turfsQuery = useMemoFirebase(() => {
     if (!db) return null
     return query(collection(db, "turfs"), orderBy("name", "asc"))
@@ -58,11 +66,23 @@ export default function Home() {
     return turfs.filter(t => t.sportTypes?.includes(activeFilter as any))
   }, [turfs, activeFilter])
 
+  const challengeCategories = useMemo(() => {
+    if (branding?.challenges && Array.isArray(branding.challenges)) {
+      return branding.challenges.map((c: any) => ({
+        name: c.name,
+        sub: c.sub,
+        image: c.imageUrl || "https://picsum.photos/seed/sport/400/400",
+        buttonText: c.buttonText || "JOIN NOW"
+      }))
+    }
+    return DEFAULT_CHALLENGES.map(c => ({ ...c, buttonText: "JOIN NOW" }))
+  }, [branding])
+
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Navbar />
       
-      {/* Redesigned Hero Section */}
+      {/* Dynamic Hero Section */}
       <section className="relative pt-32 pb-20 md:pt-48 md:pb-32 px-4 overflow-hidden">
         {/* Background Visuals */}
         <div className="absolute top-0 right-0 w-full md:w-1/2 h-full pointer-events-none">
@@ -73,11 +93,11 @@ export default function Home() {
                  <div className="w-[500px] h-[500px] border-2 border-primary/30 rounded-full halo-effect" />
                  <div className="absolute inset-0 flex items-center justify-center translate-x-10 translate-y-10">
                     <Image 
-                      src="https://picsum.photos/seed/athlete/800/800" 
+                      src={branding?.heroImageUrl || "https://picsum.photos/seed/athlete/800/800"} 
                       alt="Athlete" 
                       width={600} 
                       height={600} 
-                      className="object-contain grayscale-[0.5] contrast-125"
+                      className="object-contain grayscale-[0.5] contrast-125 transition-opacity duration-1000"
                       priority
                     />
                  </div>
@@ -94,11 +114,11 @@ export default function Home() {
             className="max-w-3xl"
           >
             <h1 className="text-6xl md:text-[110px] font-black italic uppercase tracking-tighter leading-[0.8] mb-8">
-              <span className="text-white">PLAY</span> <span className="text-primary text-neon">MORE.</span><br />
-              <span className="text-primary text-neon">BOOK</span> <span className="text-white">EASY.</span>
+              <span className="text-white">{branding?.heroHeadingWhite || "PLAY"}</span> <span className="text-primary text-neon">{branding?.heroHeadingNeon || "MORE."}</span><br />
+              <span className="text-primary text-neon">{branding?.heroHeading2White || "BOOK"}</span> <span className="text-white">{branding?.heroHeading2Neon || "EASY."}</span>
             </h1>
             <p className="text-xl md:text-2xl text-white/40 font-medium max-w-xl leading-relaxed mb-12">
-              Find elite arenas, build your squad and challenge the best in Mysuru.
+              {branding?.heroDescription || "Find elite arenas, build your squad and challenge the best in Mysuru."}
             </p>
 
             <div className="flex flex-col sm:flex-row items-center gap-6 mb-16">
@@ -144,7 +164,7 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {CHALLENGE_CATEGORIES.map((cat, idx) => (
+            {challengeCategories.map((cat, idx) => (
               <motion.div 
                 key={cat.name}
                 whileHover={{ y: -10 }}
@@ -165,7 +185,7 @@ export default function Home() {
                 <p className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-8">{cat.sub}</p>
                 
                 <Button asChild variant="ghost" className="w-full h-14 rounded-2xl bg-white/5 hover:bg-primary hover:text-black border border-white/5 transition-all font-black uppercase tracking-widest text-[10px]">
-                  <Link href="/challenges">JOIN NOW</Link>
+                  <Link href="/challenges">{cat.buttonText}</Link>
                 </Button>
               </motion.div>
             ))}

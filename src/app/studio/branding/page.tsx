@@ -9,24 +9,29 @@ import { Textarea } from "@/components/ui/textarea";
 import { 
   Card, 
   CardContent, 
-  CardDescription, 
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
 import { 
+  Tabs, 
+  TabsContent, 
+  TabsList, 
+  TabsTrigger 
+} from "@/components/ui/tabs";
+import { 
   Palette, 
   Save, 
   Loader2, 
-  Sparkles, 
   Image as ImageIcon, 
   Layout, 
   Globe, 
   Mail, 
-  Phone, 
-  ExternalLink,
-  ShieldCheck,
-  Upload,
-  Cloud
+  Upload, 
+  Zap,
+  Target,
+  Wind,
+  Star,
+  X
 } from "lucide-react";
 import { useFirestore, useDoc, useMemoFirebase, useStorage } from "@/firebase";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
@@ -36,11 +41,19 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { TurfistaLogo } from "@/components/brand-logo";
 
+const DEFAULT_CHALLENGES = [
+  { name: "Football", sub: "5v5 Challenge", icon: "Zap", imageUrl: "https://picsum.photos/seed/ball1/400/400", buttonText: "JOIN NOW" },
+  { name: "Cricket", sub: "Match Challenge", icon: "Target", imageUrl: "https://picsum.photos/seed/bat1/400/400", buttonText: "JOIN NOW" },
+  { name: "Badminton", sub: "Doubles Challenge", icon: "Wind", imageUrl: "https://picsum.photos/seed/shuttle1/400/400", buttonText: "JOIN NOW" },
+  { name: "Pickleball", sub: "Dink Challenge", icon: "Star", imageUrl: "https://picsum.photos/seed/paddle1/400/400", buttonText: "JOIN NOW" }
+];
+
 export default function BrandingStudioPage() {
   const db = useFirestore();
   const storage = useStorage();
   const { toast } = useToast();
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const heroInputRef = useRef<HTMLInputElement>(null);
   
   const brandingRef = useMemoFirebase(() => {
     if (!db) return null;
@@ -51,6 +64,8 @@ export default function BrandingStudioPage() {
 
   const [isSaving, setIsSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingHero, setUploadingHero] = useState(false);
+  const [uploadingCategory, setUploadingCategory] = useState<number | null>(null);
   
   const [formData, setFormData] = useState({
     heroHeadingWhite: "PLAY",
@@ -59,33 +74,66 @@ export default function BrandingStudioPage() {
     heroHeading2Neon: "EASY.",
     heroDescription: "Discover and book Mysuru’s best sports turfs in one place.",
     logoUrl: "",
+    heroImageUrl: "",
     seoTitle: "Turfista | Premium Sports Community in Mysuru",
     seoDescription: "Find elite sports arenas, join local teams, and challenge rivals in Mysuru.",
     footerEmail: "contact.turfista@gmail.com",
     footerWhatsapp: "917411322492",
-    copyrightText: "© 2026 Turfista"
+    copyrightText: "© 2026 Turfista",
+    challenges: DEFAULT_CHALLENGES
   });
 
   useEffect(() => {
     if (brandingData) {
-      setFormData(prev => ({ ...prev, ...brandingData }));
+      setFormData(prev => ({ 
+        ...prev, 
+        ...brandingData,
+        challenges: brandingData.challenges || DEFAULT_CHALLENGES
+      }));
     }
   }, [brandingData]);
 
-  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !storage) return;
-    setUploadingLogo(true);
-    const storageRef = ref(storage, `branding/logo_${Date.now()}`);
+  const handleFileUpload = async (file: File, path: string) => {
+    if (!storage) return null;
+    const storageRef = ref(storage, `${path}_${Date.now()}`);
     try {
       const snapshot = await uploadBytes(storageRef, file);
-      const url = await getDownloadURL(snapshot.ref);
-      setFormData(prev => ({ ...prev, logoUrl: url }));
-      toast({ title: "Visual Node Updated" });
+      return await getDownloadURL(snapshot.ref);
     } catch (err) {
       toast({ title: "Upload Failed", variant: "destructive" });
+      return null;
     }
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingLogo(true);
+    const url = await handleFileUpload(file, 'branding/logo');
+    if (url) setFormData(prev => ({ ...prev, logoUrl: url }));
     setUploadingLogo(false);
+  };
+
+  const handleHeroUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingHero(true);
+    const url = await handleFileUpload(file, 'branding/hero');
+    if (url) setFormData(prev => ({ ...prev, heroImageUrl: url }));
+    setUploadingHero(false);
+  };
+
+  const handleCategoryUpload = async (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingCategory(index);
+    const url = await handleFileUpload(file, `branding/challenges/${formData.challenges[index].name.toLowerCase()}`);
+    if (url) {
+      const updatedChallenges = [...formData.challenges];
+      updatedChallenges[index].imageUrl = url;
+      setFormData(prev => ({ ...prev, challenges: updatedChallenges }));
+    }
+    setUploadingCategory(null);
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -94,7 +142,7 @@ export default function BrandingStudioPage() {
     setIsSaving(true);
     const docRef = doc(db, "settings", "branding");
     setDoc(docRef, { ...formData, updatedAt: serverTimestamp() }, { merge: true })
-      .then(() => toast({ title: "Platform Branding Published" }))
+      .then(() => toast({ title: "Platform Visuals Published" }))
       .catch(() => {
         errorEmitter.emit('permission-error', new FirestorePermissionError({
           path: docRef.path,
@@ -115,88 +163,189 @@ export default function BrandingStudioPage() {
             <Palette className="h-10 w-10 text-primary" />
             <h1 className="font-headline text-5xl font-bold tracking-tight uppercase italic">Visual <span className="text-primary">Identity</span></h1>
           </div>
-          <p className="text-muted-foreground text-xl font-medium">Configure platform narratives and brand assets.</p>
+          <p className="text-muted-foreground text-xl font-medium">Configure platform narratives and dynamic media assets.</p>
         </div>
       </div>
 
-      <form onSubmit={handleSave} className="space-y-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-          <div className="lg:col-span-8 space-y-10">
-            <Card className="glass-card border-white/5 rounded-[3rem] overflow-hidden">
-              <CardHeader className="p-10 pb-0">
-                <CardTitle className="font-headline text-3xl font-bold flex items-center gap-4">
-                  <TurfistaLogo iconOnly size="md" /> Identity Assets
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-10 flex flex-col items-center gap-10">
-                <div className="relative group cursor-pointer" onClick={() => logoInputRef.current?.click()}>
-                  <div className="relative aspect-square w-64 rounded-full border-2 border-dashed border-primary/20 bg-black/40 flex items-center justify-center p-12 transition-all">
-                    {uploadingLogo ? <Loader2 className="h-12 w-12 animate-spin text-primary" /> : (
-                      formData.logoUrl ? <img src={formData.logoUrl} className="max-h-full max-w-full object-contain" /> : <Upload className="h-12 w-12 opacity-40" />
-                    )}
+      <Tabs defaultValue="hero" className="space-y-10">
+        <TabsList className="bg-white/5 p-1 h-14 rounded-2xl border border-white/5">
+          <TabsTrigger value="hero" className="px-8 h-full rounded-xl data-[state=active]:bg-primary data-[state=active]:text-black">Hero & Logo</TabsTrigger>
+          <TabsTrigger value="challenges" className="px-8 h-full rounded-xl data-[state=active]:bg-primary data-[state=active]:text-black">Challenge Hub</TabsTrigger>
+          <TabsTrigger value="seo" className="px-8 h-full rounded-xl data-[state=active]:bg-primary data-[state=active]:text-black">SEO & Support</TabsTrigger>
+        </TabsList>
+
+        <form onSubmit={handleSave} className="space-y-10">
+          <TabsContent value="hero" className="space-y-10">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+              <Card className="glass-card border-white/5 rounded-[3rem] overflow-hidden">
+                <CardHeader className="p-10 pb-0">
+                  <CardTitle className="font-headline text-3xl font-bold flex items-center gap-4">
+                    <TurfistaLogo iconOnly size="md" /> Branding Assets
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-10 space-y-10">
+                  <div className="space-y-4">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Primary Logo</Label>
+                    <div className="relative group cursor-pointer" onClick={() => logoInputRef.current?.click()}>
+                      <div className="relative aspect-square w-40 rounded-3xl border-2 border-dashed border-primary/20 bg-black/40 flex items-center justify-center p-8 transition-all hover:border-primary/50">
+                        {uploadingLogo ? <Loader2 className="h-8 w-8 animate-spin text-primary" /> : (
+                          formData.logoUrl ? <img src={formData.logoUrl} className="max-h-full max-w-full object-contain" alt="Logo Preview" /> : <Upload className="h-8 w-8 opacity-40" />
+                        )}
+                      </div>
+                      <input type="file" ref={logoInputRef} onChange={handleLogoUpload} accept="image/*" className="hidden" />
+                    </div>
                   </div>
-                  <input type="file" ref={logoInputRef} onChange={handleLogoUpload} accept="image/*" className="hidden" />
-                </div>
-              </CardContent>
-            </Card>
 
-            <Card className="glass-card border-white/5 rounded-[3rem] overflow-hidden">
-              <CardHeader className="p-10 pb-0"><CardTitle className="font-headline text-3xl font-bold flex items-center gap-4"><Layout className="h-8 w-8 text-primary" /> Narrative Control</CardTitle></CardHeader>
-              <CardContent className="p-10 space-y-8">
-                <div className="grid grid-cols-2 gap-8">
-                   <div className="space-y-3">
-                     <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Heading 1 (White)</Label>
-                     <Input className="h-14 bg-white/5 border-white/5 rounded-2xl" value={formData.heroHeadingWhite} onChange={e => setFormData({...formData, heroHeadingWhite: e.target.value})} />
-                   </div>
-                   <div className="space-y-3">
-                     <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Heading 1 (Neon)</Label>
-                     <Input className="h-14 bg-white/5 border-white/5 rounded-2xl text-primary" value={formData.heroHeadingNeon} onChange={e => setFormData({...formData, heroHeadingNeon: e.target.value})} />
-                   </div>
-                </div>
-                <div className="space-y-3">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Hero Description</Label>
-                  <Textarea className="min-h-[140px] bg-white/5 border-white/5 rounded-[2rem] p-6 text-lg" value={formData.heroDescription} onChange={e => setFormData({...formData, heroDescription: e.target.value})} />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                  <div className="space-y-4">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Hero Backdrop Image</Label>
+                    <div className="relative group cursor-pointer" onClick={() => heroInputRef.current?.click()}>
+                      <div className="relative aspect-video w-full rounded-3xl border-2 border-dashed border-primary/20 bg-black/40 flex items-center justify-center overflow-hidden transition-all hover:border-primary/50">
+                        {uploadingHero ? <Loader2 className="h-10 w-10 animate-spin text-primary" /> : (
+                          formData.heroImageUrl ? <img src={formData.heroImageUrl} className="h-full w-full object-cover" alt="Hero Preview" /> : <div className="text-center opacity-40"><Upload className="h-10 w-10 mx-auto mb-2" /><span className="text-[10px] font-bold uppercase">Upload Hero</span></div>
+                        )}
+                      </div>
+                      <input type="file" ref={heroInputRef} onChange={handleHeroUpload} accept="image/*" className="hidden" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-          <div className="lg:col-span-4 space-y-10">
-            <Card className="glass-card border-white/5 rounded-[3rem] overflow-hidden shadow-2xl">
-              <CardHeader className="p-8 pb-4"><CardTitle className="font-headline text-2xl font-bold flex items-center gap-4"><Globe className="h-6 w-6 text-primary" /> SEO Configuration</CardTitle></CardHeader>
-              <CardContent className="p-8 space-y-6">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Meta Title</Label>
-                  <Input className="h-12 bg-white/5 border-white/5 rounded-xl px-4" value={formData.seoTitle} onChange={e => setFormData({...formData, seoTitle: e.target.value})} />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Meta Description</Label>
-                  <Textarea className="min-h-[120px] bg-white/5 border-white/5 rounded-xl p-4 text-xs" value={formData.seoDescription} onChange={e => setFormData({...formData, seoDescription: e.target.value})} />
-                </div>
-              </CardContent>
-            </Card>
+              <Card className="glass-card border-white/5 rounded-[3rem] overflow-hidden">
+                <CardHeader className="p-10 pb-0">
+                  <CardTitle className="font-headline text-3xl font-bold flex items-center gap-4"><Layout className="h-8 w-8 text-primary" /> Hero Copy</CardTitle>
+                </CardHeader>
+                <CardContent className="p-10 space-y-8">
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Row 1 (White)</Label>
+                      <Input className="h-14 bg-white/5 border-white/5 rounded-2xl" value={formData.heroHeadingWhite} onChange={e => setFormData({...formData, heroHeadingWhite: e.target.value})} />
+                    </div>
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Row 1 (Neon)</Label>
+                      <Input className="h-14 bg-white/5 border-white/5 rounded-2xl text-primary" value={formData.heroHeadingNeon} onChange={e => setFormData({...formData, heroHeadingNeon: e.target.value})} />
+                    </div>
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Row 2 (White)</Label>
+                      <Input className="h-14 bg-white/5 border-white/5 rounded-2xl" value={formData.heroHeading2White} onChange={e => setFormData({...formData, heroHeading2White: e.target.value})} />
+                    </div>
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Row 2 (Neon)</Label>
+                      <Input className="h-14 bg-white/5 border-white/5 rounded-2xl text-primary" value={formData.heroHeading2Neon} onChange={e => setFormData({...formData, heroHeading2Neon: e.target.value})} />
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Sub-Description</Label>
+                    <Textarea className="min-h-[140px] bg-white/5 border-white/5 rounded-[2rem] p-6 text-lg" value={formData.heroDescription} onChange={e => setFormData({...formData, heroDescription: e.target.value})} />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
 
-            <Card className="glass-card border-white/5 rounded-[3rem] overflow-hidden">
-              <CardHeader className="p-8 pb-4"><CardTitle className="font-headline text-2xl font-bold flex items-center gap-4"><Mail className="h-6 w-6 text-primary" /> Support Network</CardTitle></CardHeader>
-              <CardContent className="p-8 space-y-6">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Support Email</Label>
-                  <Input className="h-12 bg-white/5 border-white/5 rounded-xl px-4" value={formData.footerEmail} onChange={e => setFormData({...formData, footerEmail: e.target.value})} />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Support WhatsApp</Label>
-                  <Input className="h-12 bg-white/5 border-white/5 rounded-xl px-4" value={formData.footerWhatsapp} onChange={e => setFormData({...formData, footerWhatsapp: e.target.value})} />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+          <TabsContent value="challenges" className="space-y-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {formData.challenges.map((challenge, idx) => (
+                <Card key={idx} className="glass-card border-white/5 rounded-[3rem] overflow-hidden">
+                  <CardHeader className="p-8 pb-0">
+                    <CardTitle className="text-xl font-black italic uppercase flex items-center gap-3">
+                      {challenge.name === 'Football' && <Zap className="h-5 w-5 text-primary" />}
+                      {challenge.name === 'Cricket' && <Target className="h-5 w-5 text-primary" />}
+                      {challenge.name === 'Badminton' && <Wind className="h-5 w-5 text-primary" />}
+                      {challenge.name === 'Pickleball' && <Star className="h-5 w-5 text-primary" />}
+                      {challenge.name} Category
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-8 space-y-6">
+                    <div className="flex gap-6">
+                      <div 
+                        className="relative aspect-square w-32 rounded-2xl bg-black/40 border-2 border-dashed border-white/10 flex items-center justify-center overflow-hidden cursor-pointer hover:border-primary/50 transition-all"
+                        onClick={() => {
+                          const input = document.createElement('input');
+                          input.type = 'file';
+                          input.accept = 'image/*';
+                          input.onchange = (e) => handleCategoryUpload(e as any, idx);
+                          input.click();
+                        }}
+                      >
+                        {uploadingCategory === idx ? <Loader2 className="h-6 w-6 animate-spin text-primary" /> : (
+                          challenge.imageUrl ? <img src={challenge.imageUrl} className="h-full w-full object-cover" alt="Cat Preview" /> : <Upload className="h-6 w-6 opacity-30" />
+                        )}
+                      </div>
+                      <div className="flex-1 space-y-4">
+                        <div className="space-y-2">
+                          <Label className="text-[9px] font-black uppercase tracking-widest text-white/30">Subtitle</Label>
+                          <Input 
+                            className="h-10 bg-white/5 border-white/5 rounded-xl" 
+                            value={challenge.sub} 
+                            onChange={e => {
+                              const updated = [...formData.challenges];
+                              updated[idx].sub = e.target.value;
+                              setFormData({...formData, challenges: updated});
+                            }}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[9px] font-black uppercase tracking-widest text-white/30">Button Text</Label>
+                          <Input 
+                            className="h-10 bg-white/5 border-white/5 rounded-xl" 
+                            value={challenge.buttonText} 
+                            onChange={e => {
+                              const updated = [...formData.challenges];
+                              updated[idx].buttonText = e.target.value;
+                              setFormData({...formData, challenges: updated});
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
 
-        <Button type="submit" disabled={isSaving} className="w-full h-20 bg-primary text-black font-black text-2xl rounded-[2rem] shadow-2xl">
-          {isSaving ? <Loader2 className="h-8 w-8 animate-spin" /> : <Save className="mr-4 h-8 w-8" />}
-          PUBLISH PLATFORM CHANGES
-        </Button>
-      </form>
+          <TabsContent value="seo" className="space-y-10">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+              <Card className="glass-card border-white/5 rounded-[3.5rem] overflow-hidden">
+                <CardHeader className="p-10 pb-0"><CardTitle className="font-headline text-3xl font-bold flex items-center gap-4"><Globe className="h-8 w-8 text-primary" /> SEO Config</CardTitle></CardHeader>
+                <CardContent className="p-10 space-y-6">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Meta Title</Label>
+                    <Input className="h-14 bg-white/5 border-white/5 rounded-2xl px-6" value={formData.seoTitle} onChange={e => setFormData({...formData, seoTitle: e.target.value})} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Meta Description</Label>
+                    <Textarea className="min-h-[160px] bg-white/5 border-white/5 rounded-[2rem] p-6 text-sm" value={formData.seoDescription} onChange={e => setFormData({...formData, seoDescription: e.target.value})} />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="glass-card border-white/5 rounded-[3.5rem] overflow-hidden">
+                <CardHeader className="p-10 pb-0"><CardTitle className="font-headline text-3xl font-bold flex items-center gap-4"><Mail className="h-8 w-8 text-primary" /> Support Bridge</CardTitle></CardHeader>
+                <CardContent className="p-10 space-y-6">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Primary Email</Label>
+                    <Input className="h-14 bg-white/5 border-white/5 rounded-2xl px-6" value={formData.footerEmail} onChange={e => setFormData({...formData, footerEmail: e.target.value})} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">WhatsApp Support (91...)</Label>
+                    <Input className="h-14 bg-white/5 border-white/5 rounded-2xl px-6" value={formData.footerWhatsapp} onChange={e => setFormData({...formData, footerWhatsapp: e.target.value})} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Copyright Label</Label>
+                    <Input className="h-14 bg-white/5 border-white/5 rounded-2xl px-6" value={formData.copyrightText} onChange={e => setFormData({...formData, copyrightText: e.target.value})} />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <Button type="submit" disabled={isSaving} className="w-full h-24 bg-primary text-black font-black text-3xl rounded-[2.5rem] shadow-2xl hover:scale-[1.01] transition-all">
+            {isSaving ? <Loader2 className="h-10 w-10 animate-spin" /> : <Save className="mr-6 h-10 w-10" />}
+            PUBLISH CHANGES TO LIVE PORTAL
+          </Button>
+        </form>
+      </Tabs>
     </div>
   );
 }

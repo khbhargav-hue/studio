@@ -34,7 +34,8 @@ import {
   CheckCircle2,
   Cloud,
   AlertCircle,
-  Info
+  Info,
+  Database
 } from "lucide-react";
 import { useFirestore, useDoc, useMemoFirebase } from "@/firebase";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
@@ -44,6 +45,7 @@ import { FirestorePermissionError } from '@/firebase/errors';
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
+import { CloudinaryPicker } from "@/components/cloudinary-picker";
 
 const DEFAULT_CHALLENGES = [
   { name: "Football", sub: "5v5 Challenge", icon: "Zap", imageUrl: "https://picsum.photos/seed/ball1/400/400", buttonText: "JOIN NOW" },
@@ -212,7 +214,7 @@ export default function BrandingStudioPage() {
         updatedAt: serverTimestamp()
       };
 
-      // NON-BLOCKING MUTATION: Proceed immediately to prevent UI hang
+      // NON-BLOCKING MUTATION: UI resets immediately
       setDoc(docRef, dataToSave, { merge: true })
         .catch(async (serverError) => {
           console.error("[Studio/Branding] Background sync failure:", serverError);
@@ -261,7 +263,7 @@ export default function BrandingStudioPage() {
             <Palette className="h-10 w-10 text-primary" />
             <h1 className="font-headline text-5xl font-bold tracking-tight uppercase italic">Visual <span className="text-primary text-neon">Identity</span></h1>
           </div>
-          <p className="text-muted-foreground text-xl font-medium">Configure global platform narratives and CDN powered media.</p>
+          <p className="text-muted-foreground text-xl font-medium">Configure platform narratives via Cloudinary Media Library.</p>
         </div>
       </div>
 
@@ -270,7 +272,7 @@ export default function BrandingStudioPage() {
           <AlertCircle className="h-6 w-6" />
           <AlertTitle className="font-black uppercase tracking-widest text-xs mb-2">Cloudinary Setup Required</AlertTitle>
           <AlertDescription className="text-xs opacity-80 leading-relaxed font-medium">
-            Define <strong>NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME</strong> and <strong>NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET</strong> in your <strong>.env</strong> file to enable the image engine.
+            Define <strong>NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME</strong> and <strong>NEXT_PUBLIC_CLOUDINARY_API_KEY</strong> in your <strong>.env</strong> to enable the media hub.
           </AlertDescription>
         </Alert>
       )}
@@ -314,7 +316,13 @@ export default function BrandingStudioPage() {
                   </div>
                   
                   <div className="pt-8 border-t border-white/5">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-4 block">Primary Logo (Cloudinary)</Label>
+                    <div className="flex items-center justify-between mb-4">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Primary Logo</Label>
+                      <CloudinaryPicker 
+                        folder="Branding" 
+                        onSelect={(url) => setFormData({...formData, logoUrl: url})} 
+                      />
+                    </div>
                     <div className="relative group cursor-pointer" onClick={() => !uploadingStates['logo'] && !isConfigMissing && logoInputRef.current?.click()}>
                       <div className={cn(
                         "relative aspect-square w-40 rounded-3xl border-2 border-dashed flex items-center justify-center p-8 transition-all overflow-hidden",
@@ -326,7 +334,7 @@ export default function BrandingStudioPage() {
                             <Progress value={uploadProgress['logo']} className="h-1 bg-white/10" />
                           </div>
                         ) : (
-                          formData.logoUrl ? <img src={formData.logoUrl} className="max-h-full max-w-full object-contain" alt="Logo Preview" /> : <div className="flex items-center gap-3 text-white/40"><Upload className="h-5 w-5" /><span className="text-[10px] font-bold uppercase">Update Logo Asset</span></div>
+                          formData.logoUrl ? <img src={formData.logoUrl} className="max-h-full max-w-full object-contain" alt="Logo Preview" /> : <div className="flex flex-col items-center gap-2 text-white/40"><Upload className="h-5 w-5" /><span className="text-[8px] font-bold uppercase">Upload</span></div>
                         )}
                       </div>
                       <input type="file" ref={logoInputRef} onChange={handleLogoUpload} accept="image/*" className="hidden" />
@@ -337,10 +345,17 @@ export default function BrandingStudioPage() {
 
               <Card className="glass-card border-white/5 rounded-[3rem] overflow-hidden order-1 lg:order-2">
                 <CardHeader className="p-10 pb-4">
-                  <CardTitle className="font-headline text-3xl font-bold flex items-center gap-4">
-                     <ImageIcon className="h-8 w-8 text-primary" />
-                     Hero Backdrop
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="font-headline text-3xl font-bold flex items-center gap-4">
+                       <ImageIcon className="h-8 w-8 text-primary" />
+                       Hero Backdrop
+                    </CardTitle>
+                    <CloudinaryPicker 
+                      folder="Hero" 
+                      label="Library"
+                      onSelect={(url) => setFormData({...formData, heroImageUrl: url})} 
+                    />
+                  </div>
                 </CardHeader>
                 <CardContent className="p-10 pt-4 space-y-10">
                    <div className="flex items-center gap-3 p-5 rounded-2xl bg-primary/5 border border-primary/10 shadow-[0_0_20px_rgba(57,255,20,0.05)]">
@@ -361,7 +376,6 @@ export default function BrandingStudioPage() {
                         <div className="text-center w-64 p-12">
                           <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-4" />
                           <Progress value={uploadProgress['hero']} className="h-2 bg-white/10" />
-                          <p className="text-[9px] font-black uppercase tracking-[0.3em] mt-6 text-primary animate-pulse">Syncing to Grid... {Math.round(uploadProgress['hero'])}%</p>
                         </div>
                       ) : formData.heroImageUrl ? (
                         <div className="relative w-full h-full p-12 flex items-center justify-center">
@@ -372,7 +386,7 @@ export default function BrandingStudioPage() {
                            />
                            <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                               <div className="bg-black/80 px-6 py-3 rounded-full border border-primary/40 text-primary font-black uppercase tracking-widest text-[10px]">
-                                 Swap Asset
+                                 Replace Asset
                               </div>
                            </div>
                         </div>
@@ -381,17 +395,10 @@ export default function BrandingStudioPage() {
                            <div className="h-20 w-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto group-hover:scale-110 group-hover:bg-primary/20 transition-all duration-500">
                              <Upload className="h-8 w-8 text-primary" />
                            </div>
-                           <div>
-                              <p className="text-white font-black italic uppercase text-lg tracking-tight">Deploy Hero</p>
-                              <p className="text-white/30 text-[9px] font-bold uppercase tracking-[0.2em] mt-1">Tap to select athlete media</p>
-                           </div>
+                           <p className="text-white/30 text-[9px] font-bold uppercase tracking-[0.2em] mt-1">Tap to select athlete media</p>
                         </div>
                       )}
                       <input type="file" ref={heroInputRef} onChange={handleHeroUpload} className="hidden" accept="image/*" />
-                    </div>
-
-                    <div className="text-center">
-                       <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-white/20">PREVIEW PORTAL STAGING</p>
                     </div>
                 </CardContent>
               </Card>
@@ -403,13 +410,24 @@ export default function BrandingStudioPage() {
               {formData.challenges.map((challenge, idx) => (
                 <Card key={idx} className="glass-card border-white/5 rounded-[3rem] overflow-hidden">
                   <CardHeader className="p-8 pb-0">
-                    <CardTitle className="text-xl font-black italic uppercase flex items-center gap-3">
-                      {challenge.name === 'Football' && <Zap className="h-5 w-5 text-primary" />}
-                      {challenge.name === 'Cricket' && <Target className="h-5 w-5 text-primary" />}
-                      {challenge.name === 'Badminton' && <Wind className="h-5 w-5 text-primary" />}
-                      {challenge.name === 'Pickleball' && <Star className="h-5 w-5 text-primary" />}
-                      {challenge.name} Category
-                    </CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-xl font-black italic uppercase flex items-center gap-3">
+                        {challenge.name === 'Football' && <Zap className="h-5 w-5 text-primary" />}
+                        {challenge.name === 'Cricket' && <Target className="h-5 w-5 text-primary" />}
+                        {challenge.name === 'Badminton' && <Wind className="h-5 w-5 text-primary" />}
+                        {challenge.name === 'Pickleball' && <Star className="h-5 w-5 text-primary" />}
+                        {challenge.name} Category
+                      </CardTitle>
+                      <CloudinaryPicker 
+                        folder="Challenges" 
+                        label="Select"
+                        onSelect={(url) => {
+                          const updated = [...formData.challenges];
+                          updated[idx].imageUrl = url;
+                          setFormData({...formData, challenges: updated});
+                        }} 
+                      />
+                    </div>
                   </CardHeader>
                   <CardContent className="p-8 space-y-6">
                     <div className="flex gap-6">

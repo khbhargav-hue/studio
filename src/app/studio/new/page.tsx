@@ -27,7 +27,8 @@ import {
   Upload, 
   X,
   Plus,
-  AlertCircle
+  AlertCircle,
+  Database
 } from "lucide-react";
 import { generateTurfDescriptionForAdmin } from "@/ai/flows/generate-turf-description-for-admin";
 import { useToast } from "@/hooks/use-toast";
@@ -38,6 +39,7 @@ import { FirestorePermissionError } from '@/firebase/errors';
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { CloudinaryPicker } from "@/components/cloudinary-picker";
 
 const SPORT_OPTIONS = ["Cricket", "Football", "Pickleball", "Badminton"];
 const COURT_OPTIONS = [
@@ -100,7 +102,6 @@ function SelectionGroup({
               >
                 {opt}
               </span>
-              {isSelected && <div className="absolute inset-0 bg-primary/5 rounded-xl animate-pulse pointer-events-none" />}
             </label>
           );
         })}
@@ -294,7 +295,7 @@ function NewTurfForm() {
         updatedAt: serverTimestamp() 
       };
 
-      // NON-BLOCKING MUTATION
+      // NON-BLOCKING MUTATION: UI resets immediately
       setDoc(turfRef, dataToSave, { merge: true })
         .catch(async (serverError) => {
           console.error("[Studio/New] Background sync failure:", serverError);
@@ -337,19 +338,9 @@ function NewTurfForm() {
         </Button>
         <div className="flex items-center gap-3">
           <div className="h-2 w-2 bg-primary rounded-full animate-pulse shadow-[0_0_10px_rgba(57,255,20,1)]" />
-          <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">CDN Deployment active</span>
+          <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Secure Media Bridge</span>
         </div>
       </div>
-
-      {isConfigMissing && (
-        <Alert variant="destructive" className="mb-10 bg-destructive/10 border-destructive/20 text-destructive rounded-[2rem] p-8">
-          <AlertCircle className="h-6 w-6" />
-          <AlertTitle className="font-black uppercase tracking-widest text-xs mb-2">Cloudinary Setup Required</AlertTitle>
-          <AlertDescription className="text-xs opacity-80 leading-relaxed font-medium">
-            Define <strong>NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME</strong> and <strong>NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET</strong> in your <strong>.env</strong> to enable the media engine.
-          </AlertDescription>
-        </Alert>
-      )}
 
       <form onSubmit={handleSubmit} className="space-y-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
@@ -451,10 +442,17 @@ function NewTurfForm() {
           <div className="lg:col-span-5 space-y-10">
             <Card className="glass-card border-white/5 rounded-[2.5rem] overflow-hidden">
               <CardHeader className="p-8 pb-4">
-                <CardTitle className="font-headline text-2xl font-bold flex items-center gap-4">
-                  <ImageIcon className="h-6 w-6 text-primary" />
-                  Arena Assets (Cloudinary)
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="font-headline text-2xl font-bold flex items-center gap-4">
+                    <ImageIcon className="h-6 w-6 text-primary" />
+                    Arena Assets
+                  </CardTitle>
+                  <CloudinaryPicker 
+                    folder="Turfs" 
+                    label="Library"
+                    onSelect={(url) => setFormData({...formData, mainImage: url})} 
+                  />
+                </div>
               </CardHeader>
               <CardContent className="p-8 space-y-10">
                 <div className="space-y-4">
@@ -470,7 +468,6 @@ function NewTurfForm() {
                       <div className="absolute inset-0 z-10 bg-black/60 flex flex-col items-center justify-center p-8">
                         <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
                         <Progress value={uploadProgress['main']} className="h-1 w-full bg-white/10" />
-                        <p className="text-[9px] font-black uppercase text-primary mt-4">Optimizing for CDN...</p>
                       </div>
                     )}
                     {formData.mainImage ? (
@@ -488,16 +485,24 @@ function NewTurfForm() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Gallery Node</Label>
-                    <Button 
-                      type="button" 
-                      size="sm" 
-                      variant="outline" 
-                      disabled={isConfigMissing}
-                      className="h-8 px-4 rounded-lg text-[9px] font-black uppercase" 
-                      onClick={() => galleryInputRef.current?.click()}
-                    >
-                       ADD PHOTOS
-                    </Button>
+                    <div className="flex gap-2">
+                      <CloudinaryPicker 
+                        folder="Turfs" 
+                        label="Library"
+                        className="h-8 px-4 text-[8px]"
+                        onSelect={(url) => setFormData(prev => ({...prev, galleryImages: [...prev.galleryImages, url]}))} 
+                      />
+                      <Button 
+                        type="button" 
+                        size="sm" 
+                        variant="outline" 
+                        disabled={isConfigMissing}
+                        className="h-8 px-4 rounded-lg text-[9px] font-black uppercase" 
+                        onClick={() => galleryInputRef.current?.click()}
+                      >
+                         ADD
+                      </Button>
+                    </div>
                     <input type="file" ref={galleryInputRef} onChange={handleGalleryUpload} className="hidden" multiple accept="image/*" />
                   </div>
                   <div className="grid grid-cols-3 gap-3">

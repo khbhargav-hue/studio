@@ -30,12 +30,9 @@ import {
   Target,
   Wind,
   Star,
-  X,
   CheckCircle2,
-  Cloud,
   AlertCircle,
-  Info,
-  Database
+  Info
 } from "lucide-react";
 import { useFirestore, useDoc, useMemoFirebase } from "@/firebase";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
@@ -45,7 +42,6 @@ import { FirestorePermissionError } from '@/firebase/errors';
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
-import { CloudinaryPicker } from "@/components/cloudinary-picker";
 
 const DEFAULT_CHALLENGES = [
   { name: "Football", sub: "5v5 Challenge", icon: "Zap", imageUrl: "https://picsum.photos/seed/ball1/400/400", buttonText: "JOIN NOW" },
@@ -137,8 +133,8 @@ export default function BrandingStudioPage() {
         } else {
           console.error("Cloudinary Error:", xhr.responseText);
           toast({ 
-            title: "CDN Upload Failed", 
-            description: "Check Cloud Name & Preset settings.", 
+            title: "Upload Failed", 
+            description: "Verify Cloudinary Cloud Name & Unsigned Preset", 
             variant: "destructive" 
           });
           resolve(null);
@@ -159,14 +155,20 @@ export default function BrandingStudioPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     const url = await uploadToCloudinary(file, 'logo');
-    if (url) setFormData(prev => ({ ...prev, logoUrl: url }));
+    if (url) {
+      setFormData(prev => ({ ...prev, logoUrl: url }));
+      toast({ title: "Logo Staged", description: "Save to persist changes." });
+    }
   };
 
   const handleHeroUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const url = await uploadToCloudinary(file, 'hero');
-    if (url) setFormData(prev => ({ ...prev, heroImageUrl: url }));
+    if (url) {
+      setFormData(prev => ({ ...prev, heroImageUrl: url }));
+      toast({ title: "Hero Athlete Staged", description: "Publish to go live." });
+    }
   };
 
   const handleCategoryUpload = async (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
@@ -186,11 +188,12 @@ export default function BrandingStudioPage() {
     if (!db) return;
     
     setIsSaving(true);
-    console.log("[Studio/Branding] Dispatching identity update...");
+    console.log("[Studio/Branding] Initiating optimistic publish flow...");
     
     try {
       const docRef = doc(db, "settings", "branding");
       
+      // Strict sanitization to prevent non-serializable crashes
       const dataToSave = {
         heroHeadingWhite: String(formData.heroHeadingWhite || ""),
         heroHeadingNeon: String(formData.heroHeadingNeon || ""),
@@ -214,10 +217,10 @@ export default function BrandingStudioPage() {
         updatedAt: serverTimestamp()
       };
 
-      // NON-BLOCKING MUTATION: UI resets immediately
+      // NON-BLOCKING MUTATION: Optimistic reset
       setDoc(docRef, dataToSave, { merge: true })
         .catch(async (serverError) => {
-          console.error("[Studio/Branding] Background sync failure:", serverError);
+          console.error("[Studio/Branding] Background sync failed:", serverError);
           const permissionError = new FirestorePermissionError({
             path: docRef.path,
             operation: 'write',
@@ -227,7 +230,7 @@ export default function BrandingStudioPage() {
           errorEmitter.emit('permission-error', permissionError);
         });
 
-      // Immediate Feedback
+      // Immediate UI Transition
       toast({ 
         title: "Changes Published", 
         description: "The live portal is now synchronizing with the grid." 
@@ -236,12 +239,12 @@ export default function BrandingStudioPage() {
       setIsSaving(false);
 
     } catch (err: any) {
-      console.error("[Studio/Branding] Fatal preparation error:", err);
+      console.error("[Studio/Branding] Preparation error:", err);
       setIsSaving(false);
       toast({
         variant: "destructive",
         title: "Publish Failed",
-        description: err.message || "Logic error in data preparation."
+        description: "Data preparation error. Check logs."
       });
     }
   };
@@ -263,16 +266,16 @@ export default function BrandingStudioPage() {
             <Palette className="h-10 w-10 text-primary" />
             <h1 className="font-headline text-5xl font-bold tracking-tight uppercase italic">Visual <span className="text-primary text-neon">Identity</span></h1>
           </div>
-          <p className="text-muted-foreground text-xl font-medium">Configure platform narratives via Cloudinary Media Library.</p>
+          <p className="text-muted-foreground text-xl font-medium">Configure global platform narratives and branding.</p>
         </div>
       </div>
 
       {isConfigMissing && (
         <Alert variant="destructive" className="mb-10 bg-destructive/10 border-destructive/20 text-destructive rounded-[2rem] p-8">
           <AlertCircle className="h-6 w-6" />
-          <AlertTitle className="font-black uppercase tracking-widest text-xs mb-2">Cloudinary Setup Required</AlertTitle>
+          <AlertTitle className="font-black uppercase tracking-widest text-xs mb-2">Cloudinary Disconnected</AlertTitle>
           <AlertDescription className="text-xs opacity-80 leading-relaxed font-medium">
-            Define <strong>NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME</strong> and <strong>NEXT_PUBLIC_CLOUDINARY_API_KEY</strong> in your <strong>.env</strong> to enable the media hub.
+            Uploads are disabled. Add <strong>NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME</strong> to your environment to restore media flows.
           </AlertDescription>
         </Alert>
       )}
@@ -289,7 +292,7 @@ export default function BrandingStudioPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
               <Card className="glass-card border-white/5 rounded-[3rem] overflow-hidden order-2 lg:order-1">
                 <CardHeader className="p-10 pb-0">
-                  <CardTitle className="font-headline text-3xl font-bold flex items-center gap-4"><Layout className="h-8 w-8 text-primary" /> Hero Copy</CardTitle>
+                  <CardTitle className="font-headline text-3xl font-bold flex items-center gap-4"><Layout className="h-8 w-8 text-primary" /> Copy Strategy</CardTitle>
                 </CardHeader>
                 <CardContent className="p-10 space-y-8">
                   <div className="grid grid-cols-2 gap-6">
@@ -316,13 +319,7 @@ export default function BrandingStudioPage() {
                   </div>
                   
                   <div className="pt-8 border-t border-white/5">
-                    <div className="flex items-center justify-between mb-4">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Primary Logo</Label>
-                      <CloudinaryPicker 
-                        folder="Branding" 
-                        onSelect={(url) => setFormData({...formData, logoUrl: url})} 
-                      />
-                    </div>
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-4 block">Primary Logo</Label>
                     <div className="relative group cursor-pointer" onClick={() => !uploadingStates['logo'] && !isConfigMissing && logoInputRef.current?.click()}>
                       <div className={cn(
                         "relative aspect-square w-40 rounded-3xl border-2 border-dashed flex items-center justify-center p-8 transition-all overflow-hidden",
@@ -334,7 +331,7 @@ export default function BrandingStudioPage() {
                             <Progress value={uploadProgress['logo']} className="h-1 bg-white/10" />
                           </div>
                         ) : (
-                          formData.logoUrl ? <img src={formData.logoUrl} className="max-h-full max-w-full object-contain" alt="Logo Preview" /> : <div className="flex flex-col items-center gap-2 text-white/40"><Upload className="h-5 w-5" /><span className="text-[8px] font-bold uppercase">Upload</span></div>
+                          formData.logoUrl ? <img src={formData.logoUrl} className="max-h-full max-w-full object-contain" alt="Logo Preview" /> : <Upload className="h-6 w-6 text-white/20" />
                         )}
                       </div>
                       <input type="file" ref={logoInputRef} onChange={handleLogoUpload} accept="image/*" className="hidden" />
@@ -345,19 +342,13 @@ export default function BrandingStudioPage() {
 
               <Card className="glass-card border-white/5 rounded-[3rem] overflow-hidden order-1 lg:order-2">
                 <CardHeader className="p-10 pb-4">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="font-headline text-3xl font-bold flex items-center gap-4">
-                       <ImageIcon className="h-8 w-8 text-primary" />
-                       Hero Backdrop
-                    </CardTitle>
-                    <CloudinaryPicker 
-                      folder="Hero" 
-                      label="Library"
-                      onSelect={(url) => setFormData({...formData, heroImageUrl: url})} 
-                    />
-                  </div>
+                  <CardTitle className="font-headline text-3xl font-bold flex items-center gap-4">
+                     <ImageIcon className="h-8 w-8 text-primary" />
+                     Hero Backdrop
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="p-10 pt-4 space-y-10">
+                   {/* Recommended Guide */}
                    <div className="flex items-center gap-3 p-5 rounded-2xl bg-primary/5 border border-primary/10 shadow-[0_0_20px_rgba(57,255,20,0.05)]">
                       <Info className="h-5 w-5 text-primary shrink-0" />
                       <div className="text-[10px] font-black uppercase tracking-widest leading-tight text-white/60">
@@ -365,6 +356,7 @@ export default function BrandingStudioPage() {
                       </div>
                    </div>
 
+                   {/* Circular Staging Area */}
                    <div 
                       className={cn(
                         "relative aspect-square w-full max-w-[320px] md:max-w-[420px] mx-auto rounded-full border-2 border-dashed transition-all overflow-hidden flex items-center justify-center group",
@@ -376,6 +368,7 @@ export default function BrandingStudioPage() {
                         <div className="text-center w-64 p-12">
                           <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-4" />
                           <Progress value={uploadProgress['hero']} className="h-2 bg-white/10" />
+                          <p className="text-[9px] font-black text-primary uppercase tracking-widest mt-4">Uploading Athlete...</p>
                         </div>
                       ) : formData.heroImageUrl ? (
                         <div className="relative w-full h-full p-12 flex items-center justify-center">
@@ -386,7 +379,7 @@ export default function BrandingStudioPage() {
                            />
                            <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                               <div className="bg-black/80 px-6 py-3 rounded-full border border-primary/40 text-primary font-black uppercase tracking-widest text-[10px]">
-                                 Replace Asset
+                                 Replace Athlete
                               </div>
                            </div>
                         </div>
@@ -410,24 +403,13 @@ export default function BrandingStudioPage() {
               {formData.challenges.map((challenge, idx) => (
                 <Card key={idx} className="glass-card border-white/5 rounded-[3rem] overflow-hidden">
                   <CardHeader className="p-8 pb-0">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-xl font-black italic uppercase flex items-center gap-3">
-                        {challenge.name === 'Football' && <Zap className="h-5 w-5 text-primary" />}
-                        {challenge.name === 'Cricket' && <Target className="h-5 w-5 text-primary" />}
-                        {challenge.name === 'Badminton' && <Wind className="h-5 w-5 text-primary" />}
-                        {challenge.name === 'Pickleball' && <Star className="h-5 w-5 text-primary" />}
-                        {challenge.name} Category
-                      </CardTitle>
-                      <CloudinaryPicker 
-                        folder="Challenges" 
-                        label="Select"
-                        onSelect={(url) => {
-                          const updated = [...formData.challenges];
-                          updated[idx].imageUrl = url;
-                          setFormData({...formData, challenges: updated});
-                        }} 
-                      />
-                    </div>
+                    <CardTitle className="text-xl font-black italic uppercase flex items-center gap-3">
+                      {challenge.name === 'Football' && <Zap className="h-5 w-5 text-primary" />}
+                      {challenge.name === 'Cricket' && <Target className="h-5 w-5 text-primary" />}
+                      {challenge.name === 'Badminton' && <Wind className="h-5 w-5 text-primary" />}
+                      {challenge.name === 'Pickleball' && <Star className="h-5 w-5 text-primary" />}
+                      {challenge.name} Category
+                    </CardTitle>
                   </CardHeader>
                   <CardContent className="p-8 space-y-6">
                     <div className="flex gap-6">
@@ -468,7 +450,7 @@ export default function BrandingStudioPage() {
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label className="text-[9px] font-black uppercase tracking-widest text-white/30">Button Text</Label>
+                          <Label className="text-[9px] font-black uppercase tracking-widest text-white/30">Button Label</Label>
                           <Input 
                             className="h-10 bg-white/5 border-white/5 rounded-xl" 
                             value={challenge.buttonText} 
@@ -490,7 +472,7 @@ export default function BrandingStudioPage() {
           <TabsContent value="seo" className="space-y-10">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
               <Card className="glass-card border-white/5 rounded-[3.5rem] overflow-hidden">
-                <CardHeader className="p-10 pb-0"><CardTitle className="font-headline text-3xl font-bold flex items-center gap-4"><Globe className="h-8 w-8 text-primary" /> SEO Config</CardTitle></CardHeader>
+                <CardHeader className="p-10 pb-0"><CardTitle className="font-headline text-3xl font-bold flex items-center gap-4"><Globe className="h-8 w-8 text-primary" /> SEO Intelligence</CardTitle></CardHeader>
                 <CardContent className="p-10 space-y-6">
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Meta Title</Label>
@@ -504,7 +486,7 @@ export default function BrandingStudioPage() {
               </Card>
 
               <Card className="glass-card border-white/5 rounded-[3.5rem] overflow-hidden">
-                <CardHeader className="p-10 pb-0"><CardTitle className="font-headline text-3xl font-bold flex items-center gap-4"><Mail className="h-8 w-8 text-primary" /> Support Bridge</CardTitle></CardHeader>
+                <CardHeader className="p-10 pb-0"><CardTitle className="font-headline text-3xl font-bold flex items-center gap-4"><Mail className="h-8 w-8 text-primary" /> Support Relay</CardTitle></CardHeader>
                 <CardContent className="p-10 space-y-6">
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Primary Email</Label>

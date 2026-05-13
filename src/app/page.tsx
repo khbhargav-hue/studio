@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useMemo } from "react"
@@ -88,18 +87,25 @@ export default function Home() {
         <div className="absolute top-0 right-0 w-full md:w-1/2 h-full pointer-events-none">
           <div className="relative w-full h-full">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] md:w-[600px] md:h-[600px] bg-primary/20 rounded-full blur-[100px] opacity-30" />
+            
+            {/* Circular Hero Hub */}
             <div className="absolute top-1/2 right-0 -translate-y-1/2 w-full h-full hidden md:block">
               <div className="relative w-full h-full flex items-center justify-center">
+                 {/* Visual Circular Frame */}
                  <div className="w-[500px] h-[500px] border-2 border-primary/30 rounded-full halo-effect" />
-                 <div className="absolute inset-0 flex items-center justify-center translate-x-10 translate-y-10">
-                    <Image 
-                      src={branding?.heroImageUrl || "https://picsum.photos/seed/athlete/800/800"} 
-                      alt="Athlete" 
-                      width={600} 
-                      height={600} 
-                      className="object-contain grayscale-[0.5] contrast-125 transition-opacity duration-1000"
-                      priority
-                    />
+                 
+                 {/* Athlete Container with Perfect Circular Fitting */}
+                 <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="relative w-[480px] h-[480px] rounded-full overflow-hidden flex items-center justify-center p-12">
+                      <Image 
+                        src={branding?.heroImageUrl || "https://picsum.photos/seed/athlete/800/800"} 
+                        alt="Turfista Hero Athlete" 
+                        width={600} 
+                        height={600} 
+                        className="w-full h-full object-contain grayscale-[0.2] contrast-125 transition-all duration-1000 drop-shadow-[0_0_50px_rgba(57,255,20,0.2)]"
+                        priority
+                      />
+                    </div>
                  </div>
               </div>
             </div>

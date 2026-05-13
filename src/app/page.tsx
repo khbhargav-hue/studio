@@ -88,11 +88,11 @@ export default function Home() {
           <div className="relative w-full h-full">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] md:w-[600px] md:h-[600px] bg-primary/20 rounded-full blur-[100px] opacity-30" />
             
-            {/* Circular Hero Hub */}
+            {/* Circular Hero Hub - CLEAN CINEMATIC VIEW */}
             <div className="absolute top-1/2 right-0 -translate-y-1/2 w-full h-full hidden md:block">
               <div className="relative w-full h-full flex items-center justify-center">
-                 {/* Visual Circular Frame */}
-                 <div className="w-[500px] h-[500px] border-2 border-primary/30 rounded-full halo-effect" />
+                 {/* Visual Glow Effect (No Visible Border) */}
+                 <div className="w-[500px] h-[500px] rounded-full halo-effect" />
                  
                  {/* Athlete Container with Perfect Circular Fitting */}
                  <div className="absolute inset-0 flex items-center justify-center">

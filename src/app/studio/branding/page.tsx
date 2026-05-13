@@ -16,7 +16,7 @@ import {
   TabsContent, 
   TabsList, 
   TabsTrigger 
-} from "@/components/tabs";
+} from "@/components/ui/tabs";
 import { 
   Palette, 
   Save, 
@@ -190,7 +190,6 @@ export default function BrandingStudioPage() {
     try {
       const docRef = doc(db, "settings", "branding");
       
-      // Explicit sanitization to avoid serializing 'undefined' or non-standard objects
       const dataToSave = {
         heroHeadingWhite: formData.heroHeadingWhite || "PLAY",
         heroHeadingNeon: formData.heroHeadingNeon || "MORE.",
@@ -216,7 +215,6 @@ export default function BrandingStudioPage() {
 
       console.log("[Studio/Branding] Initiating non-blocking write to:", docRef.path);
 
-      // NON-BLOCKING MUTATION: We trigger the write and proceed immediately
       setDoc(docRef, dataToSave, { merge: true })
         .catch(async (serverError) => {
           console.error("[Studio/Branding] Background sync failed:", serverError);
@@ -229,21 +227,21 @@ export default function BrandingStudioPage() {
           errorEmitter.emit('permission-error', permissionError);
         });
 
-      // Optimistic completion for responsive UI
       toast({ 
         title: "Synchronizing Intelligence", 
         description: "Your visual configurations are being pushed to the live edge." 
       });
-      setIsSaving(false);
 
     } catch (err: any) {
       console.error("[Studio/Branding] Critical preparation error:", err);
-      setIsSaving(false);
       toast({
         variant: "destructive",
         title: "Initialization Error",
         description: err.message || "Failed to prepare data for transmission."
       });
+    } finally {
+      // Ensure loading state is reset immediately to keep UI responsive
+      setIsSaving(false);
     }
   };
 

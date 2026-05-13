@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from "react";
@@ -31,22 +30,32 @@ export default function MediaLibraryPage() {
     setLoading(true);
     const mediaList: any[] = [];
     
-    // Check main folders
-    const folders = ['turfs/main', 'turfs/gallery', 'branding', 'branding/challenges', 'branding/hero'];
+    const folders = [
+      'turfs/main', 
+      'turfs/gallery', 
+      'branding', 
+      'branding/challenges', 
+      'branding/hero',
+      'branding/logo'
+    ];
     
     try {
       for (const folder of folders) {
         const folderRef = ref(storage, folder);
-        const result = await listAll(folderRef);
-        
-        for (const item of result.items) {
-          const url = await getDownloadURL(item);
-          mediaList.push({
-            name: item.name,
-            path: item.fullPath,
-            url,
-            folder
-          });
+        try {
+          const result = await listAll(folderRef);
+          
+          for (const item of result.items) {
+            const url = await getDownloadURL(item);
+            mediaList.push({
+              name: item.name,
+              path: item.fullPath,
+              url,
+              folder
+            });
+          }
+        } catch (folderErr) {
+          // Silent catch for folders that don't exist yet
         }
       }
       setMedia(mediaList);

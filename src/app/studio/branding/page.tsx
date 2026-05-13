@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef } from "react";
@@ -143,7 +142,7 @@ export default function BrandingStudioPage() {
     const docRef = doc(db, "settings", "branding");
     setDoc(docRef, { ...formData, updatedAt: serverTimestamp() }, { merge: true })
       .then(() => toast({ title: "Platform Visuals Published" }))
-      .catch(() => {
+      .catch((err) => {
         errorEmitter.emit('permission-error', new FirestorePermissionError({
           path: docRef.path,
           operation: 'update',

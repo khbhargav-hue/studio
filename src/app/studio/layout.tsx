@@ -1,4 +1,3 @@
-
 'use client';
 
 import { ReactNode, useEffect, useState } from 'react';
@@ -24,7 +23,6 @@ export default function StudioLayout({ children }: { children: ReactNode }) {
       if (!user) {
         router.replace('/login');
       } else if (user.email !== ADMIN_EMAIL) {
-        // Logged in but not an admin - silent redirect to home
         router.replace('/');
       } else {
         setIsAuthorized(true);
@@ -70,7 +68,7 @@ export default function StudioLayout({ children }: { children: ReactNode }) {
           <SidebarContent className="px-6 space-y-3">
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Dashboard" className="h-16 rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[10px] px-6 transition-all hover:bg-primary/5 hover:text-primary data-[active=true]:bg-primary data-[active=true]:text-black">
+                <SidebarMenuButton asChild tooltip="Dashboard" className="h-16 rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[10px] px-6 transition-all hover:bg-primary/5 hover:text-primary">
                   <Link href="/studio">
                     <LayoutDashboard className="h-5 w-5 mr-3" />
                     <span>Intelligence</span>

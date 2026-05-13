@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef } from "react";
@@ -44,6 +43,7 @@ import { FirestorePermissionError } from '@/firebase/errors';
 import { TurfistaLogo } from "@/components/brand-logo";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { cn } from "@/lib/utils";
 
 const DEFAULT_CHALLENGES = [
   { name: "Football", sub: "5v5 Challenge", icon: "Zap", imageUrl: "https://picsum.photos/seed/ball1/400/400", buttonText: "JOIN NOW" },
@@ -110,9 +110,9 @@ export default function BrandingStudioPage() {
         return;
       }
 
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+      const uploadData = new FormData();
+      uploadData.append('file', file);
+      uploadData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
 
       setUploadingStates(prev => ({ ...prev, [key]: true }));
       setUploadProgress(prev => ({ ...prev, [key]: 0 }));
@@ -150,7 +150,7 @@ export default function BrandingStudioPage() {
         resolve(null);
       };
 
-      xhr.send(formData);
+      xhr.send(uploadData);
     });
   };
 

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, Suspense, useCallback, useRef } from "react";
@@ -26,7 +27,8 @@ import {
   IndianRupee, 
   Upload, 
   X,
-  Plus
+  Plus,
+  AlertCircle
 } from "lucide-react";
 import { generateTurfDescriptionForAdmin } from "@/ai/flows/generate-turf-description-for-admin";
 import { useToast } from "@/hooks/use-toast";
@@ -36,6 +38,7 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const SPORT_OPTIONS = ["Cricket", "Football", "Pickleball", "Badminton"];
 const COURT_OPTIONS = [
@@ -47,8 +50,8 @@ const COURT_OPTIONS = [
   "Badminton Court"
 ];
 
-const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'dt7i1k7xz';
-const CLOUDINARY_UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'turfista_unsigned';
+const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+const CLOUDINARY_UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 
 function SelectionGroup({ 
   title, 
@@ -163,6 +166,12 @@ function NewTurfForm() {
 
   const uploadToCloudinary = (file: File, key: string): Promise<string | null> => {
     return new Promise((resolve) => {
+      if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
+        toast({ title: "Cloudinary Setup Required in .env", variant: "destructive" });
+        resolve(null);
+        return;
+      }
+
       const form = new FormData();
       form.append('file', file);
       form.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
@@ -186,7 +195,8 @@ function NewTurfForm() {
           const response = JSON.parse(xhr.responseText);
           resolve(response.secure_url);
         } else {
-          toast({ title: "CDN Upload Failed", variant: "destructive" });
+          console.error("Cloudinary Error:", xhr.responseText);
+          toast({ title: "CDN Upload Failed. Check Cloud Name & Preset.", variant: "destructive" });
           resolve(null);
         }
       };
@@ -269,6 +279,8 @@ function NewTurfForm() {
     });
   };
 
+  const isConfigMissing = !CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET;
+
   return (
     <div className="max-w-6xl mx-auto pb-32 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex items-center justify-between mb-12">
@@ -280,6 +292,16 @@ function NewTurfForm() {
           <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Cloudinary Bridge Active</span>
         </div>
       </div>
+
+      {isConfigMissing && (
+        <Alert variant="destructive" className="mb-10 bg-destructive/10 border-destructive/20 text-destructive rounded-3xl">
+          <AlertCircle className="h-5 w-5" />
+          <AlertTitle className="font-bold uppercase tracking-widest text-xs mb-2">Cloudinary Setup Required</AlertTitle>
+          <AlertDescription className="text-xs opacity-80 leading-relaxed">
+            Please define <strong>NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME</strong> and <strong>NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET</strong> in your <strong>.env</strong> file to enable image management.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
@@ -390,8 +412,11 @@ function NewTurfForm() {
                 <div className="space-y-4">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Primary Display (Thumbnail)</Label>
                   <div 
-                    className="relative aspect-video rounded-3xl border-2 border-dashed border-primary/20 bg-primary/5 hover:border-primary/50 transition-all cursor-pointer overflow-hidden group"
-                    onClick={() => !uploadingStates['main'] && mainInputRef.current?.click()}
+                    className={cn(
+                      "relative aspect-video rounded-3xl border-2 border-dashed transition-all overflow-hidden group",
+                      isConfigMissing ? "opacity-20 cursor-not-allowed border-white/10" : "border-primary/20 bg-primary/5 hover:border-primary/50 cursor-pointer"
+                    )}
+                    onClick={() => !uploadingStates['main'] && !isConfigMissing && mainInputRef.current?.click()}
                   >
                     {uploadingStates['main'] && (
                       <div className="absolute inset-0 z-10 bg-black/60 flex flex-col items-center justify-center p-8">
@@ -415,7 +440,14 @@ function NewTurfForm() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Gallery Node</Label>
-                    <Button type="button" size="sm" variant="outline" className="h-8 px-4 rounded-lg text-[9px] font-black uppercase" onClick={() => galleryInputRef.current?.click()}>
+                    <Button 
+                      type="button" 
+                      size="sm" 
+                      variant="outline" 
+                      disabled={isConfigMissing}
+                      className="h-8 px-4 rounded-lg text-[9px] font-black uppercase" 
+                      onClick={() => galleryInputRef.current?.click()}
+                    >
                        ADD PHOTOS
                     </Button>
                     <input type="file" ref={galleryInputRef} onChange={handleGalleryUpload} className="hidden" multiple accept="image/*" />
@@ -468,13 +500,5 @@ function NewTurfForm() {
         </div>
       </form>
     </div>
-  );
-}
-
-export default function NewTurfStudioPage() {
-  return (
-    <Suspense fallback={<div className="flex h-screen items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>}>
-      <NewTurfForm />
-    </Suspense>
   );
 }

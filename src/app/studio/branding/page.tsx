@@ -93,7 +93,7 @@ export default function BrandingStudioPage() {
       setFormData(prev => ({ 
         ...prev, 
         ...brandingData,
-        challenges: brandingData.challenges || DEFAULT_CHALLENGES
+        challenges: Array.isArray(brandingData.challenges) ? brandingData.challenges : DEFAULT_CHALLENGES
       }));
     }
   }, [brandingData]);
@@ -137,7 +137,7 @@ export default function BrandingStudioPage() {
           console.error("Cloudinary Error:", xhr.responseText);
           toast({ 
             title: "Upload Failed", 
-            description: "Check Console. Ensure Cloud Name is correct and Preset is 'Unsigned'.", 
+            description: "Check Cloud Name and Preset configuration.", 
             variant: "destructive" 
           });
           resolve(null);
@@ -183,10 +183,11 @@ export default function BrandingStudioPage() {
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     if (!db) return;
+    
     setIsSaving(true);
     const docRef = doc(db, "settings", "branding");
     
-    // Explicitly destructure to ensure only necessary data is sent
+    // Explicitly destructure to ensure only necessary, serializable data is sent
     const { 
       heroHeadingWhite, heroHeadingNeon, heroHeading2White, heroHeading2Neon, 
       heroDescription, logoUrl, heroImageUrl, seoTitle, seoDescription, 
@@ -194,28 +195,53 @@ export default function BrandingStudioPage() {
     } = formData;
 
     const dataToSave = {
-      heroHeadingWhite, heroHeadingNeon, heroHeading2White, heroHeading2Neon,
-      heroDescription, logoUrl, heroImageUrl, seoTitle, seoDescription,
-      footerEmail, footerWhatsapp, copyrightText, challenges,
+      heroHeadingWhite,
+      heroHeadingNeon,
+      heroHeading2White,
+      heroHeading2Neon,
+      heroDescription,
+      logoUrl,
+      heroImageUrl,
+      seoTitle,
+      seoDescription,
+      footerEmail,
+      footerWhatsapp,
+      copyrightText,
+      challenges: challenges.map(c => ({
+        name: c.name,
+        sub: c.sub,
+        imageUrl: c.imageUrl,
+        buttonText: c.buttonText,
+        icon: c.icon
+      })),
       updatedAt: serverTimestamp()
     };
 
     setDoc(docRef, dataToSave, { merge: true })
       .then(() => {
-        toast({ title: "Platform Visuals Published" });
+        toast({ title: "Portal Synchronized", description: "All visual changes are now live." });
         setIsSaving(false);
       })
       .catch(async (err) => {
+        // Stop loading state on failure
+        setIsSaving(false);
+        
+        // Emit rich contextual error for debugging
         errorEmitter.emit('permission-error', new FirestorePermissionError({
           path: docRef.path,
           operation: 'write',
-          requestResourceData: dataToSave
+          requestResourceData: dataToSave,
+          message: err.message
         }));
-        setIsSaving(false);
       });
   };
 
-  if (loading) return <div className="flex h-[50vh] items-center justify-center"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>;
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center py-40 gap-6">
+      <Loader2 className="h-14 w-14 animate-spin text-primary opacity-40" />
+      <p className="text-[10px] font-black text-primary/40 uppercase tracking-[0.5em]">Synchronizing Brand Intel...</p>
+    </div>
+  );
 
   const isConfigMissing = !CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET;
 
@@ -225,27 +251,27 @@ export default function BrandingStudioPage() {
         <div>
           <div className="flex items-center gap-3 mb-4">
             <Palette className="h-10 w-10 text-primary" />
-            <h1 className="font-headline text-5xl font-bold tracking-tight uppercase italic">Visual <span className="text-primary">Identity</span></h1>
+            <h1 className="font-headline text-5xl font-bold tracking-tight uppercase italic">Visual <span className="text-primary text-neon">Identity</span></h1>
           </div>
-          <p className="text-muted-foreground text-xl font-medium">Configure platform narratives and Cloudinary powered media.</p>
+          <p className="text-muted-foreground text-xl font-medium">Configure global platform narratives and CDN powered media.</p>
         </div>
       </div>
 
       {isConfigMissing && (
-        <Alert variant="destructive" className="mb-10 bg-destructive/10 border-destructive/20 text-destructive rounded-3xl">
-          <AlertCircle className="h-5 w-5" />
-          <AlertTitle className="font-bold uppercase tracking-widest text-xs mb-2">Cloudinary Setup Required</AlertTitle>
-          <AlertDescription className="text-xs opacity-80 leading-relaxed">
-            Please define <strong>NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME</strong> and <strong>NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET</strong> in your <strong>.env</strong> file to enable image management.
+        <Alert variant="destructive" className="mb-10 bg-destructive/10 border-destructive/20 text-destructive rounded-[2rem] p-8">
+          <AlertCircle className="h-6 w-6" />
+          <AlertTitle className="font-black uppercase tracking-widest text-xs mb-2">Cloudinary Setup Required</AlertTitle>
+          <AlertDescription className="text-xs opacity-80 leading-relaxed font-medium">
+            Define <strong>NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME</strong> and <strong>NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET</strong> in your <strong>.env</strong> file to enable the image engine.
           </AlertDescription>
         </Alert>
       )}
 
       <Tabs defaultValue="hero" className="space-y-10">
-        <TabsList className="bg-white/5 p-1 h-14 rounded-2xl border border-white/5">
-          <TabsTrigger value="hero" className="px-8 h-full rounded-xl data-[state=active]:bg-primary data-[state=active]:text-black">Hero & Logo</TabsTrigger>
-          <TabsTrigger value="challenges" className="px-8 h-full rounded-xl data-[state=active]:bg-primary data-[state=active]:text-black">Challenge Hub</TabsTrigger>
-          <TabsTrigger value="seo" className="px-8 h-full rounded-xl data-[state=active]:bg-primary data-[state=active]:text-black">SEO & Support</TabsTrigger>
+        <TabsList className="bg-white/5 p-1 h-14 rounded-[1.5rem] border border-white/5">
+          <TabsTrigger value="hero" className="px-8 h-full rounded-xl data-[state=active]:bg-primary data-[state=active]:text-black font-bold uppercase tracking-widest text-[10px]">Hero & Logo</TabsTrigger>
+          <TabsTrigger value="challenges" className="px-8 h-full rounded-xl data-[state=active]:bg-primary data-[state=active]:text-black font-bold uppercase tracking-widest text-[10px]">Challenge Hub</TabsTrigger>
+          <TabsTrigger value="seo" className="px-8 h-full rounded-xl data-[state=active]:bg-primary data-[state=active]:text-black font-bold uppercase tracking-widest text-[10px]">SEO & Support</TabsTrigger>
         </TabsList>
 
         <form onSubmit={handleSave} className="space-y-10">
@@ -289,10 +315,10 @@ export default function BrandingStudioPage() {
                           <div className="text-center w-64">
                             <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-4" />
                             <Progress value={uploadProgress['hero']} className="h-2 bg-white/10" />
-                            <p className="text-[10px] font-black uppercase tracking-widest mt-4 text-primary">CDN Deployment... {Math.round(uploadProgress['hero'])}%</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest mt-4 text-primary">CDN Push... {Math.round(uploadProgress['hero'])}%</p>
                           </div>
                         ) : (
-                          formData.heroImageUrl ? <img src={formData.heroImageUrl} className="h-full w-full object-cover" alt="Hero Preview" /> : <div className="text-center opacity-40"><Upload className="h-10 w-10 mx-auto mb-2" /><span className="text-[10px] font-bold uppercase">Upload to CDN</span></div>
+                          formData.heroImageUrl ? <img src={formData.heroImageUrl} className="h-full w-full object-cover" alt="Hero Preview" /> : <div className="text-center opacity-40"><Upload className="h-10 w-10 mx-auto mb-2" /><span className="text-[10px] font-bold uppercase">CDN Upload</span></div>
                         )}
                       </div>
                       <input type="file" ref={heroInputRef} onChange={handleHeroUpload} accept="image/*" className="hidden" />
@@ -326,7 +352,7 @@ export default function BrandingStudioPage() {
                   </div>
                   <div className="space-y-3">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Sub-Description</Label>
-                    <Textarea className="min-h-[140px] bg-white/5 border-white/5 rounded-[2rem] p-6 text-lg" value={formData.heroDescription} onChange={e => setFormData({...formData, heroDescription: e.target.value})} />
+                    <Textarea className="min-h-[140px] bg-white/5 border-white/5 rounded-[2rem] p-6 text-lg leading-relaxed italic" value={formData.heroDescription} onChange={e => setFormData({...formData, heroDescription: e.target.value})} />
                   </div>
                 </CardContent>
               </Card>
@@ -415,7 +441,7 @@ export default function BrandingStudioPage() {
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Meta Description</Label>
-                    <Textarea className="min-h-[160px] bg-white/5 border-white/5 rounded-[2rem] p-6 text-sm" value={formData.seoDescription} onChange={e => setFormData({...formData, seoDescription: e.target.value})} />
+                    <Textarea className="min-h-[160px] bg-white/5 border-white/5 rounded-[2rem] p-6 text-sm italic" value={formData.seoDescription} onChange={e => setFormData({...formData, seoDescription: e.target.value})} />
                   </div>
                 </CardContent>
               </Card>
@@ -440,7 +466,11 @@ export default function BrandingStudioPage() {
             </div>
           </TabsContent>
 
-          <Button type="submit" disabled={isSaving} className="w-full h-24 bg-primary text-black font-black text-3xl rounded-[2.5rem] shadow-2xl hover:scale-[1.01] transition-all">
+          <Button 
+            type="submit" 
+            disabled={isSaving} 
+            className="w-full h-24 bg-primary text-black font-black text-3xl rounded-[2.5rem] shadow-2xl hover:scale-[1.01] transition-all"
+          >
             {isSaving ? <Loader2 className="h-10 w-10 animate-spin" /> : <Save className="mr-6 h-10 w-10" />}
             PUBLISH CHANGES TO LIVE PORTAL
           </Button>

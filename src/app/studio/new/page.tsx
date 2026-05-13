@@ -263,25 +263,33 @@ function NewTurfForm() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!db) return;
+    
     setIsSaving(true);
     const id = editId || formData.name.toLowerCase().replace(/\s+/g, '-');
     const turfRef = doc(db, "turfs", id);
     
-    const dataToSave = { ...formData, id, updatedAt: serverTimestamp() };
+    const dataToSave = { 
+      ...formData, 
+      id, 
+      updatedAt: serverTimestamp() 
+    };
 
     setDoc(turfRef, dataToSave, { merge: true })
     .then(() => {
-      toast({ title: "Arena Deployed" });
+      toast({ title: "Arena Deployed", description: "The listing is now active on the discovery feed." });
       setIsSaving(false);
       router.push("/studio");
     })
     .catch(async (err) => {
+      // Ensure loading state resets even on error
+      setIsSaving(false);
+      
       errorEmitter.emit('permission-error', new FirestorePermissionError({
         path: turfRef.path,
         operation: 'write',
-        requestResourceData: dataToSave
+        requestResourceData: dataToSave,
+        message: err.message
       }));
-      setIsSaving(false);
     });
   };
 
@@ -290,21 +298,21 @@ function NewTurfForm() {
   return (
     <div className="max-w-6xl mx-auto pb-32 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex items-center justify-between mb-12">
-        <Button variant="ghost" onClick={() => router.back()} className="rounded-xl group">
+        <Button variant="ghost" onClick={() => router.back()} className="rounded-xl group font-black text-[10px] uppercase tracking-[0.3em] text-white/40 h-12">
           <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" /> Dashboard
         </Button>
         <div className="flex items-center gap-3">
           <div className="h-2 w-2 bg-primary rounded-full animate-pulse shadow-[0_0_10px_rgba(57,255,20,1)]" />
-          <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Cloudinary Bridge Active</span>
+          <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">CDN Deployment active</span>
         </div>
       </div>
 
       {isConfigMissing && (
-        <Alert variant="destructive" className="mb-10 bg-destructive/10 border-destructive/20 text-destructive rounded-3xl">
-          <AlertCircle className="h-5 w-5" />
-          <AlertTitle className="font-bold uppercase tracking-widest text-xs mb-2">Cloudinary Setup Required</AlertTitle>
-          <AlertDescription className="text-xs opacity-80 leading-relaxed">
-            Please define <strong>NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME</strong> and <strong>NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET</strong> in your <strong>.env</strong> file to enable image management.
+        <Alert variant="destructive" className="mb-10 bg-destructive/10 border-destructive/20 text-destructive rounded-[2rem] p-8">
+          <AlertCircle className="h-6 w-6" />
+          <AlertTitle className="font-black uppercase tracking-widest text-xs mb-2">Cloudinary Setup Required</AlertTitle>
+          <AlertDescription className="text-xs opacity-80 leading-relaxed font-medium">
+            Define <strong>NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME</strong> and <strong>NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET</strong> in your <strong>.env</strong> to enable the media engine.
           </AlertDescription>
         </Alert>
       )}
@@ -398,7 +406,7 @@ function NewTurfForm() {
               <CardContent className="p-10 pt-4">
                 <Textarea 
                   placeholder="The AI engine will craft a premium description..." 
-                  className="min-h-[250px] bg-background/50 border-white/5 rounded-[2rem] p-8 leading-relaxed resize-none"
+                  className="min-h-[250px] bg-background/50 border-white/5 rounded-[2rem] p-8 leading-relaxed resize-none italic font-medium"
                   value={formData.description}
                   onChange={(e) => setFormData({...formData, description: e.target.value})}
                 />
@@ -497,11 +505,15 @@ function NewTurfForm() {
         </div>
 
         <div className="flex flex-col md:flex-row gap-6 pt-10">
-          <Button type="submit" disabled={isSaving} className="flex-1 h-20 bg-primary text-black font-black text-2xl rounded-[2rem] shadow-2xl">
+          <Button 
+            type="submit" 
+            disabled={isSaving} 
+            className="flex-1 h-20 bg-primary text-black font-black text-2xl rounded-[2rem] shadow-2xl transition-all"
+          >
             {isSaving ? <Loader2 className="mr-4 h-8 w-8 animate-spin" /> : <Save className="mr-4 h-8 w-8" />}
             {editId ? "PUBLISH UPDATES" : "DEPLOY ARENA"}
           </Button>
-          <Button type="button" variant="outline" onClick={() => router.back()} className="h-20 px-12 border-white/10 bg-white/5 rounded-[2rem] font-black text-xl">
+          <Button type="button" variant="outline" onClick={() => router.back()} className="h-20 px-12 border-white/10 bg-white/5 rounded-[2rem] font-black text-xl hover:bg-destructive hover:text-white hover:border-destructive transition-all">
             ABORT
           </Button>
         </div>
@@ -512,7 +524,7 @@ function NewTurfForm() {
 
 export default function NewTurfPage() {
   return (
-    <Suspense fallback={<div className="flex h-screen items-center justify-center"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>}>
+    <Suspense fallback={null}>
       <NewTurfForm />
     </Suspense>
   );

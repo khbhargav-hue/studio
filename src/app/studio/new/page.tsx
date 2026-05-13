@@ -30,9 +30,8 @@ import {
 } from "lucide-react";
 import { generateTurfDescriptionForAdmin } from "@/ai/flows/generate-turf-description-for-admin";
 import { useToast } from "@/hooks/use-toast";
-import { useFirestore, useDoc, useMemoFirebase, useStorage } from "@/firebase";
+import { useFirestore, useDoc, useMemoFirebase } from "@/firebase";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
-import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { cn } from "@/lib/utils";
@@ -47,6 +46,9 @@ const COURT_OPTIONS = [
   "Pickleball Court",
   "Badminton Court"
 ];
+
+const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'dt7i1k7xz';
+const CLOUDINARY_UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'turfista_unsigned';
 
 function SelectionGroup({ 
   title, 
@@ -110,7 +112,6 @@ function NewTurfForm() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const db = useFirestore();
-  const storage = useStorage();
   const editId = searchParams.get("id");
   const mainInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
@@ -160,45 +161,50 @@ function NewTurfForm() {
     }
   }, [existingTurf, editId]);
 
-  const uploadFile = (file: File, path: string, key: string): Promise<string | null> => {
+  const uploadToCloudinary = (file: File, key: string): Promise<string | null> => {
     return new Promise((resolve) => {
-      if (!storage) {
-        toast({ title: "Storage Not Configured", variant: "destructive" });
-        return resolve(null);
-      }
-
-      const fileName = `${path}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
-      const storageRef = ref(storage, fileName);
-      const uploadTask = uploadBytesResumable(storageRef, file);
+      const form = new FormData();
+      form.append('file', file);
+      form.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
 
       setUploadingStates(prev => ({ ...prev, [key]: true }));
       setUploadProgress(prev => ({ ...prev, [key]: 0 }));
 
-      uploadTask.on(
-        'state_changed',
-        (snapshot) => {
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, true);
+
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const progress = Math.round((event.loaded / event.total) * 100);
           setUploadProgress(prev => ({ ...prev, [key]: progress }));
-        },
-        (error) => {
-          console.error("Upload error:", error);
-          toast({ title: "Upload Failed", description: error.message, variant: "destructive" });
-          setUploadingStates(prev => ({ ...prev, [key]: false }));
-          resolve(null);
-        },
-        async () => {
-          const url = await getDownloadURL(uploadTask.snapshot.ref);
-          setUploadingStates(prev => ({ ...prev, [key]: false }));
-          resolve(url);
         }
-      );
+      };
+
+      xhr.onload = () => {
+        setUploadingStates(prev => ({ ...prev, [key]: false }));
+        if (xhr.status === 200) {
+          const response = JSON.parse(xhr.responseText);
+          resolve(response.secure_url);
+        } else {
+          toast({ title: "CDN Upload Failed", variant: "destructive" });
+          resolve(null);
+        }
+      };
+
+      xhr.onerror = () => {
+        setUploadingStates(prev => ({ ...prev, [key]: false }));
+        toast({ title: "Network Error during CDN upload", variant: "destructive" });
+        resolve(null);
+      };
+
+      xhr.send(form);
     });
   };
 
   const handleMainUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const url = await uploadFile(file, 'turfs/main', 'main');
+    const url = await uploadToCloudinary(file, 'main');
     if (url) setFormData(prev => ({ ...prev, mainImage: url }));
   };
 
@@ -207,7 +213,7 @@ function NewTurfForm() {
     if (files.length === 0) return;
     
     for (let i = 0; i < files.length; i++) {
-      const url = await uploadFile(files[i], 'turfs/gallery', `gal-${i}`);
+      const url = await uploadToCloudinary(files[i], `gal-${i}`);
       if (url) setFormData(prev => ({ ...prev, galleryImages: [...prev.galleryImages, url] }));
     }
   };
@@ -271,7 +277,7 @@ function NewTurfForm() {
         </Button>
         <div className="flex items-center gap-3">
           <div className="h-2 w-2 bg-primary rounded-full animate-pulse shadow-[0_0_10px_rgba(57,255,20,1)]" />
-          <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Secure Editor Active</span>
+          <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Cloudinary Bridge Active</span>
         </div>
       </div>
 
@@ -377,7 +383,7 @@ function NewTurfForm() {
               <CardHeader className="p-8 pb-4">
                 <CardTitle className="font-headline text-2xl font-bold flex items-center gap-4">
                   <ImageIcon className="h-6 w-6 text-primary" />
-                  Arena Assets
+                  Arena Assets (Cloudinary)
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-8 space-y-10">
@@ -391,6 +397,7 @@ function NewTurfForm() {
                       <div className="absolute inset-0 z-10 bg-black/60 flex flex-col items-center justify-center p-8">
                         <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
                         <Progress value={uploadProgress['main']} className="h-1 w-full bg-white/10" />
+                        <p className="text-[9px] font-black uppercase text-primary mt-4">Optimizing for CDN...</p>
                       </div>
                     )}
                     {formData.mainImage ? (

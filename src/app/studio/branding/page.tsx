@@ -31,11 +31,11 @@ import {
   Wind,
   Star,
   X,
-  CheckCircle2
+  CheckCircle2,
+  Cloud
 } from "lucide-react";
-import { useFirestore, useDoc, useMemoFirebase, useStorage } from "@/firebase";
+import { useFirestore, useDoc, useMemoFirebase } from "@/firebase";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
-import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { useToast } from "@/hooks/use-toast";
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -49,9 +49,12 @@ const DEFAULT_CHALLENGES = [
   { name: "Pickleball", sub: "Dink Challenge", icon: "Star", imageUrl: "https://picsum.photos/seed/paddle1/400/400", buttonText: "JOIN NOW" }
 ];
 
+// Cloudinary Configuration Constants
+const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'dt7i1k7xz';
+const CLOUDINARY_UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'turfista_unsigned';
+
 export default function BrandingStudioPage() {
   const db = useFirestore();
-  const storage = useStorage();
   const { toast } = useToast();
   const logoInputRef = useRef<HTMLInputElement>(null);
   const heroInputRef = useRef<HTMLInputElement>(null);
@@ -93,57 +96,63 @@ export default function BrandingStudioPage() {
     }
   }, [brandingData]);
 
-  const uploadFile = (file: File, path: string, key: string): Promise<string | null> => {
+  const uploadToCloudinary = (file: File, key: string): Promise<string | null> => {
     return new Promise((resolve) => {
-      if (!storage) {
-        toast({ title: "Storage Not Initialized", variant: "destructive" });
-        return resolve(null);
-      }
-
-      const fileName = `${path}_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
-      const storageRef = ref(storage, fileName);
-      const uploadTask = uploadBytesResumable(storageRef, file);
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
 
       setUploadingStates(prev => ({ ...prev, [key]: true }));
       setUploadProgress(prev => ({ ...prev, [key]: 0 }));
 
-      uploadTask.on(
-        'state_changed',
-        (snapshot) => {
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, true);
+
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const progress = Math.round((event.loaded / event.total) * 100);
           setUploadProgress(prev => ({ ...prev, [key]: progress }));
-        },
-        (error) => {
-          console.error("Upload error:", error);
+        }
+      };
+
+      xhr.onload = () => {
+        setUploadingStates(prev => ({ ...prev, [key]: false }));
+        if (xhr.status === 200) {
+          const response = JSON.parse(xhr.responseText);
+          toast({ title: "Asset Uploaded to Cloudinary" });
+          resolve(response.secure_url);
+        } else {
+          console.error("Cloudinary Error:", xhr.responseText);
           toast({ 
             title: "Upload Failed", 
-            description: error.message, 
+            description: "Verify Cloudinary Cloud Name & Unsigned Preset", 
             variant: "destructive" 
           });
-          setUploadingStates(prev => ({ ...prev, [key]: false }));
           resolve(null);
-        },
-        async () => {
-          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-          setUploadingStates(prev => ({ ...prev, [key]: false }));
-          toast({ title: "Asset Uploaded Successfully" });
-          resolve(downloadURL);
         }
-      );
+      };
+
+      xhr.onerror = () => {
+        setUploadingStates(prev => ({ ...prev, [key]: false }));
+        toast({ title: "Network Error during upload", variant: "destructive" });
+        resolve(null);
+      };
+
+      xhr.send(formData);
     });
   };
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const url = await uploadFile(file, 'branding/logo', 'logo');
+    const url = await uploadToCloudinary(file, 'logo');
     if (url) setFormData(prev => ({ ...prev, logoUrl: url }));
   };
 
   const handleHeroUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const url = await uploadFile(file, 'branding/hero', 'hero');
+    const url = await uploadToCloudinary(file, 'hero');
     if (url) setFormData(prev => ({ ...prev, heroImageUrl: url }));
   };
 
@@ -151,7 +160,7 @@ export default function BrandingStudioPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     const key = `cat-${index}`;
-    const url = await uploadFile(file, `branding/challenges/${formData.challenges[index].name.toLowerCase()}`, key);
+    const url = await uploadToCloudinary(file, key);
     if (url) {
       const updatedChallenges = [...formData.challenges];
       updatedChallenges[index].imageUrl = url;
@@ -186,7 +195,7 @@ export default function BrandingStudioPage() {
             <Palette className="h-10 w-10 text-primary" />
             <h1 className="font-headline text-5xl font-bold tracking-tight uppercase italic">Visual <span className="text-primary">Identity</span></h1>
           </div>
-          <p className="text-muted-foreground text-xl font-medium">Configure platform narratives and dynamic media assets.</p>
+          <p className="text-muted-foreground text-xl font-medium">Configure platform narratives and Cloudinary powered media.</p>
         </div>
       </div>
 
@@ -208,7 +217,7 @@ export default function BrandingStudioPage() {
                 </CardHeader>
                 <CardContent className="p-10 space-y-10">
                   <div className="space-y-4">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Primary Logo</Label>
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Primary Logo (Cloudinary)</Label>
                     <div className="relative group cursor-pointer" onClick={() => !uploadingStates['logo'] && logoInputRef.current?.click()}>
                       <div className="relative aspect-square w-40 rounded-3xl border-2 border-dashed border-primary/20 bg-black/40 flex items-center justify-center p-8 transition-all hover:border-primary/50 overflow-hidden">
                         {uploadingStates['logo'] ? (
@@ -225,17 +234,17 @@ export default function BrandingStudioPage() {
                   </div>
 
                   <div className="space-y-4">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Hero Backdrop Image</Label>
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Hero Backdrop (Cloudinary)</Label>
                     <div className="relative group cursor-pointer" onClick={() => !uploadingStates['hero'] && heroInputRef.current?.click()}>
                       <div className="relative aspect-video w-full rounded-3xl border-2 border-dashed border-primary/20 bg-black/40 flex items-center justify-center overflow-hidden transition-all hover:border-primary/50">
                         {uploadingStates['hero'] ? (
                           <div className="text-center w-64">
                             <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-4" />
                             <Progress value={uploadProgress['hero']} className="h-2 bg-white/10" />
-                            <p className="text-[10px] font-black uppercase tracking-widest mt-4 text-primary">Uploading Elite Visual... {Math.round(uploadProgress['hero'])}%</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest mt-4 text-primary">CDN Deployment... {Math.round(uploadProgress['hero'])}%</p>
                           </div>
                         ) : (
-                          formData.heroImageUrl ? <img src={formData.heroImageUrl} className="h-full w-full object-cover" alt="Hero Preview" /> : <div className="text-center opacity-40"><Upload className="h-10 w-10 mx-auto mb-2" /><span className="text-[10px] font-bold uppercase">Upload Hero</span></div>
+                          formData.heroImageUrl ? <img src={formData.heroImageUrl} className="h-full w-full object-cover" alt="Hero Preview" /> : <div className="text-center opacity-40"><Upload className="h-10 w-10 mx-auto mb-2" /><span className="text-[10px] font-bold uppercase">Upload to CDN</span></div>
                         )}
                       </div>
                       <input type="file" ref={heroInputRef} onChange={handleHeroUpload} accept="image/*" className="hidden" />

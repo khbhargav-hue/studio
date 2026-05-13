@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, Suspense, useCallback, useRef } from "react";
@@ -161,13 +160,22 @@ function NewTurfForm() {
   }, [existingTurf, editId]);
 
   const handleFileUpload = async (file: File, path: string) => {
-    if (!storage) return null;
-    const storageRef = ref(storage, `${path}/${Date.now()}_${file.name}`);
+    if (!storage) {
+      toast({ title: "Storage Not Configured", description: "Storage bucket not found.", variant: "destructive" });
+      return null;
+    }
+    const fileName = `${path}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+    const storageRef = ref(storage, fileName);
     try {
       const snapshot = await uploadBytes(storageRef, file);
       return await getDownloadURL(snapshot.ref);
     } catch (error: any) {
-      toast({ title: "Upload Failed", description: error.message, variant: "destructive" });
+      console.error("Storage upload error:", error);
+      toast({ 
+        title: "Upload Failed", 
+        description: error.message || "Permissions or network error.", 
+        variant: "destructive" 
+      });
       return null;
     }
   };

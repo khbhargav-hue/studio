@@ -93,13 +93,23 @@ export default function BrandingStudioPage() {
   }, [brandingData]);
 
   const handleFileUpload = async (file: File, path: string) => {
-    if (!storage) return null;
-    const storageRef = ref(storage, `${path}_${Date.now()}`);
+    if (!storage) {
+      toast({ title: "Storage Not Initialized", description: "Check your Firebase config.", variant: "destructive" });
+      return null;
+    }
+    const fileName = `${path}_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+    const storageRef = ref(storage, fileName);
     try {
       const snapshot = await uploadBytes(storageRef, file);
-      return await getDownloadURL(snapshot.ref);
-    } catch (err) {
-      toast({ title: "Upload Failed", variant: "destructive" });
+      const url = await getDownloadURL(snapshot.ref);
+      return url;
+    } catch (err: any) {
+      console.error("Upload error details:", err);
+      toast({ 
+        title: "Upload Failed", 
+        description: err.message || "An unexpected error occurred during upload.", 
+        variant: "destructive" 
+      });
       return null;
     }
   };

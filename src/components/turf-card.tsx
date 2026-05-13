@@ -13,6 +13,7 @@ import { useMemo, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import * as gtag from "@/lib/gtag";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 
 interface TurfCardProps {
   turf: Turf
@@ -26,7 +27,6 @@ export function TurfCard({ turf }: TurfCardProps) {
   const handleWhatsAppClick = async (e: React.MouseEvent) => {
     if (!db || !turf.id) return;
     
-    // Track Google Analytics Event
     gtag.event({
       action: 'generate_lead',
       category: 'Booking',
@@ -34,12 +34,10 @@ export function TurfCard({ turf }: TurfCardProps) {
       value: 1
     });
 
-    // Prevent spam clicks
     if (isThrottled) return;
     setIsThrottled(true);
-    setTimeout(() => setIsThrottled(false), 5000); // 5 second cooldown
+    setTimeout(() => setIsThrottled(false), 5000);
 
-    // Track lead information securely
     const leadData = {
       turfId: turf.id,
       turfName: turf.name,
@@ -51,122 +49,71 @@ export function TurfCard({ turf }: TurfCardProps) {
 
     try {
       await addDoc(collection(db, "leads"), leadData);
-      
       const turfRef = doc(db, "turfs", turf.id);
       const statsRef = doc(db, "analytics", "stats");
-      
       setDoc(turfRef, { whatsappClicks: increment(1) }, { merge: true }).catch(() => {});
       setDoc(statsRef, { totalWhatsAppClicks: increment(1) }, { merge: true }).catch(() => {});
-    } catch (err) {
-      console.error("Lead capture failed:", err);
-    }
+    } catch (err) {}
   };
 
-  const pricingDetails = useMemo(() => {
-    const pricing = turf.courtPricing || {};
-    const halfKey = Object.keys(pricing).find(k => k.toLowerCase().includes('half'));
-    const fullKey = Object.keys(pricing).find(k => k.toLowerCase().includes('full'));
-    
-    return {
-      half: halfKey ? pricing[halfKey] : null,
-      full: fullKey ? pricing[fullKey] : null,
-      default: turf.pricePerHour
-    };
-  }, [turf.courtPricing, turf.pricePerHour]);
-
-  const message = `Hi, I found ${turf.name} in ${turf.area} on Turfista and would like to inquire about booking a slot.`;
-  const whatsappUrl = `https://wa.me/${turf.whatsappNumber}?text=${encodeURIComponent(message)}`;
-
-  const rawImage = turf.mainImage || (turf.galleryImages && turf.galleryImages[0]) || "https://picsum.photos/seed/turf-placeholder/800/600";
-  const displayImage = rawImage.includes('cloudinary.com') 
-    ? rawImage.replace('/upload/', '/upload/f_auto,q_auto,w_800/') 
-    : rawImage;
+  const displayImage = turf.mainImage || "https://picsum.photos/seed/turf-placeholder/800/600";
 
   return (
-    <Card className="group relative overflow-hidden border-none bg-secondary/40 glass-card rounded-[3rem] flex flex-col h-full hover:scale-[1.02] transition-all duration-500 shadow-2xl">
-      <Link href={`/turf/${turf.id}`} className="block relative aspect-[14/11] overflow-hidden rounded-t-[3rem]">
-        <Image
-          src={displayImage}
-          alt={turf.name}
-          fill
-          className="object-cover transition-transform duration-1000 group-hover:scale-110 grayscale-[0.3] group-hover:grayscale-0"
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
-        
-        <div className="absolute left-6 top-6 flex flex-col gap-2">
-          <Badge className="bg-black/80 backdrop-blur-md text-[hsl(var(--rating))] border border-white/10 font-black px-4 py-1.5 text-[10px] rounded-xl shadow-2xl w-fit">
-            {turf.rating || 4.5} <Star className="ml-1.5 h-3.5 w-3.5 fill-current" />
-          </Badge>
-          {turf.isPopular && (
-            <Badge className="bg-primary/90 text-black border-none text-[8px] font-black uppercase tracking-[0.3em] px-4 py-1.5 rounded-xl shadow-[0_0_15px_rgba(57,255,20,0.5)] w-fit">
-              PREMIUM
-            </Badge>
-          )}
-        </div>
-      </Link>
+    <motion.div whileHover={{ y: -8 }} transition={{ type: "spring", stiffness: 300 }}>
+      <Card className="group relative overflow-hidden border-none bg-secondary/40 glass-card rounded-[2.5rem] flex flex-col h-full shadow-2xl">
+        <Link href={`/turf/${turf.id}`} className="block relative aspect-[16/10] overflow-hidden rounded-t-[2.5rem]">
+          <Image
+            src={displayImage}
+            alt={turf.name}
+            fill
+            className="object-cover transition-transform duration-1000 group-hover:scale-110 grayscale-[0.2] group-hover:grayscale-0"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-60" />
+          
+          <div className="absolute left-4 top-4 flex flex-wrap gap-2">
+            <div className="bg-black/60 backdrop-blur-md px-3 py-1 rounded-lg border border-white/10 flex items-center gap-1.5">
+               <span className="text-[10px] font-black text-primary italic uppercase tracking-tighter">{turf.sportTypes?.[0]}</span>
+            </div>
+          </div>
 
-      <CardContent className="p-8 flex-1 flex flex-col">
-        <div className="mb-6">
-          <Link href={`/turf/${turf.id}`}>
-            <h3 className="text-3xl mb-3 group-hover:text-primary transition-colors italic font-black uppercase tracking-tighter leading-[0.9] text-white">
+          <div className="absolute bottom-4 right-4">
+             <div className="bg-black/80 backdrop-blur-md px-3 py-1 rounded-lg border border-white/10 flex items-center gap-1.5 shadow-2xl">
+                <span className="text-xs font-black text-white italic">{turf.rating || 4.5}</span>
+                <Star className="h-3 w-3 text-[hsl(var(--rating))] fill-current" />
+             </div>
+          </div>
+        </Link>
+
+        <CardContent className="p-8 flex-1 flex flex-col">
+          <Link href={`/turf/${turf.id}`} className="mb-6 block">
+            <h3 className="text-2xl mb-2 group-hover:text-primary transition-colors italic font-black uppercase tracking-tighter leading-tight text-white line-clamp-1">
               {turf.name}
             </h3>
-            <div className="flex items-center text-white/30 text-[11px] font-black uppercase tracking-[0.2em] gap-2">
-              <MapPin className="h-3.5 w-3.5 text-primary" />
-              <span>{turf.area}</span>
+            <div className="flex items-center text-white/30 text-[10px] font-bold uppercase tracking-widest gap-2">
+              <MapPin className="h-3 w-3 text-primary/60" />
+              <span>{turf.area}, Mysuru</span>
             </div>
           </Link>
-        </div>
 
-        <div className={cn(
-          "grid gap-4 mb-6",
-          pricingDetails.half && pricingDetails.full ? "grid-cols-2" : "grid-cols-1"
-        )}>
-          {pricingDetails.half && (
-            <div className="bg-white/5 p-4 rounded-[1.5rem] border border-white/5 transition-colors text-center">
-              <p className="text-[9px] text-white/30 font-black uppercase tracking-[0.1em] mb-1">HALF</p>
-              <p className="text-2xl font-black italic text-white leading-none">
-                ₹{pricingDetails.half}
-              </p>
-            </div>
-          )}
-          {pricingDetails.full && (
-            <div className="bg-primary/5 p-4 rounded-[1.5rem] border border-primary/20 transition-colors text-center">
-              <p className="text-[9px] text-primary/60 font-black uppercase tracking-[0.1em] mb-1">FULL</p>
-              <p className="text-2xl font-black italic text-primary leading-none">
-                ₹{pricingDetails.full}
-              </p>
-            </div>
-          )}
-          {!pricingDetails.half && !pricingDetails.full && (
-            <div className="bg-white/5 p-4 rounded-[1.5rem] border border-white/5 transition-colors text-center">
-              <p className="text-[9px] text-white/30 font-black uppercase tracking-[0.1em] mb-1">STARTING</p>
-              <p className="text-2xl font-black italic text-white leading-none">
-                ₹{pricingDetails.default}
-              </p>
-            </div>
-          )}
-        </div>
-
-        <div className="flex items-center gap-3 text-[10px] font-black text-white/20 uppercase tracking-[0.2em] mt-auto border-t border-white/5 pt-6">
-          <Clock className="h-4 w-4 text-primary" />
-          <span>{turf.openingHours || 'Live Schedule'}</span>
-        </div>
-      </CardContent>
-
-      <CardFooter className="p-8 pt-0">
-        <Button 
-          asChild 
-          onClick={handleWhatsAppClick}
-          className="btn-neon-glow w-full h-18 bg-primary hover:bg-primary text-black font-black text-xs uppercase tracking-widest rounded-[1.5rem] border-none shadow-[0_20px_40px_-10px_rgba(57,255,20,0.3)] transition-all"
-        >
-          <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
-            <MessageCircle className="mr-3 h-5 w-5" />
-            BOOK ARENA
-          </a>
-        </Button>
-      </CardFooter>
-    </Card>
+          <div className="flex items-center justify-between mt-auto pt-6 border-t border-white/5">
+             <div className="flex items-center gap-2">
+                <span className="text-2xl font-black italic text-primary">₹{turf.pricePerHour}</span>
+                <span className="text-[9px] font-bold text-white/20 uppercase tracking-widest">/ HR</span>
+             </div>
+             <Button 
+              asChild 
+              onClick={handleWhatsAppClick}
+              size="sm"
+              className="h-11 px-6 bg-white/5 hover:bg-primary hover:text-black border border-white/10 rounded-xl transition-all"
+            >
+              <a href={`https://wa.me/${turf.whatsappNumber}`} target="_blank" rel="noopener noreferrer">
+                <MessageCircle className="h-4 w-4" />
+              </a>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }

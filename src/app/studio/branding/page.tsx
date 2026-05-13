@@ -32,7 +32,8 @@ import {
   Star,
   CheckCircle2,
   AlertCircle,
-  Info
+  Info,
+  ShieldAlert
 } from "lucide-react";
 import { useFirestore, useDoc, useMemoFirebase } from "@/firebase";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
@@ -108,6 +109,8 @@ export default function BrandingStudioPage() {
         return;
       }
 
+      console.log(`[Cloudinary] Starting upload with preset: ${CLOUDINARY_UPLOAD_PRESET} to cloud: ${CLOUDINARY_CLOUD_NAME}`);
+
       const uploadData = new FormData();
       uploadData.append('file', file);
       uploadData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
@@ -129,12 +132,20 @@ export default function BrandingStudioPage() {
         setUploadingStates(prev => ({ ...prev, [key]: false }));
         if (xhr.status === 200) {
           const response = JSON.parse(xhr.responseText);
+          console.log("[Cloudinary] Upload success:", response.secure_url);
           resolve(response.secure_url);
         } else {
-          console.error("Cloudinary Error:", xhr.responseText);
+          const errorMsg = xhr.responseText;
+          console.error("[Cloudinary] Upload error details:", errorMsg);
+          
+          let friendlyMsg = "Verify Cloudinary Cloud Name & Unsigned Preset.";
+          if (errorMsg.includes("Upload preset not found")) {
+            friendlyMsg = `The preset "${CLOUDINARY_UPLOAD_PRESET}" was not found in your Cloudinary settings.`;
+          }
+
           toast({ 
             title: "Upload Failed", 
-            description: "Verify Cloudinary Cloud Name & Unsigned Preset", 
+            description: friendlyMsg, 
             variant: "destructive" 
           });
           resolve(null);
@@ -193,7 +204,6 @@ export default function BrandingStudioPage() {
     try {
       const docRef = doc(db, "settings", "branding");
       
-      // Strict sanitization to prevent non-serializable crashes
       const dataToSave = {
         heroHeadingWhite: String(formData.heroHeadingWhite || ""),
         heroHeadingNeon: String(formData.heroHeadingNeon || ""),
@@ -217,7 +227,6 @@ export default function BrandingStudioPage() {
         updatedAt: serverTimestamp()
       };
 
-      // NON-BLOCKING MUTATION: Optimistic reset
       setDoc(docRef, dataToSave, { merge: true })
         .catch(async (serverError) => {
           console.error("[Studio/Branding] Background sync failed:", serverError);
@@ -230,10 +239,9 @@ export default function BrandingStudioPage() {
           errorEmitter.emit('permission-error', permissionError);
         });
 
-      // Immediate UI Transition
       toast({ 
         title: "Changes Published", 
-        description: "The live portal is now synchronizing with the grid." 
+        description: "The live portal is now synchronizing." 
       });
       
       setIsSaving(false);
@@ -244,7 +252,7 @@ export default function BrandingStudioPage() {
       toast({
         variant: "destructive",
         title: "Publish Failed",
-        description: "Data preparation error. Check logs."
+        description: "Data preparation error."
       });
     }
   };
@@ -270,15 +278,27 @@ export default function BrandingStudioPage() {
         </div>
       </div>
 
-      {isConfigMissing && (
-        <Alert variant="destructive" className="mb-10 bg-destructive/10 border-destructive/20 text-destructive rounded-[2rem] p-8">
-          <AlertCircle className="h-6 w-6" />
-          <AlertTitle className="font-black uppercase tracking-widest text-xs mb-2">Cloudinary Disconnected</AlertTitle>
-          <AlertDescription className="text-xs opacity-80 leading-relaxed font-medium">
-            Uploads are disabled. Add <strong>NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME</strong> to your environment to restore media flows.
-          </AlertDescription>
-        </Alert>
-      )}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-10">
+        <div className="lg:col-span-8">
+          {isConfigMissing ? (
+            <Alert variant="destructive" className="bg-destructive/10 border-destructive/20 text-destructive rounded-[2rem] p-8">
+              <AlertCircle className="h-6 w-6" />
+              <AlertTitle className="font-black uppercase tracking-widest text-xs mb-2">Cloudinary Disconnected</AlertTitle>
+              <AlertDescription className="text-xs opacity-80 leading-relaxed font-medium">
+                Media flows are inactive. Add <strong>NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME</strong> and <strong>NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET</strong> to your environment.
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <Alert className="bg-primary/5 border-primary/20 text-primary rounded-[2rem] p-8">
+              <ShieldAlert className="h-6 w-6" />
+              <AlertTitle className="font-black uppercase tracking-widest text-xs mb-2">Media Bridge Active</AlertTitle>
+              <AlertDescription className="text-xs opacity-80 leading-relaxed font-medium">
+                Cloud: <span className="font-bold">{CLOUDINARY_CLOUD_NAME}</span> • Preset: <span className="font-bold underline">{CLOUDINARY_UPLOAD_PRESET}</span>
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
+      </div>
 
       <Tabs defaultValue="hero" className="space-y-10">
         <TabsList className="bg-white/5 p-1 h-14 rounded-[1.5rem] border border-white/5">
@@ -348,7 +368,6 @@ export default function BrandingStudioPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-10 pt-4 space-y-10">
-                   {/* Recommended Guide */}
                    <div className="flex items-center gap-3 p-5 rounded-2xl bg-primary/5 border border-primary/10 shadow-[0_0_20px_rgba(57,255,20,0.05)]">
                       <Info className="h-5 w-5 text-primary shrink-0" />
                       <div className="text-[10px] font-black uppercase tracking-widest leading-tight text-white/60">
@@ -356,7 +375,6 @@ export default function BrandingStudioPage() {
                       </div>
                    </div>
 
-                   {/* Circular Staging Area */}
                    <div 
                       className={cn(
                         "relative aspect-square w-full max-w-[320px] md:max-w-[420px] mx-auto rounded-full border-2 border-dashed transition-all overflow-hidden flex items-center justify-center group",

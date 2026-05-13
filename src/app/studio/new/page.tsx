@@ -28,7 +28,8 @@ import {
   X,
   Plus,
   AlertCircle,
-  Database
+  Database,
+  ShieldAlert
 } from "lucide-react";
 import { generateTurfDescriptionForAdmin } from "@/ai/flows/generate-turf-description-for-admin";
 import { useToast } from "@/hooks/use-toast";
@@ -173,6 +174,8 @@ function NewTurfForm() {
         return;
       }
 
+      console.log(`[Cloudinary] Uploading to cloud: ${CLOUDINARY_CLOUD_NAME} using preset: ${CLOUDINARY_UPLOAD_PRESET}`);
+
       const form = new FormData();
       form.append('file', file);
       form.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
@@ -196,8 +199,15 @@ function NewTurfForm() {
           const response = JSON.parse(xhr.responseText);
           resolve(response.secure_url);
         } else {
-          console.error("Cloudinary Error:", xhr.responseText);
-          toast({ title: "CDN Upload Failed. Verify configuration.", variant: "destructive" });
+          const errorMsg = xhr.responseText;
+          console.error("[Cloudinary] Upload Error:", errorMsg);
+          
+          let friendlyMsg = "CDN Upload Failed. Verify configuration.";
+          if (errorMsg.includes("Upload preset not found")) {
+            friendlyMsg = `Cloudinary preset "${CLOUDINARY_UPLOAD_PRESET}" not found. Verify your environment variables.`;
+          }
+
+          toast({ title: "Media Sync Failed", description: friendlyMsg, variant: "destructive" });
           resolve(null);
         }
       };
@@ -295,7 +305,6 @@ function NewTurfForm() {
         updatedAt: serverTimestamp() 
       };
 
-      // NON-BLOCKING MUTATION: UI resets immediately
       setDoc(turfRef, dataToSave, { merge: true })
         .catch(async (serverError) => {
           console.error("[Studio/New] Background sync failure:", serverError);
@@ -308,7 +317,6 @@ function NewTurfForm() {
           errorEmitter.emit('permission-error', permissionError);
         });
 
-      // Immediate UI Transition
       toast({ 
         title: "Arena Deployed", 
         description: "The listing is active and syncing to the grid." 
@@ -323,7 +331,7 @@ function NewTurfForm() {
       toast({
         variant: "destructive",
         title: "Deployment Failed",
-        description: err.message || "Logic error in data preparation."
+        description: "Logic error in data preparation."
       });
     }
   };
@@ -332,14 +340,34 @@ function NewTurfForm() {
 
   return (
     <div className="max-w-6xl mx-auto pb-32 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="flex items-center justify-between mb-12">
+      <div className="flex items-center justify-between mb-8">
         <Button variant="ghost" onClick={() => router.back()} className="rounded-xl group font-black text-[10px] uppercase tracking-[0.3em] text-white/40 h-12">
           <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" /> Dashboard
         </Button>
         <div className="flex items-center gap-3">
           <div className="h-2 w-2 bg-primary rounded-full animate-pulse shadow-[0_0_10px_rgba(57,255,20,1)]" />
-          <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Secure Media Bridge</span>
+          <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Deployment Console</span>
         </div>
+      </div>
+
+      <div className="mb-10">
+        {isConfigMissing ? (
+          <Alert variant="destructive" className="bg-destructive/10 border-destructive/20 text-destructive rounded-[2rem] p-8">
+            <AlertCircle className="h-6 w-6" />
+            <AlertTitle className="font-black uppercase tracking-widest text-xs mb-2">Cloudinary Disconnected</AlertTitle>
+            <AlertDescription className="text-xs opacity-80 leading-relaxed font-medium">
+              Uploads are disabled. Add <strong>NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME</strong> and <strong>NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET</strong> to your environment.
+            </AlertDescription>
+          </Alert>
+        ) : (
+          <Alert className="bg-primary/5 border-primary/20 text-primary rounded-[2rem] p-8">
+            <ShieldAlert className="h-6 w-6" />
+            <AlertTitle className="font-black uppercase tracking-widest text-xs mb-2">Media Protocol Verified</AlertTitle>
+            <AlertDescription className="text-xs opacity-80 leading-relaxed font-medium">
+              Target Cloud: <span className="font-bold">{CLOUDINARY_CLOUD_NAME}</span> • Active Preset: <span className="font-bold underline">{CLOUDINARY_UPLOAD_PRESET}</span>
+            </AlertDescription>
+          </Alert>
+        )}
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-10">

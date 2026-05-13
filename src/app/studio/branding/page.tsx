@@ -102,14 +102,14 @@ export default function BrandingStudioPage() {
       if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
         toast({ 
           title: "Config Missing", 
-          description: "Cloudinary configuration required in environment.", 
+          description: "Add NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME and NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET to your .env file.", 
           variant: "destructive" 
         });
         resolve(null);
         return;
       }
 
-      console.log(`[Cloudinary] Starting upload with preset: ${CLOUDINARY_UPLOAD_PRESET} to cloud: ${CLOUDINARY_CLOUD_NAME}`);
+      console.log(`[Cloudinary] Starting upload to ${CLOUDINARY_CLOUD_NAME} using preset ${CLOUDINARY_UPLOAD_PRESET}`);
 
       const uploadData = new FormData();
       uploadData.append('file', file);
@@ -132,19 +132,18 @@ export default function BrandingStudioPage() {
         setUploadingStates(prev => ({ ...prev, [key]: false }));
         if (xhr.status === 200) {
           const response = JSON.parse(xhr.responseText);
-          console.log("[Cloudinary] Upload success:", response.secure_url);
           resolve(response.secure_url);
         } else {
           const errorMsg = xhr.responseText;
-          console.error("[Cloudinary] Upload error details:", errorMsg);
+          console.error("[Cloudinary] Upload Error:", errorMsg);
           
           let friendlyMsg = "Verify Cloudinary Cloud Name & Unsigned Preset.";
           if (errorMsg.includes("Upload preset not found")) {
-            friendlyMsg = `The preset "${CLOUDINARY_UPLOAD_PRESET}" was not found in your Cloudinary settings.`;
+            friendlyMsg = `The preset "${CLOUDINARY_UPLOAD_PRESET}" was not found. Please create an 'Unsigned' preset in Cloudinary Settings > Upload.`;
           }
 
           toast({ 
-            title: "Upload Failed", 
+            title: "Media Upload Failed", 
             description: friendlyMsg, 
             variant: "destructive" 
           });
@@ -168,7 +167,7 @@ export default function BrandingStudioPage() {
     const url = await uploadToCloudinary(file, 'logo');
     if (url) {
       setFormData(prev => ({ ...prev, logoUrl: url }));
-      toast({ title: "Logo Staged", description: "Save to persist changes." });
+      toast({ title: "Logo Staged", description: "Publish changes to save." });
     }
   };
 
@@ -178,19 +177,7 @@ export default function BrandingStudioPage() {
     const url = await uploadToCloudinary(file, 'hero');
     if (url) {
       setFormData(prev => ({ ...prev, heroImageUrl: url }));
-      toast({ title: "Hero Athlete Staged", description: "Publish to go live." });
-    }
-  };
-
-  const handleCategoryUpload = async (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const key = `cat-${index}`;
-    const url = await uploadToCloudinary(file, key);
-    if (url) {
-      const updatedChallenges = [...formData.challenges];
-      updatedChallenges[index].imageUrl = url;
-      setFormData(prev => ({ ...prev, challenges: updatedChallenges }));
+      toast({ title: "Hero Media Staged", description: "Publish to go live." });
     }
   };
 
@@ -199,7 +186,6 @@ export default function BrandingStudioPage() {
     if (!db) return;
     
     setIsSaving(true);
-    console.log("[Studio/Branding] Initiating optimistic publish flow...");
     
     try {
       const docRef = doc(db, "settings", "branding");
@@ -228,8 +214,12 @@ export default function BrandingStudioPage() {
       };
 
       setDoc(docRef, dataToSave, { merge: true })
+        .then(() => {
+          toast({ title: "Changes Published", description: "Site identity synchronized successfully." });
+          setIsSaving(false);
+        })
         .catch(async (serverError) => {
-          console.error("[Studio/Branding] Background sync failed:", serverError);
+          setIsSaving(false);
           const permissionError = new FirestorePermissionError({
             path: docRef.path,
             operation: 'write',
@@ -239,21 +229,9 @@ export default function BrandingStudioPage() {
           errorEmitter.emit('permission-error', permissionError);
         });
 
-      toast({ 
-        title: "Changes Published", 
-        description: "The live portal is now synchronizing." 
-      });
-      
-      setIsSaving(false);
-
     } catch (err: any) {
-      console.error("[Studio/Branding] Preparation error:", err);
       setIsSaving(false);
-      toast({
-        variant: "destructive",
-        title: "Publish Failed",
-        description: "Data preparation error."
-      });
+      toast({ variant: "destructive", title: "Error", description: "Could not prepare data for publish." });
     }
   };
 
@@ -278,26 +256,25 @@ export default function BrandingStudioPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-10">
-        <div className="lg:col-span-8">
-          {isConfigMissing ? (
-            <Alert variant="destructive" className="bg-destructive/10 border-destructive/20 text-destructive rounded-[2rem] p-8">
-              <AlertCircle className="h-6 w-6" />
-              <AlertTitle className="font-black uppercase tracking-widest text-xs mb-2">Cloudinary Disconnected</AlertTitle>
-              <AlertDescription className="text-xs opacity-80 leading-relaxed font-medium">
-                Media flows are inactive. Add <strong>NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME</strong> and <strong>NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET</strong> to your environment.
-              </AlertDescription>
-            </Alert>
-          ) : (
-            <Alert className="bg-primary/5 border-primary/20 text-primary rounded-[2rem] p-8">
-              <ShieldAlert className="h-6 w-6" />
-              <AlertTitle className="font-black uppercase tracking-widest text-xs mb-2">Media Bridge Active</AlertTitle>
-              <AlertDescription className="text-xs opacity-80 leading-relaxed font-medium">
-                Cloud: <span className="font-bold">{CLOUDINARY_CLOUD_NAME}</span> • Preset: <span className="font-bold underline">{CLOUDINARY_UPLOAD_PRESET}</span>
-              </AlertDescription>
-            </Alert>
-          )}
-        </div>
+      <div className="mb-10">
+        {isConfigMissing ? (
+          <Alert variant="destructive" className="bg-destructive/10 border-destructive/20 text-destructive rounded-[2rem] p-8">
+            <AlertCircle className="h-6 w-6" />
+            <AlertTitle className="font-black uppercase tracking-widest text-xs mb-2">Cloudinary Setup Required</AlertTitle>
+            <AlertDescription className="text-xs opacity-80 leading-relaxed font-medium">
+              Media flows are inactive. Add <strong>NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME</strong> and <strong>NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET</strong> to your .env file.
+            </AlertDescription>
+          </Alert>
+        ) : (
+          <Alert className="bg-primary/5 border-primary/20 text-primary rounded-[2rem] p-8">
+            <ShieldAlert className="h-6 w-6" />
+            <AlertTitle className="font-black uppercase tracking-widest text-xs mb-2">Media Bridge Active</AlertTitle>
+            <AlertDescription className="text-xs opacity-80 leading-relaxed font-medium">
+              Cloud: <span className="font-bold">{CLOUDINARY_CLOUD_NAME}</span> • Preset: <span className="font-bold underline">{CLOUDINARY_UPLOAD_PRESET}</span>
+              <p className="mt-2 text-[10px] opacity-60">Note: Ensure this preset is 'Unsigned' in your Cloudinary Dashboard.</p>
+            </AlertDescription>
+          </Alert>
+        )}
       </div>
 
       <Tabs defaultValue="hero" className="space-y-10">
@@ -368,17 +345,17 @@ export default function BrandingStudioPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-10 pt-4 space-y-10">
-                   <div className="flex items-center gap-3 p-5 rounded-2xl bg-primary/5 border border-primary/10 shadow-[0_0_20px_rgba(57,255,20,0.05)]">
+                   <div className="flex items-center gap-3 p-5 rounded-2xl bg-primary/5 border border-primary/10">
                       <Info className="h-5 w-5 text-primary shrink-0" />
                       <div className="text-[10px] font-black uppercase tracking-widest leading-tight text-white/60">
-                        Recommended: <span className="text-primary italic">1200 × 1200 px</span> • PNG/WebP preferred • Transparent support
+                        Recommended: <span className="text-primary italic">1200 × 1200 px</span> • PNG/WebP preferred
                       </div>
                    </div>
 
                    <div 
                       className={cn(
-                        "relative aspect-square w-full max-w-[320px] md:max-w-[420px] mx-auto rounded-full border-2 border-dashed transition-all overflow-hidden flex items-center justify-center group",
-                        isConfigMissing ? "opacity-20 cursor-not-allowed border-white/10" : "border-primary/40 bg-black/60 hover:border-primary hover:shadow-[0_0_50px_rgba(57,255,20,0.2)] shadow-[0_0_30px_rgba(57,255,20,0.05)] cursor-pointer"
+                        "relative aspect-square w-full max-w-[420px] mx-auto rounded-full border-2 border-dashed transition-all overflow-hidden flex items-center justify-center group",
+                        isConfigMissing ? "opacity-20 cursor-not-allowed border-white/10" : "border-primary/40 bg-black/60 hover:border-primary hover:shadow-[0_0_50px_rgba(57,255,20,0.2)] cursor-pointer"
                       )}
                       onClick={() => !uploadingStates['hero'] && !isConfigMissing && heroInputRef.current?.click()}
                     >
@@ -386,27 +363,19 @@ export default function BrandingStudioPage() {
                         <div className="text-center w-64 p-12">
                           <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-4" />
                           <Progress value={uploadProgress['hero']} className="h-2 bg-white/10" />
-                          <p className="text-[9px] font-black text-primary uppercase tracking-widest mt-4">Uploading Athlete...</p>
+                          <p className="text-[9px] font-black text-primary uppercase tracking-widest mt-4">Uploading...</p>
                         </div>
                       ) : formData.heroImageUrl ? (
                         <div className="relative w-full h-full p-12 flex items-center justify-center">
-                           <img 
-                            src={formData.heroImageUrl} 
-                            className="w-full h-full object-contain drop-shadow-[0_0_30px_rgba(255,255,255,0.1)] transition-transform group-hover:scale-105 duration-700" 
-                            alt="Hero Staging Preview" 
-                           />
+                           <img src={formData.heroImageUrl} className="w-full h-full object-contain drop-shadow-[0_0_30px_rgba(255,255,255,0.1)]" alt="Hero Preview" />
                            <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                              <div className="bg-black/80 px-6 py-3 rounded-full border border-primary/40 text-primary font-black uppercase tracking-widest text-[10px]">
-                                 Replace Athlete
-                              </div>
+                              <div className="bg-black/80 px-6 py-3 rounded-full border border-primary/40 text-primary font-black uppercase tracking-widest text-[10px]">Replace Media</div>
                            </div>
                         </div>
                       ) : (
-                        <div className="text-center p-12 space-y-4">
-                           <div className="h-20 w-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto group-hover:scale-110 group-hover:bg-primary/20 transition-all duration-500">
-                             <Upload className="h-8 w-8 text-primary" />
-                           </div>
-                           <p className="text-white/30 text-[9px] font-bold uppercase tracking-[0.2em] mt-1">Tap to select athlete media</p>
+                        <div className="text-center p-12 opacity-30">
+                          <Upload className="h-12 w-12 mx-auto mb-4" />
+                          <p className="text-[10px] font-black uppercase">Click to select athlete image</p>
                         </div>
                       )}
                       <input type="file" ref={heroInputRef} onChange={handleHeroUpload} className="hidden" accept="image/*" />
@@ -441,14 +410,24 @@ export default function BrandingStudioPage() {
                           const input = document.createElement('input');
                           input.type = 'file';
                           input.accept = 'image/*';
-                          input.onchange = (e) => handleCategoryUpload(e as any, idx);
+                          input.onchange = (e) => {
+                            const file = (e.target as any).files?.[0];
+                            if (file) {
+                              uploadToCloudinary(file, `cat-${idx}`).then(url => {
+                                if (url) {
+                                  const updated = [...formData.challenges];
+                                  updated[idx].imageUrl = url;
+                                  setFormData({...formData, challenges: updated});
+                                }
+                              });
+                            }
+                          };
                           input.click();
                         }}
                       >
                         {uploadingStates[`cat-${idx}`] ? (
                           <div className="p-4 w-full">
                             <Loader2 className="h-6 w-6 animate-spin text-primary mx-auto mb-2" />
-                            <Progress value={uploadProgress[`cat-${idx}`]} className="h-1" />
                           </div>
                         ) : (
                           challenge.imageUrl ? <img src={challenge.imageUrl} className="h-full w-full object-cover" alt="Cat Preview" /> : <Upload className="h-6 w-6 opacity-30" />

@@ -30,15 +30,17 @@ import {
   Target,
   Wind,
   Star,
-  X
+  X,
+  CheckCircle2
 } from "lucide-react";
 import { useFirestore, useDoc, useMemoFirebase, useStorage } from "@/firebase";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { useToast } from "@/hooks/use-toast";
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { TurfistaLogo } from "@/components/brand-logo";
+import { Progress } from "@/components/ui/progress";
 
 const DEFAULT_CHALLENGES = [
   { name: "Football", sub: "5v5 Challenge", icon: "Zap", imageUrl: "https://picsum.photos/seed/ball1/400/400", buttonText: "JOIN NOW" },
@@ -62,9 +64,8 @@ export default function BrandingStudioPage() {
   const { data: brandingData, loading } = useDoc(brandingRef);
 
   const [isSaving, setIsSaving] = useState(false);
-  const [uploadingLogo, setUploadingLogo] = useState(false);
-  const [uploadingHero, setUploadingHero] = useState(false);
-  const [uploadingCategory, setUploadingCategory] = useState<number | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
+  const [uploadingStates, setUploadingStates] = useState<Record<string, boolean>>({});
   
   const [formData, setFormData] = useState({
     heroHeadingWhite: "PLAY",
@@ -92,57 +93,70 @@ export default function BrandingStudioPage() {
     }
   }, [brandingData]);
 
-  const handleFileUpload = async (file: File, path: string) => {
-    if (!storage) {
-      toast({ title: "Storage Not Initialized", description: "Check your Firebase config.", variant: "destructive" });
-      return null;
-    }
-    const fileName = `${path}_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
-    const storageRef = ref(storage, fileName);
-    try {
-      const snapshot = await uploadBytes(storageRef, file);
-      const url = await getDownloadURL(snapshot.ref);
-      return url;
-    } catch (err: any) {
-      console.error("Upload error details:", err);
-      toast({ 
-        title: "Upload Failed", 
-        description: err.message || "An unexpected error occurred during upload.", 
-        variant: "destructive" 
-      });
-      return null;
-    }
+  const uploadFile = (file: File, path: string, key: string): Promise<string | null> => {
+    return new Promise((resolve) => {
+      if (!storage) {
+        toast({ title: "Storage Not Initialized", variant: "destructive" });
+        return resolve(null);
+      }
+
+      const fileName = `${path}_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+      const storageRef = ref(storage, fileName);
+      const uploadTask = uploadBytesResumable(storageRef, file);
+
+      setUploadingStates(prev => ({ ...prev, [key]: true }));
+      setUploadProgress(prev => ({ ...prev, [key]: 0 }));
+
+      uploadTask.on(
+        'state_changed',
+        (snapshot) => {
+          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          setUploadProgress(prev => ({ ...prev, [key]: progress }));
+        },
+        (error) => {
+          console.error("Upload error:", error);
+          toast({ 
+            title: "Upload Failed", 
+            description: error.message, 
+            variant: "destructive" 
+          });
+          setUploadingStates(prev => ({ ...prev, [key]: false }));
+          resolve(null);
+        },
+        async () => {
+          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+          setUploadingStates(prev => ({ ...prev, [key]: false }));
+          toast({ title: "Asset Uploaded Successfully" });
+          resolve(downloadURL);
+        }
+      );
+    });
   };
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setUploadingLogo(true);
-    const url = await handleFileUpload(file, 'branding/logo');
+    const url = await uploadFile(file, 'branding/logo', 'logo');
     if (url) setFormData(prev => ({ ...prev, logoUrl: url }));
-    setUploadingLogo(false);
   };
 
   const handleHeroUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setUploadingHero(true);
-    const url = await handleFileUpload(file, 'branding/hero');
+    const url = await uploadFile(file, 'branding/hero', 'hero');
     if (url) setFormData(prev => ({ ...prev, heroImageUrl: url }));
-    setUploadingHero(false);
   };
 
   const handleCategoryUpload = async (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setUploadingCategory(index);
-    const url = await handleFileUpload(file, `branding/challenges/${formData.challenges[index].name.toLowerCase()}`);
+    const key = `cat-${index}`;
+    const url = await uploadFile(file, `branding/challenges/${formData.challenges[index].name.toLowerCase()}`, key);
     if (url) {
       const updatedChallenges = [...formData.challenges];
       updatedChallenges[index].imageUrl = url;
       setFormData(prev => ({ ...prev, challenges: updatedChallenges }));
     }
-    setUploadingCategory(null);
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -195,9 +209,14 @@ export default function BrandingStudioPage() {
                 <CardContent className="p-10 space-y-10">
                   <div className="space-y-4">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Primary Logo</Label>
-                    <div className="relative group cursor-pointer" onClick={() => logoInputRef.current?.click()}>
-                      <div className="relative aspect-square w-40 rounded-3xl border-2 border-dashed border-primary/20 bg-black/40 flex items-center justify-center p-8 transition-all hover:border-primary/50">
-                        {uploadingLogo ? <Loader2 className="h-8 w-8 animate-spin text-primary" /> : (
+                    <div className="relative group cursor-pointer" onClick={() => !uploadingStates['logo'] && logoInputRef.current?.click()}>
+                      <div className="relative aspect-square w-40 rounded-3xl border-2 border-dashed border-primary/20 bg-black/40 flex items-center justify-center p-8 transition-all hover:border-primary/50 overflow-hidden">
+                        {uploadingStates['logo'] ? (
+                          <div className="text-center w-full px-4">
+                            <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-2" />
+                            <Progress value={uploadProgress['logo']} className="h-1 bg-white/10" />
+                          </div>
+                        ) : (
                           formData.logoUrl ? <img src={formData.logoUrl} className="max-h-full max-w-full object-contain" alt="Logo Preview" /> : <Upload className="h-8 w-8 opacity-40" />
                         )}
                       </div>
@@ -207,9 +226,15 @@ export default function BrandingStudioPage() {
 
                   <div className="space-y-4">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Hero Backdrop Image</Label>
-                    <div className="relative group cursor-pointer" onClick={() => heroInputRef.current?.click()}>
+                    <div className="relative group cursor-pointer" onClick={() => !uploadingStates['hero'] && heroInputRef.current?.click()}>
                       <div className="relative aspect-video w-full rounded-3xl border-2 border-dashed border-primary/20 bg-black/40 flex items-center justify-center overflow-hidden transition-all hover:border-primary/50">
-                        {uploadingHero ? <Loader2 className="h-10 w-10 animate-spin text-primary" /> : (
+                        {uploadingStates['hero'] ? (
+                          <div className="text-center w-64">
+                            <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-4" />
+                            <Progress value={uploadProgress['hero']} className="h-2 bg-white/10" />
+                            <p className="text-[10px] font-black uppercase tracking-widest mt-4 text-primary">Uploading Elite Visual... {Math.round(uploadProgress['hero'])}%</p>
+                          </div>
+                        ) : (
                           formData.heroImageUrl ? <img src={formData.heroImageUrl} className="h-full w-full object-cover" alt="Hero Preview" /> : <div className="text-center opacity-40"><Upload className="h-10 w-10 mx-auto mb-2" /><span className="text-[10px] font-bold uppercase">Upload Hero</span></div>
                         )}
                       </div>
@@ -276,7 +301,12 @@ export default function BrandingStudioPage() {
                           input.click();
                         }}
                       >
-                        {uploadingCategory === idx ? <Loader2 className="h-6 w-6 animate-spin text-primary" /> : (
+                        {uploadingStates[`cat-${idx}`] ? (
+                          <div className="p-4 w-full">
+                            <Loader2 className="h-6 w-6 animate-spin text-primary mx-auto mb-2" />
+                            <Progress value={uploadProgress[`cat-${idx}`]} className="h-1" />
+                          </div>
+                        ) : (
                           challenge.imageUrl ? <img src={challenge.imageUrl} className="h-full w-full object-cover" alt="Cat Preview" /> : <Upload className="h-6 w-6 opacity-30" />
                         )}
                       </div>

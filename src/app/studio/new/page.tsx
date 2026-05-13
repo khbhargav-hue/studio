@@ -32,11 +32,11 @@ import { generateTurfDescriptionForAdmin } from "@/ai/flows/generate-turf-descri
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore, useDoc, useMemoFirebase, useStorage } from "@/firebase";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { cn } from "@/lib/utils";
-import { motion, AnimatePresence } from "framer-motion";
+import { Progress } from "@/components/ui/progress";
 
 const SPORT_OPTIONS = ["Cricket", "Football", "Pickleball", "Badminton"];
 const COURT_OPTIONS = [
@@ -123,8 +123,9 @@ function NewTurfForm() {
   const { data: existingTurf, loading: loadingExisting } = useDoc(turfDocRef);
 
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isUploadingMain, setIsUploadingMain] = useState(false);
-  const [isUploadingGallery, setIsUploadingGallery] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
+  const [uploadingStates, setUploadingStates] = useState<Record<string, boolean>>({});
+
   const [formData, setFormData] = useState({
     id: "",
     name: "",
@@ -159,47 +160,56 @@ function NewTurfForm() {
     }
   }, [existingTurf, editId]);
 
-  const handleFileUpload = async (file: File, path: string) => {
-    if (!storage) {
-      toast({ title: "Storage Not Configured", description: "Storage bucket not found.", variant: "destructive" });
-      return null;
-    }
-    const fileName = `${path}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
-    const storageRef = ref(storage, fileName);
-    try {
-      const snapshot = await uploadBytes(storageRef, file);
-      return await getDownloadURL(snapshot.ref);
-    } catch (error: any) {
-      console.error("Storage upload error:", error);
-      toast({ 
-        title: "Upload Failed", 
-        description: error.message || "Permissions or network error.", 
-        variant: "destructive" 
-      });
-      return null;
-    }
+  const uploadFile = (file: File, path: string, key: string): Promise<string | null> => {
+    return new Promise((resolve) => {
+      if (!storage) {
+        toast({ title: "Storage Not Configured", variant: "destructive" });
+        return resolve(null);
+      }
+
+      const fileName = `${path}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+      const storageRef = ref(storage, fileName);
+      const uploadTask = uploadBytesResumable(storageRef, file);
+
+      setUploadingStates(prev => ({ ...prev, [key]: true }));
+      setUploadProgress(prev => ({ ...prev, [key]: 0 }));
+
+      uploadTask.on(
+        'state_changed',
+        (snapshot) => {
+          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          setUploadProgress(prev => ({ ...prev, [key]: progress }));
+        },
+        (error) => {
+          console.error("Upload error:", error);
+          toast({ title: "Upload Failed", description: error.message, variant: "destructive" });
+          setUploadingStates(prev => ({ ...prev, [key]: false }));
+          resolve(null);
+        },
+        async () => {
+          const url = await getDownloadURL(uploadTask.snapshot.ref);
+          setUploadingStates(prev => ({ ...prev, [key]: false }));
+          resolve(url);
+        }
+      );
+    });
   };
 
   const handleMainUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setIsUploadingMain(true);
-    const url = await handleFileUpload(file, 'turfs/main');
+    const url = await uploadFile(file, 'turfs/main', 'main');
     if (url) setFormData(prev => ({ ...prev, mainImage: url }));
-    setIsUploadingMain(false);
   };
 
   const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
-    setIsUploadingGallery(true);
-    const newUrls: string[] = [];
-    for (const file of files) {
-      const url = await handleFileUpload(file, 'turfs/gallery');
-      if (url) newUrls.push(url);
+    
+    for (let i = 0; i < files.length; i++) {
+      const url = await uploadFile(files[i], 'turfs/gallery', `gal-${i}`);
+      if (url) setFormData(prev => ({ ...prev, galleryImages: [...prev.galleryImages, url] }));
     }
-    setFormData(prev => ({ ...prev, galleryImages: [...prev.galleryImages, ...newUrls] }));
-    setIsUploadingGallery(false);
   };
 
   const toggleSelection = useCallback((field: keyof typeof formData, value: string) => {
@@ -375,9 +385,14 @@ function NewTurfForm() {
                   <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Primary Display (Thumbnail)</Label>
                   <div 
                     className="relative aspect-video rounded-3xl border-2 border-dashed border-primary/20 bg-primary/5 hover:border-primary/50 transition-all cursor-pointer overflow-hidden group"
-                    onClick={() => mainInputRef.current?.click()}
+                    onClick={() => !uploadingStates['main'] && mainInputRef.current?.click()}
                   >
-                    {isUploadingMain && <div className="absolute inset-0 z-10 bg-black/60 flex items-center justify-center"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>}
+                    {uploadingStates['main'] && (
+                      <div className="absolute inset-0 z-10 bg-black/60 flex flex-col items-center justify-center p-8">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+                        <Progress value={uploadProgress['main']} className="h-1 w-full bg-white/10" />
+                      </div>
+                    )}
                     {formData.mainImage ? (
                       <img src={formData.mainImage} className="w-full h-full object-cover" />
                     ) : (

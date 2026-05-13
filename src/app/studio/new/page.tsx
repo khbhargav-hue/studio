@@ -264,65 +264,68 @@ function NewTurfForm() {
     e.preventDefault();
     if (!db) return;
     
-    console.log("[Studio/New] Starting deployment flow...");
     setIsSaving(true);
+    console.log("[Studio/New] Starting non-blocking deployment flow...");
     
     try {
       const id = editId || formData.name.toLowerCase().replace(/\s+/g, '-');
       const turfRef = doc(db, "turfs", id);
       
-      // Sanitization: Picking only required fields and ensuring no undefined values
+      // Explicit sanitization to prevent Firestore serialization errors
       const dataToSave = { 
-        id,
-        name: formData.name || "",
-        area: formData.area || "",
-        location: formData.location || "",
+        id: String(id),
+        name: String(formData.name || ""),
+        area: String(formData.area || ""),
+        location: String(formData.location || ""),
         pricePerHour: Number(formData.pricePerHour) || 0,
         courtPricing: formData.courtPricing || {},
-        description: formData.description || "",
-        amenities: formData.amenities || [],
-        sportTypes: formData.sportTypes || [],
-        courtTypes: formData.courtTypes || [],
+        description: String(formData.description || ""),
+        amenities: Array.isArray(formData.amenities) ? formData.amenities.map(String) : [],
+        sportTypes: Array.isArray(formData.sportTypes) ? formData.sportTypes.map(String) : [],
+        courtTypes: Array.isArray(formData.courtTypes) ? formData.courtTypes.map(String) : [],
         rating: Number(formData.rating) || 4.5,
         reviewCount: Number(formData.reviewCount) || 0,
-        openingHours: formData.openingHours || "",
-        contactNumber: formData.contactNumber || "",
-        whatsappNumber: formData.whatsappNumber || "",
-        mainImage: formData.mainImage || "",
-        galleryImages: formData.galleryImages || [],
-        mapUrl: formData.mapUrl || "",
-        isPopular: !!formData.isPopular,
+        openingHours: String(formData.openingHours || ""),
+        contactNumber: String(formData.contactNumber || ""),
+        whatsappNumber: String(formData.whatsappNumber || ""),
+        mainImage: String(formData.mainImage || ""),
+        galleryImages: Array.isArray(formData.galleryImages) ? formData.galleryImages.map(String) : [],
+        mapUrl: String(formData.mapUrl || ""),
+        isPopular: Boolean(formData.isPopular),
         updatedAt: serverTimestamp() 
       };
 
-      console.log("[Studio/New] Deployment payload ready:", dataToSave);
+      console.log("[Studio/New] Dispatching mutation to:", turfRef.path);
 
+      // NON-BLOCKING MUTATION: Proceed immediately to local cache
       setDoc(turfRef, dataToSave, { merge: true })
-      .then(() => {
-        console.log("[Studio/New] Deployment successful.");
-        toast({ title: "Arena Deployed", description: "The listing is now active on the discovery feed." });
-        setIsSaving(false);
-        router.push("/studio");
-      })
-      .catch(async (err) => {
-        console.error("[Studio/New] Deployment rejected:", err);
-        setIsSaving(false);
-        
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: turfRef.path,
-          operation: 'write',
-          requestResourceData: dataToSave,
-          message: err.message
-        }));
+        .catch(async (serverError) => {
+          console.error("[Studio/New] Background sync rejected:", serverError);
+          const permissionError = new FirestorePermissionError({
+            path: turfRef.path,
+            operation: 'write',
+            requestResourceData: dataToSave,
+            message: serverError.message
+          });
+          errorEmitter.emit('permission-error', permissionError);
+        });
+
+      // UI proceeds immediately
+      toast({ 
+        title: "Arena Deployed", 
+        description: "The listing is active in local cache and syncing to the grid." 
       });
+      
+      setIsSaving(false);
+      router.push("/studio");
 
     } catch (err: any) {
-      console.error("[Studio/New] Critical exception in handleSubmit:", err);
+      console.error("[Studio/New] Critical submission error:", err);
       setIsSaving(false);
       toast({
         variant: "destructive",
         title: "Deployment Failed",
-        description: err.message || "An unexpected error occurred during sanitization."
+        description: err.message || "A logic error occurred during sanitization."
       });
     }
   };

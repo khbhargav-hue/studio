@@ -16,7 +16,7 @@ import {
   TabsContent, 
   TabsList, 
   TabsTrigger 
-} from "@/components/ui/tabs";
+} from "@/components/tabs";
 import { 
   Palette, 
   Save, 
@@ -180,23 +180,22 @@ export default function BrandingStudioPage() {
     }
   };
 
-  const handleSave = async (e: React.FormEvent) => {
+  const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     if (!db) return;
     
-    console.log("[Studio/Branding] Starting publish flow...");
     setIsSaving(true);
+    console.log("[Studio/Branding] Preparing sanitized payload...");
     
     try {
       const docRef = doc(db, "settings", "branding");
       
-      // Sanitization logic: Firestore rejects 'undefined' values.
-      // We explicitly pick and default every field to ensure a clean payload.
+      // Explicit sanitization to avoid serializing 'undefined' or non-standard objects
       const dataToSave = {
-        heroHeadingWhite: formData.heroHeadingWhite || "",
-        heroHeadingNeon: formData.heroHeadingNeon || "",
-        heroHeading2White: formData.heroHeading2White || "",
-        heroHeading2Neon: formData.heroHeading2Neon || "",
+        heroHeadingWhite: formData.heroHeadingWhite || "PLAY",
+        heroHeadingNeon: formData.heroHeadingNeon || "MORE.",
+        heroHeading2White: formData.heroHeading2White || "BOOK",
+        heroHeading2Neon: formData.heroHeading2Neon || "EASY.",
         heroDescription: formData.heroDescription || "",
         logoUrl: formData.logoUrl || "",
         heroImageUrl: formData.heroImageUrl || "",
@@ -206,43 +205,44 @@ export default function BrandingStudioPage() {
         footerWhatsapp: formData.footerWhatsapp || "",
         copyrightText: formData.copyrightText || "",
         challenges: (formData.challenges || []).map(c => ({
-          name: c.name || "",
-          sub: c.sub || "",
-          imageUrl: c.imageUrl || "",
-          buttonText: c.buttonText || "",
-          icon: c.icon || ""
+          name: String(c.name || ""),
+          sub: String(c.sub || ""),
+          imageUrl: String(c.imageUrl || ""),
+          buttonText: String(c.buttonText || ""),
+          icon: String(c.icon || "")
         })),
         updatedAt: serverTimestamp()
       };
 
-      console.log("[Studio/Branding] Sanitized payload ready:", dataToSave);
+      console.log("[Studio/Branding] Initiating non-blocking write to:", docRef.path);
 
-      // Initiation of the non-blocking write
+      // NON-BLOCKING MUTATION: We trigger the write and proceed immediately
       setDoc(docRef, dataToSave, { merge: true })
-        .then(() => {
-          console.log("[Studio/Branding] Firestore settlement successful.");
-          toast({ title: "Portal Synchronized", description: "All visual changes are now live." });
-          setIsSaving(false);
-        })
-        .catch(async (err) => {
-          console.error("[Studio/Branding] Firestore settlement rejected:", err);
-          setIsSaving(false);
-          
-          errorEmitter.emit('permission-error', new FirestorePermissionError({
+        .catch(async (serverError) => {
+          console.error("[Studio/Branding] Background sync failed:", serverError);
+          const permissionError = new FirestorePermissionError({
             path: docRef.path,
             operation: 'write',
             requestResourceData: dataToSave,
-            message: err.message
-          }));
+            message: serverError.message
+          });
+          errorEmitter.emit('permission-error', permissionError);
         });
 
+      // Optimistic completion for responsive UI
+      toast({ 
+        title: "Synchronizing Intelligence", 
+        description: "Your visual configurations are being pushed to the live edge." 
+      });
+      setIsSaving(false);
+
     } catch (err: any) {
-      console.error("[Studio/Branding] Critical exception in handleSave:", err);
+      console.error("[Studio/Branding] Critical preparation error:", err);
       setIsSaving(false);
       toast({
         variant: "destructive",
-        title: "Save Failure",
-        description: err.message || "A logic error prevented the save initiation."
+        title: "Initialization Error",
+        description: err.message || "Failed to prepare data for transmission."
       });
     }
   };

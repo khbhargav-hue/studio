@@ -167,7 +167,7 @@ function NewTurfForm() {
   const uploadToCloudinary = (file: File, key: string): Promise<string | null> => {
     return new Promise((resolve) => {
       if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
-        toast({ title: "Cloudinary Setup Required in .env", variant: "destructive" });
+        toast({ title: "Cloudinary Setup Required in environment.", variant: "destructive" });
         resolve(null);
         return;
       }
@@ -196,14 +196,14 @@ function NewTurfForm() {
           resolve(response.secure_url);
         } else {
           console.error("Cloudinary Error:", xhr.responseText);
-          toast({ title: "CDN Upload Failed. Check Cloud Name & Preset.", variant: "destructive" });
+          toast({ title: "CDN Upload Failed. Verify configuration.", variant: "destructive" });
           resolve(null);
         }
       };
 
       xhr.onerror = () => {
         setUploadingStates(prev => ({ ...prev, [key]: false }));
-        toast({ title: "Network Error during CDN upload", variant: "destructive" });
+        toast({ title: "Network error during CDN upload.", variant: "destructive" });
         resolve(null);
       };
 
@@ -265,13 +265,12 @@ function NewTurfForm() {
     if (!db) return;
     
     setIsSaving(true);
-    console.log("[Studio/New] Starting non-blocking deployment flow...");
+    console.log("[Studio/New] Dispatching deployment flow...");
     
     try {
       const id = editId || formData.name.toLowerCase().replace(/\s+/g, '-');
       const turfRef = doc(db, "turfs", id);
       
-      // Explicit sanitization to prevent Firestore serialization errors
       const dataToSave = { 
         id: String(id),
         name: String(formData.name || ""),
@@ -295,12 +294,10 @@ function NewTurfForm() {
         updatedAt: serverTimestamp() 
       };
 
-      console.log("[Studio/New] Dispatching mutation to:", turfRef.path);
-
-      // NON-BLOCKING MUTATION: Proceed immediately to local cache
+      // NON-BLOCKING MUTATION
       setDoc(turfRef, dataToSave, { merge: true })
         .catch(async (serverError) => {
-          console.error("[Studio/New] Background sync rejected:", serverError);
+          console.error("[Studio/New] Background sync failure:", serverError);
           const permissionError = new FirestorePermissionError({
             path: turfRef.path,
             operation: 'write',
@@ -310,22 +307,22 @@ function NewTurfForm() {
           errorEmitter.emit('permission-error', permissionError);
         });
 
-      // UI proceeds immediately
+      // Immediate UI Transition
       toast({ 
         title: "Arena Deployed", 
-        description: "The listing is active in local cache and syncing to the grid." 
+        description: "The listing is active and syncing to the grid." 
       });
       
       setIsSaving(false);
       router.push("/studio");
 
     } catch (err: any) {
-      console.error("[Studio/New] Critical submission error:", err);
+      console.error("[Studio/New] Fatal submission error:", err);
       setIsSaving(false);
       toast({
         variant: "destructive",
         title: "Deployment Failed",
-        description: err.message || "A logic error occurred during sanitization."
+        description: err.message || "Logic error in data preparation."
       });
     }
   };
@@ -477,7 +474,7 @@ function NewTurfForm() {
                       </div>
                     )}
                     {formData.mainImage ? (
-                      <img src={formData.mainImage} className="w-full h-full object-cover" />
+                      <img src={formData.mainImage} className="w-full h-full object-cover" alt="Turf Preview" />
                     ) : (
                       <div className="flex flex-col items-center justify-center h-full gap-4 opacity-40">
                         <Upload className="h-10 w-10" />
@@ -506,7 +503,7 @@ function NewTurfForm() {
                   <div className="grid grid-cols-3 gap-3">
                     {formData.galleryImages.map((url, i) => (
                       <div key={url} className="relative aspect-square rounded-xl overflow-hidden border border-white/5 group">
-                        <img src={url} className="w-full h-full object-cover" />
+                        <img src={url} className="w-full h-full object-cover" alt="Gallery item" />
                         <button type="button" onClick={() => setFormData(p => ({...p, galleryImages: p.galleryImages.filter(u => u !== url)}))} className="absolute inset-0 bg-destructive/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                           <X className="h-5 w-5 text-white" />
                         </button>
@@ -517,7 +514,7 @@ function NewTurfForm() {
               </CardContent>
             </Card>
 
-            <Card className="glass-card border-white/5 rounded-[2.5rem] overflow-hidden">
+            <Card className="glass-card border-white/5 rounded-[3.5rem] overflow-hidden">
               <CardHeader className="p-8">
                 <CardTitle className="font-headline text-2xl font-bold flex items-center gap-4">
                   <Zap className="h-6 w-6 text-primary" />

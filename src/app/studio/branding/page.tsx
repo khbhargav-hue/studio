@@ -41,7 +41,6 @@ import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
-import { TurfistaLogo } from "@/components/brand-logo";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
@@ -104,7 +103,7 @@ export default function BrandingStudioPage() {
       if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
         toast({ 
           title: "Config Missing", 
-          description: "Cloudinary Cloud Name or Upload Preset is not defined in .env", 
+          description: "Cloudinary configuration required in environment.", 
           variant: "destructive" 
         });
         resolve(null);
@@ -132,13 +131,12 @@ export default function BrandingStudioPage() {
         setUploadingStates(prev => ({ ...prev, [key]: false }));
         if (xhr.status === 200) {
           const response = JSON.parse(xhr.responseText);
-          toast({ title: "Asset Uploaded to Cloudinary" });
           resolve(response.secure_url);
         } else {
           console.error("Cloudinary Error:", xhr.responseText);
           toast({ 
-            title: "Upload Failed", 
-            description: "Verify Cloudinary Cloud Name & Unsigned Preset", 
+            title: "CDN Upload Failed", 
+            description: "Check Cloud Name & Preset settings.", 
             variant: "destructive" 
           });
           resolve(null);
@@ -147,7 +145,7 @@ export default function BrandingStudioPage() {
 
       xhr.onerror = () => {
         setUploadingStates(prev => ({ ...prev, [key]: false }));
-        toast({ title: "Network Error during upload", variant: "destructive" });
+        toast({ title: "Network error during upload.", variant: "destructive" });
         resolve(null);
       };
 
@@ -186,24 +184,24 @@ export default function BrandingStudioPage() {
     if (!db) return;
     
     setIsSaving(true);
-    console.log("[Studio/Branding] Preparing sanitized payload...");
+    console.log("[Studio/Branding] Dispatching identity update...");
     
     try {
       const docRef = doc(db, "settings", "branding");
       
       const dataToSave = {
-        heroHeadingWhite: formData.heroHeadingWhite || "PLAY",
-        heroHeadingNeon: formData.heroHeadingNeon || "MORE.",
-        heroHeading2White: formData.heroHeading2White || "BOOK",
-        heroHeading2Neon: formData.heroHeading2Neon || "EASY.",
-        heroDescription: formData.heroDescription || "",
-        logoUrl: formData.logoUrl || "",
-        heroImageUrl: formData.heroImageUrl || "",
-        seoTitle: formData.seoTitle || "",
-        seoDescription: formData.seoDescription || "",
-        footerEmail: formData.footerEmail || "",
-        footerWhatsapp: formData.footerWhatsapp || "",
-        copyrightText: formData.copyrightText || "",
+        heroHeadingWhite: String(formData.heroHeadingWhite || ""),
+        heroHeadingNeon: String(formData.heroHeadingNeon || ""),
+        heroHeading2White: String(formData.heroHeading2White || ""),
+        heroHeading2Neon: String(formData.heroHeading2Neon || ""),
+        heroDescription: String(formData.heroDescription || ""),
+        logoUrl: String(formData.logoUrl || ""),
+        heroImageUrl: String(formData.heroImageUrl || ""),
+        seoTitle: String(formData.seoTitle || ""),
+        seoDescription: String(formData.seoDescription || ""),
+        footerEmail: String(formData.footerEmail || ""),
+        footerWhatsapp: String(formData.footerWhatsapp || ""),
+        copyrightText: String(formData.copyrightText || ""),
         challenges: (formData.challenges || []).map(c => ({
           name: String(c.name || ""),
           sub: String(c.sub || ""),
@@ -214,17 +212,10 @@ export default function BrandingStudioPage() {
         updatedAt: serverTimestamp()
       };
 
-      console.log("[Studio/Branding] Initiating non-blocking write to:", docRef.path);
-
+      // NON-BLOCKING MUTATION: Proceed immediately to prevent UI hang
       setDoc(docRef, dataToSave, { merge: true })
-        .then(() => {
-           toast({ 
-            title: "Identity Published", 
-            description: "Live portal has been synchronized with the latest intelligence." 
-          });
-        })
         .catch(async (serverError) => {
-          console.error("[Studio/Branding] Background sync failed:", serverError);
+          console.error("[Studio/Branding] Background sync failure:", serverError);
           const permissionError = new FirestorePermissionError({
             path: docRef.path,
             operation: 'write',
@@ -232,19 +223,24 @@ export default function BrandingStudioPage() {
             message: serverError.message
           });
           errorEmitter.emit('permission-error', permissionError);
-        })
-        .finally(() => {
-          setIsSaving(false);
         });
 
+      // Immediate Feedback
+      toast({ 
+        title: "Changes Published", 
+        description: "The live portal is now synchronizing with the grid." 
+      });
+      
+      setIsSaving(false);
+
     } catch (err: any) {
-      console.error("[Studio/Branding] Critical preparation error:", err);
+      console.error("[Studio/Branding] Fatal preparation error:", err);
+      setIsSaving(false);
       toast({
         variant: "destructive",
-        title: "Initialization Error",
-        description: err.message || "Failed to prepare data for transmission."
+        title: "Publish Failed",
+        description: err.message || "Logic error in data preparation."
       });
-      setIsSaving(false);
     }
   };
 
@@ -321,7 +317,7 @@ export default function BrandingStudioPage() {
                     <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-4 block">Primary Logo (Cloudinary)</Label>
                     <div className="relative group cursor-pointer" onClick={() => !uploadingStates['logo'] && !isConfigMissing && logoInputRef.current?.click()}>
                       <div className={cn(
-                        "relative h-24 w-full rounded-2xl border-2 border-dashed flex items-center justify-center p-4 transition-all overflow-hidden",
+                        "relative aspect-square w-40 rounded-3xl border-2 border-dashed flex items-center justify-center p-8 transition-all overflow-hidden",
                         isConfigMissing ? "opacity-20 cursor-not-allowed border-white/10" : "border-primary/20 bg-black/40 hover:border-primary/50"
                       )}>
                         {uploadingStates['logo'] ? (
@@ -391,7 +387,7 @@ export default function BrandingStudioPage() {
                            </div>
                         </div>
                       )}
-                      <input type="file" ref={heroInputRef} onChange={handleHeroUpload} accept="image/*" className="hidden" />
+                      <input type="file" ref={heroInputRef} onChange={handleHeroUpload} className="hidden" accept="image/*" />
                     </div>
 
                     <div className="text-center">

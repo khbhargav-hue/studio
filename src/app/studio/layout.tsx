@@ -4,7 +4,7 @@ import { ReactNode, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser, useAuth } from '@/firebase';
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from '@/components/ui/sidebar';
-import { LayoutDashboard, PlusCircle, LogOut, Loader2, Palette, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, LogOut, Loader2, Palette, ShieldCheck, Globe } from 'lucide-react';
 import Link from 'next/link';
 import { signOut } from 'firebase/auth';
 import { TurfistaLogo } from '@/components/brand-logo';
@@ -22,7 +22,7 @@ export default function StudioLayout({ children }: { children: ReactNode }) {
       if (!user) {
         router.replace('/login');
       } else if (user.email !== ADMIN_EMAIL) {
-        // Logged in but not an admin - redirect to home (keep studio hidden)
+        // Logged in but not an admin - silent redirect to home
         router.replace('/');
       } else {
         setIsAuthorized(true);
@@ -36,7 +36,7 @@ export default function StudioLayout({ children }: { children: ReactNode }) {
         await signOut(auth);
         router.push('/');
       } catch (error) {
-        console.error("Logout failed", error);
+        console.error("Studio termination failed", error);
       }
     }
   };
@@ -44,9 +44,9 @@ export default function StudioLayout({ children }: { children: ReactNode }) {
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-black">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-12 w-12 animate-spin text-primary" />
-          <p className="text-[10px] font-black text-primary uppercase tracking-[0.4em]">Secure Authentication...</p>
+        <div className="flex flex-col items-center gap-6">
+          <Loader2 className="h-16 w-16 animate-spin text-primary" />
+          <p className="text-[10px] font-black text-primary uppercase tracking-[0.5em] animate-pulse">Establishing Secure Node...</p>
         </div>
       </div>
     );
@@ -58,53 +58,53 @@ export default function StudioLayout({ children }: { children: ReactNode }) {
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-background">
-        <Sidebar className="border-r border-white/5 bg-card/50 backdrop-blur-xl w-80">
-          <SidebarHeader className="p-10">
+      <div className="flex min-h-screen w-full bg-background selection:bg-primary selection:text-black">
+        <Sidebar className="border-r border-white/5 bg-card/60 backdrop-blur-3xl w-80">
+          <SidebarHeader className="p-12">
             <Link href="/">
               <TurfistaLogo size="lg" />
             </Link>
           </SidebarHeader>
-          <SidebarContent className="px-6 space-y-2">
+          <SidebarContent className="px-6 space-y-3">
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Dashboard" className="h-14 rounded-2xl font-bold uppercase tracking-widest text-xs px-4">
+                <SidebarMenuButton asChild tooltip="Dashboard" className="h-16 rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[10px] px-6 transition-all hover:bg-primary/5 hover:text-primary data-[active=true]:bg-primary data-[active=true]:text-black">
                   <Link href="/studio">
-                    <LayoutDashboard className="h-5 w-5 mr-2" />
-                    <span>Dashboard</span>
+                    <LayoutDashboard className="h-5 w-5 mr-3" />
+                    <span>Intelligence</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Add New Turf" className="h-14 rounded-2xl font-bold uppercase tracking-widest text-xs px-4">
+                <SidebarMenuButton asChild tooltip="Add New Turf" className="h-16 rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[10px] px-6 transition-all hover:bg-primary/5 hover:text-primary">
                   <Link href="/studio/new">
-                    <PlusCircle className="h-5 w-5 mr-2" />
-                    <span>Add New Turf</span>
+                    <PlusCircle className="h-5 w-5 mr-3" />
+                    <span>Deploy Arena</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Branding" className="h-14 rounded-2xl font-bold uppercase tracking-widest text-xs px-4">
+                <SidebarMenuButton asChild tooltip="Branding" className="h-16 rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[10px] px-6 transition-all hover:bg-primary/5 hover:text-primary">
                   <Link href="/studio/branding">
-                    <Palette className="h-5 w-5 mr-2" />
-                    <span>Branding</span>
+                    <Palette className="h-5 w-5 mr-3" />
+                    <span>Visual Assets</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarContent>
-          <SidebarFooter className="p-8">
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton onClick={handleLogout} className="h-14 rounded-2xl font-bold uppercase tracking-widest text-xs px-4 text-destructive hover:text-destructive hover:bg-destructive/10">
-                  <LogOut className="h-5 w-5 mr-2" />
-                  <span>Logout</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
+          <SidebarFooter className="p-10">
+            <div className="flex flex-col gap-4">
+              <Button asChild variant="outline" className="h-14 rounded-2xl border-white/5 bg-white/5 font-black uppercase tracking-widest text-[9px]">
+                <Link href="/" target="_blank"><Globe className="h-4 w-4 mr-2" /> Live Portal</Link>
+              </Button>
+              <Button onClick={handleLogout} variant="ghost" className="h-14 rounded-2xl font-black uppercase tracking-widest text-[9px] text-destructive hover:bg-destructive/10 hover:text-destructive">
+                <LogOut className="h-4 w-4 mr-2" /> Terminate Access
+              </Button>
+            </div>
           </SidebarFooter>
         </Sidebar>
-        <main className="flex-1 overflow-y-auto px-6 py-10 md:px-12">
+        <main className="flex-1 overflow-y-auto px-8 py-12 md:px-16 md:py-20">
           {children}
         </main>
       </div>

@@ -1,4 +1,3 @@
-
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
@@ -18,12 +17,15 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://turfista.in'),
+  metadataBase: new URL('https://www.turfista.in'),
+  alternates: {
+    canonical: '/',
+  },
   title: {
-    default: 'Turfista | Football, Cricket, Badminton & Pickleball in Mysuru',
+    default: 'Turfista | Premium Sports Community in Mysuru',
     template: '%s | Turfista'
   },
-  description: 'The elite platform to discover sports arenas, join teams, and challenge rivals in Mysuru. Play more, book easy.',
+  description: 'Discover elite sports arenas, join local teams, and challenge rivals in Mysuru. The all-in-one platform for Football, Cricket, Badminton & Pickleball.',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
@@ -35,7 +37,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Turfista | Premium Sports Community in Mysuru',
     description: 'Find your squad, book your pitch, and dominate the city circuits.',
-    url: 'https://turfista.in',
+    url: 'https://www.turfista.in',
     siteName: 'Turfista',
     locale: 'en_IN',
     type: 'website',

@@ -83,24 +83,24 @@ export function TurfCard({ turf }: TurfCardProps) {
     : rawImage;
 
   return (
-    <Card className="group relative overflow-hidden border-none bg-secondary/40 glass-card rounded-[2.5rem] flex flex-col h-full hover:scale-[1.03] transition-all duration-700 shadow-2xl">
-      <Link href={`/turf/${turf.id}`} className="block relative aspect-[14/11] overflow-hidden rounded-t-[2.5rem]">
+    <Card className="group relative overflow-hidden border-none bg-secondary/40 glass-card rounded-[3rem] flex flex-col h-full hover:scale-[1.02] transition-all duration-500 shadow-2xl">
+      <Link href={`/turf/${turf.id}`} className="block relative aspect-[14/11] overflow-hidden rounded-t-[3rem]">
         <Image
           src={displayImage}
           alt={turf.name}
           fill
-          className="object-cover transition-transform duration-1000 group-hover:scale-110 grayscale-[0.2] group-hover:grayscale-0"
+          className="object-cover transition-transform duration-1000 group-hover:scale-110 grayscale-[0.3] group-hover:grayscale-0"
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/10 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
         
-        <div className="absolute left-6 top-6 flex items-center gap-2">
-          <Badge className="bg-black/60 backdrop-blur-md text-[hsl(var(--rating))] border border-white/10 font-black px-4 py-1.5 text-[10px] rounded-xl shadow-2xl">
+        <div className="absolute left-6 top-6 flex flex-col gap-2">
+          <Badge className="bg-black/80 backdrop-blur-md text-[hsl(var(--rating))] border border-white/10 font-black px-4 py-1.5 text-[10px] rounded-xl shadow-2xl w-fit">
             {turf.rating || 4.5} <Star className="ml-1.5 h-3.5 w-3.5 fill-current" />
           </Badge>
           {turf.isPopular && (
-            <Badge className="bg-black/60 backdrop-blur-md text-primary border-primary/20 text-[8px] font-black uppercase tracking-[0.2em] px-4 py-1.5 rounded-xl shadow-2xl">
-              <Star className="h-3 w-3 mr-1.5 fill-current animate-pulse" /> FEATURED
+            <Badge className="bg-primary/90 text-black border-none text-[8px] font-black uppercase tracking-[0.3em] px-4 py-1.5 rounded-xl shadow-[0_0_15px_rgba(57,255,20,0.5)] w-fit">
+              PREMIUM
             </Badge>
           )}
         </div>
@@ -109,39 +109,39 @@ export function TurfCard({ turf }: TurfCardProps) {
       <CardContent className="p-8 flex-1 flex flex-col">
         <div className="mb-6">
           <Link href={`/turf/${turf.id}`}>
-            <h3 className="text-3xl mb-2 group-hover:text-primary transition-colors italic font-black uppercase tracking-tighter leading-none text-white">
+            <h3 className="text-3xl mb-3 group-hover:text-primary transition-colors italic font-black uppercase tracking-tighter leading-[0.9] text-white">
               {turf.name}
             </h3>
-            <div className="flex items-center text-white/30 text-[10px] font-black uppercase tracking-widest gap-2">
+            <div className="flex items-center text-white/30 text-[11px] font-black uppercase tracking-[0.2em] gap-2">
               <MapPin className="h-3.5 w-3.5 text-primary" />
-              <span>{turf.area}, MYSURU</span>
+              <span>{turf.area}</span>
             </div>
           </Link>
         </div>
 
         <div className={cn(
-          "grid gap-3 mb-4",
+          "grid gap-4 mb-6",
           pricingDetails.half && pricingDetails.full ? "grid-cols-2" : "grid-cols-1"
         )}>
           {pricingDetails.half && (
-            <div className="bg-white/5 p-4 rounded-2xl border border-white/5 group-hover:bg-white/10 transition-colors">
-              <p className="text-[9px] text-white/30 font-black uppercase tracking-[0.1em] mb-1">Half Court</p>
+            <div className="bg-white/5 p-4 rounded-[1.5rem] border border-white/5 transition-colors text-center">
+              <p className="text-[9px] text-white/30 font-black uppercase tracking-[0.1em] mb-1">HALF</p>
               <p className="text-2xl font-black italic text-white leading-none">
                 ₹{pricingDetails.half}
               </p>
             </div>
           )}
           {pricingDetails.full && (
-            <div className="bg-primary/5 p-4 rounded-2xl border border-primary/20 group-hover:bg-primary/10 transition-colors">
-              <p className="text-[9px] text-primary/60 font-black uppercase tracking-[0.1em] mb-1">Full Court</p>
+            <div className="bg-primary/5 p-4 rounded-[1.5rem] border border-primary/20 transition-colors text-center">
+              <p className="text-[9px] text-primary/60 font-black uppercase tracking-[0.1em] mb-1">FULL</p>
               <p className="text-2xl font-black italic text-primary leading-none">
                 ₹{pricingDetails.full}
               </p>
             </div>
           )}
           {!pricingDetails.half && !pricingDetails.full && (
-            <div className="bg-white/5 p-4 rounded-2xl border border-white/5 group-hover:bg-white/10 transition-colors">
-              <p className="text-[9px] text-white/30 font-black uppercase tracking-[0.1em] mb-1">Standard Rate</p>
+            <div className="bg-white/5 p-4 rounded-[1.5rem] border border-white/5 transition-colors text-center">
+              <p className="text-[9px] text-white/30 font-black uppercase tracking-[0.1em] mb-1">STARTING</p>
               <p className="text-2xl font-black italic text-white leading-none">
                 ₹{pricingDetails.default}
               </p>
@@ -149,13 +149,9 @@ export function TurfCard({ turf }: TurfCardProps) {
           )}
         </div>
 
-        <p className="text-[9px] text-white/20 font-medium italic mb-6">
-          * Prices may vary. Please confirm with the turf owner.
-        </p>
-
-        <div className="flex items-center gap-2 text-[9px] font-black text-white/20 uppercase tracking-[0.2em] mt-auto">
-          <Clock className="h-3.5 w-3.5 text-primary" />
-          <span>{turf.openingHours || 'Schedule in portal'}</span>
+        <div className="flex items-center gap-3 text-[10px] font-black text-white/20 uppercase tracking-[0.2em] mt-auto border-t border-white/5 pt-6">
+          <Clock className="h-4 w-4 text-primary" />
+          <span>{turf.openingHours || 'Live Schedule'}</span>
         </div>
       </CardContent>
 
@@ -163,11 +159,11 @@ export function TurfCard({ turf }: TurfCardProps) {
         <Button 
           asChild 
           onClick={handleWhatsAppClick}
-          className="w-full h-16 bg-primary hover:bg-primary/90 text-black font-black text-sm uppercase tracking-widest rounded-2xl transition-all shadow-xl hover:shadow-primary/20 hover:scale-[1.02] border-none"
+          className="btn-neon-glow w-full h-18 bg-primary hover:bg-primary text-black font-black text-xs uppercase tracking-widest rounded-[1.5rem] border-none shadow-[0_20px_40px_-10px_rgba(57,255,20,0.3)] transition-all"
         >
           <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
             <MessageCircle className="mr-3 h-5 w-5" />
-            Book Now
+            BOOK ARENA
           </a>
         </Button>
       </CardFooter>

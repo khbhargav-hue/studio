@@ -33,7 +33,8 @@ import {
   X,
   CheckCircle2,
   Cloud,
-  AlertCircle
+  AlertCircle,
+  Info
 } from "lucide-react";
 import { useFirestore, useDoc, useMemoFirebase } from "@/firebase";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
@@ -216,6 +217,12 @@ export default function BrandingStudioPage() {
       console.log("[Studio/Branding] Initiating non-blocking write to:", docRef.path);
 
       setDoc(docRef, dataToSave, { merge: true })
+        .then(() => {
+           toast({ 
+            title: "Identity Published", 
+            description: "Live portal has been synchronized with the latest intelligence." 
+          });
+        })
         .catch(async (serverError) => {
           console.error("[Studio/Branding] Background sync failed:", serverError);
           const permissionError = new FirestorePermissionError({
@@ -225,12 +232,10 @@ export default function BrandingStudioPage() {
             message: serverError.message
           });
           errorEmitter.emit('permission-error', permissionError);
+        })
+        .finally(() => {
+          setIsSaving(false);
         });
-
-      toast({ 
-        title: "Synchronizing Intelligence", 
-        description: "Your visual configurations are being pushed to the live edge." 
-      });
 
     } catch (err: any) {
       console.error("[Studio/Branding] Critical preparation error:", err);
@@ -239,8 +244,6 @@ export default function BrandingStudioPage() {
         title: "Initialization Error",
         description: err.message || "Failed to prepare data for transmission."
       });
-    } finally {
-      // Ensure loading state is reset immediately to keep UI responsive
       setIsSaving(false);
     }
   };
@@ -285,58 +288,8 @@ export default function BrandingStudioPage() {
 
         <form onSubmit={handleSave} className="space-y-10">
           <TabsContent value="hero" className="space-y-10">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-              <Card className="glass-card border-white/5 rounded-[3rem] overflow-hidden">
-                <CardHeader className="p-10 pb-0">
-                  <CardTitle className="font-headline text-3xl font-bold flex items-center gap-4">
-                    <TurfistaLogo iconOnly size="md" /> Branding Assets
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-10 space-y-10">
-                  <div className="space-y-4">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Primary Logo (Cloudinary)</Label>
-                    <div className="relative group cursor-pointer" onClick={() => !uploadingStates['logo'] && !isConfigMissing && logoInputRef.current?.click()}>
-                      <div className={cn(
-                        "relative aspect-square w-40 rounded-3xl border-2 border-dashed flex items-center justify-center p-8 transition-all overflow-hidden",
-                        isConfigMissing ? "opacity-20 cursor-not-allowed border-white/10" : "border-primary/20 bg-black/40 hover:border-primary/50"
-                      )}>
-                        {uploadingStates['logo'] ? (
-                          <div className="text-center w-full px-4">
-                            <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-2" />
-                            <Progress value={uploadProgress['logo']} className="h-1 bg-white/10" />
-                          </div>
-                        ) : (
-                          formData.logoUrl ? <img src={formData.logoUrl} className="max-h-full max-w-full object-contain" alt="Logo Preview" /> : <Upload className="h-8 w-8 opacity-40" />
-                        )}
-                      </div>
-                      <input type="file" ref={logoInputRef} onChange={handleLogoUpload} accept="image/*" className="hidden" />
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Hero Backdrop (Cloudinary)</Label>
-                    <div className="relative group cursor-pointer" onClick={() => !uploadingStates['hero'] && !isConfigMissing && heroInputRef.current?.click()}>
-                      <div className={cn(
-                        "relative aspect-video w-full rounded-3xl border-2 border-dashed flex items-center justify-center overflow-hidden transition-all",
-                        isConfigMissing ? "opacity-20 cursor-not-allowed border-white/10" : "border-primary/20 bg-black/40 hover:border-primary/50"
-                      )}>
-                        {uploadingStates['hero'] ? (
-                          <div className="text-center w-64">
-                            <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-4" />
-                            <Progress value={uploadProgress['hero']} className="h-2 bg-white/10" />
-                            <p className="text-[10px] font-black uppercase tracking-widest mt-4 text-primary">CDN Push... {Math.round(uploadProgress['hero'])}%</p>
-                          </div>
-                        ) : (
-                          formData.heroImageUrl ? <img src={formData.heroImageUrl} className="h-full w-full object-cover" alt="Hero Preview" /> : <div className="text-center opacity-40"><Upload className="h-10 w-10 mx-auto mb-2" /><span className="text-[10px] font-bold uppercase">CDN Upload</span></div>
-                        )}
-                      </div>
-                      <input type="file" ref={heroInputRef} onChange={handleHeroUpload} accept="image/*" className="hidden" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="glass-card border-white/5 rounded-[3rem] overflow-hidden">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
+              <Card className="glass-card border-white/5 rounded-[3rem] overflow-hidden order-2 lg:order-1">
                 <CardHeader className="p-10 pb-0">
                   <CardTitle className="font-headline text-3xl font-bold flex items-center gap-4"><Layout className="h-8 w-8 text-primary" /> Hero Copy</CardTitle>
                 </CardHeader>
@@ -363,6 +316,87 @@ export default function BrandingStudioPage() {
                     <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Sub-Description</Label>
                     <Textarea className="min-h-[140px] bg-white/5 border-white/5 rounded-[2rem] p-6 text-lg leading-relaxed italic" value={formData.heroDescription} onChange={e => setFormData({...formData, heroDescription: e.target.value})} />
                   </div>
+                  
+                  <div className="pt-8 border-t border-white/5">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-4 block">Primary Logo (Cloudinary)</Label>
+                    <div className="relative group cursor-pointer" onClick={() => !uploadingStates['logo'] && !isConfigMissing && logoInputRef.current?.click()}>
+                      <div className={cn(
+                        "relative h-24 w-full rounded-2xl border-2 border-dashed flex items-center justify-center p-4 transition-all overflow-hidden",
+                        isConfigMissing ? "opacity-20 cursor-not-allowed border-white/10" : "border-primary/20 bg-black/40 hover:border-primary/50"
+                      )}>
+                        {uploadingStates['logo'] ? (
+                          <div className="text-center w-full px-4">
+                            <Loader2 className="h-6 w-6 animate-spin text-primary mx-auto mb-2" />
+                            <Progress value={uploadProgress['logo']} className="h-1 bg-white/10" />
+                          </div>
+                        ) : (
+                          formData.logoUrl ? <img src={formData.logoUrl} className="max-h-full max-w-full object-contain" alt="Logo Preview" /> : <div className="flex items-center gap-3 text-white/40"><Upload className="h-5 w-5" /><span className="text-[10px] font-bold uppercase">Update Logo Asset</span></div>
+                        )}
+                      </div>
+                      <input type="file" ref={logoInputRef} onChange={handleLogoUpload} accept="image/*" className="hidden" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="glass-card border-white/5 rounded-[3rem] overflow-hidden order-1 lg:order-2">
+                <CardHeader className="p-10 pb-4">
+                  <CardTitle className="font-headline text-3xl font-bold flex items-center gap-4">
+                     <ImageIcon className="h-8 w-8 text-primary" />
+                     Hero Backdrop
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-10 pt-4 space-y-10">
+                   <div className="flex items-center gap-3 p-5 rounded-2xl bg-primary/5 border border-primary/10 shadow-[0_0_20px_rgba(57,255,20,0.05)]">
+                      <Info className="h-5 w-5 text-primary shrink-0" />
+                      <div className="text-[10px] font-black uppercase tracking-widest leading-tight text-white/60">
+                        Recommended: <span className="text-primary italic">1200 × 1200 px</span> • PNG/WebP preferred • Transparent support
+                      </div>
+                   </div>
+
+                   <div 
+                      className={cn(
+                        "relative aspect-square w-full max-w-[320px] md:max-w-[420px] mx-auto rounded-full border-2 border-dashed transition-all overflow-hidden flex items-center justify-center group",
+                        isConfigMissing ? "opacity-20 cursor-not-allowed border-white/10" : "border-primary/40 bg-black/60 hover:border-primary hover:shadow-[0_0_50px_rgba(57,255,20,0.2)] shadow-[0_0_30px_rgba(57,255,20,0.05)] cursor-pointer"
+                      )}
+                      onClick={() => !uploadingStates['hero'] && !isConfigMissing && heroInputRef.current?.click()}
+                    >
+                      {uploadingStates['hero'] ? (
+                        <div className="text-center w-64 p-12">
+                          <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-4" />
+                          <Progress value={uploadProgress['hero']} className="h-2 bg-white/10" />
+                          <p className="text-[9px] font-black uppercase tracking-[0.3em] mt-6 text-primary animate-pulse">Syncing to Grid... {Math.round(uploadProgress['hero'])}%</p>
+                        </div>
+                      ) : formData.heroImageUrl ? (
+                        <div className="relative w-full h-full p-12 flex items-center justify-center">
+                           <img 
+                            src={formData.heroImageUrl} 
+                            className="w-full h-full object-contain drop-shadow-[0_0_30px_rgba(255,255,255,0.1)] transition-transform group-hover:scale-105 duration-700" 
+                            alt="Hero Staging Preview" 
+                           />
+                           <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <div className="bg-black/80 px-6 py-3 rounded-full border border-primary/40 text-primary font-black uppercase tracking-widest text-[10px]">
+                                 Swap Asset
+                              </div>
+                           </div>
+                        </div>
+                      ) : (
+                        <div className="text-center p-12 space-y-4">
+                           <div className="h-20 w-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto group-hover:scale-110 group-hover:bg-primary/20 transition-all duration-500">
+                             <Upload className="h-8 w-8 text-primary" />
+                           </div>
+                           <div>
+                              <p className="text-white font-black italic uppercase text-lg tracking-tight">Deploy Hero</p>
+                              <p className="text-white/30 text-[9px] font-bold uppercase tracking-[0.2em] mt-1">Tap to select athlete media</p>
+                           </div>
+                        </div>
+                      )}
+                      <input type="file" ref={heroInputRef} onChange={handleHeroUpload} accept="image/*" className="hidden" />
+                    </div>
+
+                    <div className="text-center">
+                       <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-white/20">PREVIEW PORTAL STAGING</p>
+                    </div>
                 </CardContent>
               </Card>
             </div>

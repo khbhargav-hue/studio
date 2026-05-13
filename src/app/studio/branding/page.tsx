@@ -88,12 +88,14 @@ export default function BrandingStudioPage() {
     challenges: DEFAULT_CHALLENGES
   });
 
+  // Critical: Populate form only when Firestore data is available
   useEffect(() => {
     if (brandingData) {
+      console.log("[Studio/Branding] Synchronizing with Firestore persistence...");
       setFormData(prev => ({ 
         ...prev, 
         ...brandingData,
-        challenges: Array.isArray(brandingData.challenges) ? brandingData.challenges : DEFAULT_CHALLENGES
+        challenges: Array.isArray(brandingData.challenges) ? brandingData.challenges : prev.challenges
       }));
     }
   }, [brandingData]);
@@ -109,8 +111,6 @@ export default function BrandingStudioPage() {
         resolve(null);
         return;
       }
-
-      console.log(`[Cloudinary] Starting upload to ${CLOUDINARY_CLOUD_NAME} using preset ${CLOUDINARY_UPLOAD_PRESET}`);
 
       const uploadData = new FormData();
       uploadData.append('file', file);
@@ -135,17 +135,10 @@ export default function BrandingStudioPage() {
           const response = JSON.parse(xhr.responseText);
           resolve(response.secure_url);
         } else {
-          const errorMsg = xhr.responseText;
-          console.error("[Cloudinary] Upload Error Details:", errorMsg);
-          
-          let friendlyMsg = "Verify Cloudinary Cloud Name & Unsigned Preset.";
-          if (errorMsg.includes("Upload preset not found")) {
-            friendlyMsg = `The preset "${CLOUDINARY_UPLOAD_PRESET}" was not found. Please create an 'Unsigned' preset in Cloudinary Dashboard Settings > Upload.`;
-          }
-
+          console.error("[Cloudinary] Upload Failure:", xhr.responseText);
           toast({ 
             title: "Media Upload Failed", 
-            description: friendlyMsg, 
+            description: "Check your Cloudinary presets and cloud name.", 
             variant: "destructive" 
           });
           resolve(null);
@@ -168,7 +161,7 @@ export default function BrandingStudioPage() {
     const url = await uploadToCloudinary(file, 'logo');
     if (url) {
       setFormData(prev => ({ ...prev, logoUrl: url }));
-      toast({ title: "Logo Staged", description: "Publish changes to save." });
+      toast({ title: "Logo Staged", description: "Publish changes to save permanently." });
     }
   };
 
@@ -178,7 +171,7 @@ export default function BrandingStudioPage() {
     const url = await uploadToCloudinary(file, 'hero');
     if (url) {
       setFormData(prev => ({ ...prev, heroImageUrl: url }));
-      toast({ title: "Hero Media Staged", description: "Publish to go live." });
+      toast({ title: "Hero Media Staged", description: "Publish to update live website." });
     }
   };
 
@@ -187,20 +180,21 @@ export default function BrandingStudioPage() {
     if (!db) return;
     
     setIsSaving(true);
-    console.log("[Studio/Branding] Dispatching publish flow...");
+    console.log("[Studio/Branding] Initializing permanent publish flow...");
     
     try {
       const docRef = doc(db, "settings", "branding");
       
+      // Clean and sanitize payload to prevent serialization errors
       const dataToSave = {
-        heroHeadingWhite: String(formData.heroHeadingWhite || ""),
-        heroHeadingNeon: String(formData.heroHeadingNeon || ""),
-        heroHeading2White: String(formData.heroHeading2White || ""),
-        heroHeading2Neon: String(formData.heroHeading2Neon || ""),
+        heroHeadingWhite: String(formData.heroHeadingWhite || "PLAY"),
+        heroHeadingNeon: String(formData.heroHeadingNeon || "MORE."),
+        heroHeading2White: String(formData.heroHeading2White || "BOOK"),
+        heroHeading2Neon: String(formData.heroHeading2Neon || "EASY."),
         heroDescription: String(formData.heroDescription || ""),
         logoUrl: String(formData.logoUrl || ""),
         heroImageUrl: String(formData.heroImageUrl || ""),
-        seoTitle: String(formData.seoTitle || ""),
+        seoTitle: String(formData.seoTitle || "Turfista"),
         seoDescription: String(formData.seoDescription || ""),
         footerEmail: String(formData.footerEmail || ""),
         footerWhatsapp: String(formData.footerWhatsapp || ""),
@@ -215,10 +209,10 @@ export default function BrandingStudioPage() {
         updatedAt: serverTimestamp()
       };
 
-      // OPTIMISTIC UPDATE: Initiate write and immediately feedback to user
+      // Firestore Write Pattern: Non-blocking mutation with background error handling
       setDoc(docRef, dataToSave, { merge: true })
         .catch(async (serverError) => {
-          console.error("[Studio/Branding] Background sync failure:", serverError);
+          console.error("[Studio/Branding] Firestore Sync Failure:", serverError);
           const permissionError = new FirestorePermissionError({
             path: docRef.path,
             operation: 'write',
@@ -228,6 +222,7 @@ export default function BrandingStudioPage() {
           errorEmitter.emit('permission-error', permissionError);
         });
 
+      // Immediate UI update for the admin
       toast({ title: "Changes Published", description: "Site identity synchronized successfully." });
       setIsSaving(false);
 
@@ -241,7 +236,7 @@ export default function BrandingStudioPage() {
   if (loading) return (
     <div className="flex flex-col items-center justify-center py-40 gap-6">
       <Loader2 className="h-14 w-14 animate-spin text-primary opacity-40" />
-      <p className="text-[10px] font-black text-primary/40 uppercase tracking-[0.5em]">Synchronizing Brand Intel...</p>
+      <p className="text-[10px] font-black text-primary/40 uppercase tracking-[0.5em]">Establishing Connection to Branding Node...</p>
     </div>
   );
 
@@ -255,7 +250,7 @@ export default function BrandingStudioPage() {
             <Palette className="h-10 w-10 text-primary" />
             <h1 className="font-headline text-5xl font-bold tracking-tight uppercase italic">Visual <span className="text-primary text-neon">Identity</span></h1>
           </div>
-          <p className="text-muted-foreground text-xl font-medium">Configure global platform narratives and branding.</p>
+          <p className="text-muted-foreground text-xl font-medium">Configure global platform narratives and branding. Changes persist across redeploys.</p>
         </div>
       </div>
 
@@ -265,7 +260,7 @@ export default function BrandingStudioPage() {
             <AlertCircle className="h-6 w-6" />
             <AlertTitle className="font-black uppercase tracking-widest text-xs mb-2">Cloudinary Setup Required</AlertTitle>
             <AlertDescription className="text-xs opacity-80 leading-relaxed font-medium">
-              Media flows are inactive. Add <strong>NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME</strong> to your .env file.
+              Media flows are inactive. Add <strong>NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME</strong> to your environment.
             </AlertDescription>
           </Alert>
         ) : (
@@ -357,8 +352,8 @@ export default function BrandingStudioPage() {
 
                    <div 
                       className={cn(
-                        "relative aspect-square w-full max-w-[420px] mx-auto rounded-full border-2 border-dashed transition-all overflow-hidden flex items-center justify-center group",
-                        isConfigMissing ? "opacity-20 cursor-not-allowed border-white/10" : "border-primary/40 bg-black/60 hover:border-primary hover:shadow-[0_0_50px_rgba(57,255,20,0.2)] cursor-pointer"
+                        "relative aspect-square w-full max-w-[420px] mx-auto rounded-full border-2 border-dashed transition-all overflow-hidden flex items-center justify-center group bg-black/40",
+                        isConfigMissing ? "opacity-20 cursor-not-allowed border-white/10" : "border-primary/40 hover:border-primary hover:shadow-[0_0_50px_rgba(57,255,20,0.2)] cursor-pointer"
                       )}
                       onClick={() => !uploadingStates['hero'] && !isConfigMissing && heroInputRef.current?.click()}
                     >
@@ -370,7 +365,7 @@ export default function BrandingStudioPage() {
                         </div>
                       ) : formData.heroImageUrl ? (
                         <div className="relative w-full h-full p-12 flex items-center justify-center">
-                           <img src={formData.heroImageUrl} className="w-full h-full object-contain drop-shadow-[0_0_30px_rgba(255,255,255,0.1)]" alt="Hero Preview" />
+                           <img src={formData.heroImageUrl} className="w-full h-full object-contain drop-shadow-[0_0_30px_rgba(255,255,20,0.2)]" alt="Hero Preview" />
                            <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                               <div className="bg-black/80 px-6 py-3 rounded-full border border-primary/40 text-primary font-black uppercase tracking-widest text-[10px]">Replace Media</div>
                            </div>
@@ -378,7 +373,7 @@ export default function BrandingStudioPage() {
                       ) : (
                         <div className="text-center p-12 opacity-30">
                           <Upload className="h-12 w-12 mx-auto mb-4" />
-                          <p className="text-[10px] font-black uppercase">Click to select athlete image</p>
+                          <p className="text-[10px] font-black uppercase">Click to select hero image</p>
                         </div>
                       )}
                       <input type="file" ref={heroInputRef} onChange={handleHeroUpload} className="hidden" accept="image/*" />

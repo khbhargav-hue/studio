@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useMemo } from "react"
@@ -45,6 +46,7 @@ export default function Home() {
   const db = useFirestore()
   const [activeFilter, setActiveFilter] = useState("All")
   
+  // Persistent Source of Truth:settings/branding
   const brandingRef = useMemoFirebase(() => {
     if (!db) return null
     return doc(db, "settings", "branding")
@@ -65,11 +67,12 @@ export default function Home() {
     return turfs.filter(t => t.sportTypes?.includes(activeFilter as any))
   }, [turfs, activeFilter])
 
+  // Reactive Challenge Hub logic
   const challengeCategories = useMemo(() => {
-    if (branding?.challenges && Array.isArray(branding.challenges)) {
+    if (branding?.challenges && Array.isArray(branding.challenges) && branding.challenges.length > 0) {
       return branding.challenges.map((c: any) => ({
-        name: c.name,
-        sub: c.sub,
+        name: c.name || "Sport",
+        sub: c.sub || "Challenge",
         image: c.imageUrl || "https://picsum.photos/seed/sport/400/400",
         buttonText: c.buttonText || "JOIN NOW"
       }))
@@ -81,20 +84,18 @@ export default function Home() {
     <div className="flex min-h-screen flex-col bg-background">
       <Navbar />
       
-      {/* Dynamic Hero Section */}
+      {/* Reactive Hero Section */}
       <section className="relative pt-32 pb-20 md:pt-48 md:pb-32 px-4 overflow-hidden">
         {/* Background Visuals */}
         <div className="absolute top-0 right-0 w-full md:w-1/2 h-full pointer-events-none">
           <div className="relative w-full h-full">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] md:w-[600px] md:h-[600px] bg-primary/20 rounded-full blur-[100px] opacity-30" />
             
-            {/* Circular Hero Hub - CLEAN CINEMATIC VIEW */}
+            {/* Athlete Container */}
             <div className="absolute top-1/2 right-0 -translate-y-1/2 w-full h-full hidden md:block">
               <div className="relative w-full h-full flex items-center justify-center">
-                 {/* Visual Glow Effect (No Visible Border) */}
                  <div className="w-[500px] h-[500px] rounded-full halo-effect" />
                  
-                 {/* Athlete Container with Perfect Circular Fitting */}
                  <div className="absolute inset-0 flex items-center justify-center">
                     <div className="relative w-[480px] h-[480px] rounded-full overflow-hidden flex items-center justify-center p-12">
                       <Image 
@@ -140,7 +141,6 @@ export default function Home() {
               </Button>
             </div>
 
-            {/* Feature Chips */}
             <div className="flex flex-wrap gap-4">
               {FEATURE_CHIPS.map((chip, idx) => (
                 <div key={idx} className="flex items-center gap-3 px-6 py-3 rounded-xl bg-white/[0.03] border border-white/10">
@@ -172,7 +172,7 @@ export default function Home() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {challengeCategories.map((cat, idx) => (
               <motion.div 
-                key={cat.name}
+                key={cat.name + idx}
                 whileHover={{ y: -10 }}
                 className="glass-card rounded-[2.5rem] p-8 text-center group relative overflow-hidden"
               >
@@ -249,69 +249,6 @@ export default function Home() {
               </div>
             </div>
           )}
-        </div>
-      </section>
-
-      {/* Why Turfista Section */}
-      <section className="px-4 py-24 bg-black/80 border-t border-white/5">
-        <div className="mx-auto max-w-7xl">
-          <div className="flex items-center gap-4 mb-16">
-            <div className="h-1 w-8 bg-primary rounded-full" />
-            <h2 className="text-3xl font-black italic uppercase tracking-tighter">WHY TURFISTA?</h2>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
-            {[
-              { title: "Verified Arenas", desc: "Best turfs, verified for quality", icon: ShieldCheck },
-              { title: "Easy Booking", desc: "Book in seconds, play more", icon: MousePointerClick },
-              { title: "Challenge & Win", desc: "Create or join exciting challenges", icon: Trophy },
-              { title: "Built for Players", desc: "For athletes. By athletes.", icon: Users }
-            ].map((item, i) => (
-              <div key={i} className="flex items-start gap-6 group">
-                <div className="h-14 w-14 shrink-0 rounded-full bg-white/5 flex items-center justify-center border border-white/5 group-hover:border-primary/50 group-hover:bg-primary/5 transition-all">
-                  <item.icon className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <h4 className="text-lg font-black italic text-white mb-2 uppercase">{item.title}</h4>
-                  <p className="text-sm text-white/40 font-medium leading-relaxed">{item.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Bottom Banner */}
-      <section className="px-4 py-24">
-        <div className="mx-auto max-w-7xl">
-          <div className="glass-card p-12 md:p-24 rounded-[4rem] bg-primary/[0.02] border-primary/20 relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-16">
-            <div className="absolute top-0 right-0 p-24 opacity-5 pointer-events-none group-hover:scale-110 transition-transform">
-               <Trophy className="h-96 w-96 text-primary" />
-            </div>
-            
-            <div className="relative z-10 text-center md:text-left">
-              <h2 className="text-5xl md:text-8xl font-black italic uppercase tracking-tighter text-white mb-6 leading-none">
-                READY TO <span className="text-primary text-neon">PLAY?</span>
-              </h2>
-              <p className="text-xl text-white/40 font-medium mb-12 max-w-xl leading-relaxed">
-                Join thousands of players already playing more with Turfista.
-              </p>
-              <Button asChild size="lg" className="btn-neon-glow h-20 px-16 bg-primary text-black font-black uppercase tracking-widest text-xs rounded-3xl">
-                <Link href="/profile">
-                  <Zap className="mr-3 h-6 w-6 fill-current" /> GET STARTED NOW
-                </Link>
-              </Button>
-            </div>
-
-            <div className="relative z-10 w-full md:w-1/3 aspect-[4/3] rounded-[3rem] overflow-hidden border border-white/10 shadow-2xl">
-              <Image 
-                src="https://picsum.photos/seed/squad1/800/600" 
-                alt="Squad" 
-                fill 
-                className="object-cover grayscale-[0.3]" 
-              />
-            </div>
-          </div>
         </div>
       </section>
 

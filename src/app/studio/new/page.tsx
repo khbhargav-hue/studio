@@ -41,7 +41,6 @@ import { FirestorePermissionError } from '@/firebase/errors';
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { CloudinaryPicker } from "@/components/cloudinary-picker";
 
 const SPORT_OPTIONS = ["Cricket", "Football", "Pickleball", "Badminton"];
 const COURT_OPTIONS = [
@@ -175,8 +174,6 @@ function NewTurfForm() {
         return;
       }
 
-      console.log(`[Cloudinary] Uploading to cloud: ${CLOUDINARY_CLOUD_NAME} using preset: ${CLOUDINARY_UPLOAD_PRESET}`);
-
       const form = new FormData();
       form.append('file', file);
       form.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
@@ -200,15 +197,8 @@ function NewTurfForm() {
           const response = JSON.parse(xhr.responseText);
           resolve(response.secure_url);
         } else {
-          const errorMsg = xhr.responseText;
-          console.error("[Cloudinary] Upload Error Details:", errorMsg);
-          
-          let friendlyMsg = "CDN Upload Failed. Verify configuration.";
-          if (errorMsg.includes("Upload preset not found")) {
-            friendlyMsg = `Cloudinary preset "${CLOUDINARY_UPLOAD_PRESET}" not found. Verify your environment variables.`;
-          }
-
-          toast({ title: "Media Sync Failed", description: friendlyMsg, variant: "destructive" });
+          console.error("[Cloudinary] Upload Error Details:", xhr.responseText);
+          toast({ title: "Media Sync Failed", description: "Verify your Cloudinary environment variables.", variant: "destructive" });
           resolve(null);
         }
       };
@@ -278,7 +268,7 @@ function NewTurfForm() {
     
     setIsSaving(true);
     const isUpdate = !!editId;
-    console.log(`[Studio/New] Dispatching ${isUpdate ? 'update' : 'deployment'} flow...`);
+    console.log(`[Studio/New] Dispatching permanent ${isUpdate ? 'update' : 'deployment'} flow...`);
     
     try {
       const id = editId || formData.name.toLowerCase().replace(/\s+/g, '-');
@@ -307,10 +297,10 @@ function NewTurfForm() {
         updatedAt: serverTimestamp() 
       };
 
-      // OPTIMISTIC UPDATE: Initiate write and immediately feedback to user
+      // Firestore Write Pattern: Non-blocking mutation with optimistic feedback
       setDoc(turfRef, dataToSave, { merge: true })
         .catch(async (serverError) => {
-          console.error("[Studio/New] Background sync failure:", serverError);
+          console.error("[Studio/New] Sync failure:", serverError);
           const permissionError = new FirestorePermissionError({
             path: turfRef.path,
             operation: isUpdate ? 'update' : 'create',
@@ -322,7 +312,7 @@ function NewTurfForm() {
 
       toast({ 
         title: isUpdate ? "Arena Intelligence Updated" : "Arena Deployed", 
-        description: isUpdate ? "Changes synchronized to the grid." : "The listing is active and syncing to the grid." 
+        description: isUpdate ? "Changes synchronized to the grid." : "The listing is active and syncing permanently." 
       });
       
       setIsSaving(false);
@@ -475,17 +465,10 @@ function NewTurfForm() {
           <div className="lg:col-span-5 space-y-10">
             <Card className="glass-card border-white/5 rounded-[2.5rem] overflow-hidden">
               <CardHeader className="p-8 pb-4">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="font-headline text-2xl font-bold flex items-center gap-4">
-                    <ImageIcon className="h-6 w-6 text-primary" />
-                    Arena Assets
-                  </CardTitle>
-                  <CloudinaryPicker 
-                    folder="Turfs" 
-                    label="Library"
-                    onSelect={(url) => setFormData({...formData, mainImage: url})} 
-                  />
-                </div>
+                <CardTitle className="font-headline text-2xl font-bold flex items-center gap-4">
+                  <ImageIcon className="h-6 w-6 text-primary" />
+                  Arena Assets
+                </CardTitle>
               </CardHeader>
               <CardContent className="p-8 space-y-10">
                 <div className="space-y-4">
@@ -518,24 +501,16 @@ function NewTurfForm() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Gallery Node</Label>
-                    <div className="flex gap-2">
-                      <CloudinaryPicker 
-                        folder="Turfs" 
-                        label="Library"
-                        className="h-8 px-4 text-[8px]"
-                        onSelect={(url) => setFormData(prev => ({...prev, galleryImages: [...prev.galleryImages, url]}))} 
-                      />
-                      <Button 
-                        type="button" 
-                        size="sm" 
-                        variant="outline" 
-                        disabled={isConfigMissing}
-                        className="h-8 px-4 rounded-lg text-[9px] font-black uppercase" 
-                        onClick={() => galleryInputRef.current?.click()}
-                      >
-                         ADD
-                      </Button>
-                    </div>
+                    <Button 
+                      type="button" 
+                      size="sm" 
+                      variant="outline" 
+                      disabled={isConfigMissing}
+                      className="h-8 px-4 rounded-lg text-[9px] font-black uppercase" 
+                      onClick={() => galleryInputRef.current?.click()}
+                    >
+                       ADD
+                    </Button>
                     <input type="file" ref={galleryInputRef} onChange={handleGalleryUpload} className="hidden" multiple accept="image/*" />
                   </div>
                   <div className="grid grid-cols-3 gap-3">

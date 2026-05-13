@@ -4,6 +4,7 @@ import { ReactNode, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser, useAuth } from '@/firebase';
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from '@/components/ui/sidebar';
+import { Button } from '@/components/ui/button';
 import { LayoutDashboard, PlusCircle, LogOut, Loader2, Palette, ShieldCheck, Globe } from 'lucide-react';
 import Link from 'next/link';
 import { signOut } from 'firebase/auth';

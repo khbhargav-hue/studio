@@ -264,33 +264,67 @@ function NewTurfForm() {
     e.preventDefault();
     if (!db) return;
     
+    console.log("[Studio/New] Starting deployment flow...");
     setIsSaving(true);
-    const id = editId || formData.name.toLowerCase().replace(/\s+/g, '-');
-    const turfRef = doc(db, "turfs", id);
     
-    const dataToSave = { 
-      ...formData, 
-      id, 
-      updatedAt: serverTimestamp() 
-    };
-
-    setDoc(turfRef, dataToSave, { merge: true })
-    .then(() => {
-      toast({ title: "Arena Deployed", description: "The listing is now active on the discovery feed." });
-      setIsSaving(false);
-      router.push("/studio");
-    })
-    .catch(async (err) => {
-      // Ensure loading state resets even on error
-      setIsSaving(false);
+    try {
+      const id = editId || formData.name.toLowerCase().replace(/\s+/g, '-');
+      const turfRef = doc(db, "turfs", id);
       
-      errorEmitter.emit('permission-error', new FirestorePermissionError({
-        path: turfRef.path,
-        operation: 'write',
-        requestResourceData: dataToSave,
-        message: err.message
-      }));
-    });
+      // Sanitization: Picking only required fields and ensuring no undefined values
+      const dataToSave = { 
+        id,
+        name: formData.name || "",
+        area: formData.area || "",
+        location: formData.location || "",
+        pricePerHour: Number(formData.pricePerHour) || 0,
+        courtPricing: formData.courtPricing || {},
+        description: formData.description || "",
+        amenities: formData.amenities || [],
+        sportTypes: formData.sportTypes || [],
+        courtTypes: formData.courtTypes || [],
+        rating: Number(formData.rating) || 4.5,
+        reviewCount: Number(formData.reviewCount) || 0,
+        openingHours: formData.openingHours || "",
+        contactNumber: formData.contactNumber || "",
+        whatsappNumber: formData.whatsappNumber || "",
+        mainImage: formData.mainImage || "",
+        galleryImages: formData.galleryImages || [],
+        mapUrl: formData.mapUrl || "",
+        isPopular: !!formData.isPopular,
+        updatedAt: serverTimestamp() 
+      };
+
+      console.log("[Studio/New] Deployment payload ready:", dataToSave);
+
+      setDoc(turfRef, dataToSave, { merge: true })
+      .then(() => {
+        console.log("[Studio/New] Deployment successful.");
+        toast({ title: "Arena Deployed", description: "The listing is now active on the discovery feed." });
+        setIsSaving(false);
+        router.push("/studio");
+      })
+      .catch(async (err) => {
+        console.error("[Studio/New] Deployment rejected:", err);
+        setIsSaving(false);
+        
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: turfRef.path,
+          operation: 'write',
+          requestResourceData: dataToSave,
+          message: err.message
+        }));
+      });
+
+    } catch (err: any) {
+      console.error("[Studio/New] Critical exception in handleSubmit:", err);
+      setIsSaving(false);
+      toast({
+        variant: "destructive",
+        title: "Deployment Failed",
+        description: err.message || "An unexpected error occurred during sanitization."
+      });
+    }
   };
 
   const isConfigMissing = !CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET;

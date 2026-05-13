@@ -137,7 +137,7 @@ export default function BrandingStudioPage() {
           console.error("Cloudinary Error:", xhr.responseText);
           toast({ 
             title: "Upload Failed", 
-            description: "Check Cloud Name and Preset configuration.", 
+            description: "Verify Cloudinary Cloud Name & Unsigned Preset", 
             variant: "destructive" 
           });
           resolve(null);
@@ -180,60 +180,71 @@ export default function BrandingStudioPage() {
     }
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!db) return;
     
+    console.log("[Studio/Branding] Starting publish flow...");
     setIsSaving(true);
-    const docRef = doc(db, "settings", "branding");
     
-    // Explicitly destructure to ensure only necessary, serializable data is sent
-    const { 
-      heroHeadingWhite, heroHeadingNeon, heroHeading2White, heroHeading2Neon, 
-      heroDescription, logoUrl, heroImageUrl, seoTitle, seoDescription, 
-      footerEmail, footerWhatsapp, copyrightText, challenges 
-    } = formData;
+    try {
+      const docRef = doc(db, "settings", "branding");
+      
+      // Sanitization logic: Firestore rejects 'undefined' values.
+      // We explicitly pick and default every field to ensure a clean payload.
+      const dataToSave = {
+        heroHeadingWhite: formData.heroHeadingWhite || "",
+        heroHeadingNeon: formData.heroHeadingNeon || "",
+        heroHeading2White: formData.heroHeading2White || "",
+        heroHeading2Neon: formData.heroHeading2Neon || "",
+        heroDescription: formData.heroDescription || "",
+        logoUrl: formData.logoUrl || "",
+        heroImageUrl: formData.heroImageUrl || "",
+        seoTitle: formData.seoTitle || "",
+        seoDescription: formData.seoDescription || "",
+        footerEmail: formData.footerEmail || "",
+        footerWhatsapp: formData.footerWhatsapp || "",
+        copyrightText: formData.copyrightText || "",
+        challenges: (formData.challenges || []).map(c => ({
+          name: c.name || "",
+          sub: c.sub || "",
+          imageUrl: c.imageUrl || "",
+          buttonText: c.buttonText || "",
+          icon: c.icon || ""
+        })),
+        updatedAt: serverTimestamp()
+      };
 
-    const dataToSave = {
-      heroHeadingWhite,
-      heroHeadingNeon,
-      heroHeading2White,
-      heroHeading2Neon,
-      heroDescription,
-      logoUrl,
-      heroImageUrl,
-      seoTitle,
-      seoDescription,
-      footerEmail,
-      footerWhatsapp,
-      copyrightText,
-      challenges: challenges.map(c => ({
-        name: c.name,
-        sub: c.sub,
-        imageUrl: c.imageUrl,
-        buttonText: c.buttonText,
-        icon: c.icon
-      })),
-      updatedAt: serverTimestamp()
-    };
+      console.log("[Studio/Branding] Sanitized payload ready:", dataToSave);
 
-    setDoc(docRef, dataToSave, { merge: true })
-      .then(() => {
-        toast({ title: "Portal Synchronized", description: "All visual changes are now live." });
-        setIsSaving(false);
-      })
-      .catch(async (err) => {
-        // Stop loading state on failure
-        setIsSaving(false);
-        
-        // Emit rich contextual error for debugging
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: docRef.path,
-          operation: 'write',
-          requestResourceData: dataToSave,
-          message: err.message
-        }));
+      // Initiation of the non-blocking write
+      setDoc(docRef, dataToSave, { merge: true })
+        .then(() => {
+          console.log("[Studio/Branding] Firestore settlement successful.");
+          toast({ title: "Portal Synchronized", description: "All visual changes are now live." });
+          setIsSaving(false);
+        })
+        .catch(async (err) => {
+          console.error("[Studio/Branding] Firestore settlement rejected:", err);
+          setIsSaving(false);
+          
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: docRef.path,
+            operation: 'write',
+            requestResourceData: dataToSave,
+            message: err.message
+          }));
+        });
+
+    } catch (err: any) {
+      console.error("[Studio/Branding] Critical exception in handleSave:", err);
+      setIsSaving(false);
+      toast({
+        variant: "destructive",
+        title: "Save Failure",
+        description: err.message || "A logic error prevented the save initiation."
       });
+    }
   };
 
   if (loading) return (

@@ -6,10 +6,11 @@ import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { TurfCard } from "@/components/turf-card";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, query, where, orderBy } from "firebase/firestore";
+import { collection, query, where } from "firebase/firestore";
 import { Trophy, Zap, Star, Users, Loader2, ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { useMemo } from "react";
+import { MOCK_TURFS } from "@/lib/data";
 
 const SPORT_CONFIG: Record<string, any> = {
   football: { name: "Football", icon: Zap, theme: "text-blue-500", desc: "Elite 5v5 & 7v7 football turfs in Mysuru. Pro-grade lighting and FIFA certified grass." },
@@ -34,7 +35,15 @@ export default function SportGuidePage() {
     );
   }, [db, config.name]);
 
-  const { data: turfs, loading } = useCollection(turfsQuery);
+  const { data: firestoreTurfs, loading } = useCollection(turfsQuery);
+
+  const turfs = useMemo(() => {
+    if (loading) return [];
+    if (!firestoreTurfs || firestoreTurfs.length === 0) {
+      return MOCK_TURFS.filter(t => t.sportTypes.includes(config.name as any));
+    }
+    return firestoreTurfs;
+  }, [firestoreTurfs, loading, config.name]);
 
   return (
     <div className="flex min-h-screen flex-col bg-black">

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useCollection, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
@@ -44,8 +45,8 @@ import {
   LayoutDashboard,
   MessageSquare,
   ShieldCheck,
-  History,
-  Zap
+  Zap,
+  RefreshCcw
 } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
@@ -73,7 +74,7 @@ export default function StudioDashboard() {
   // Data Queries
   const turfsQuery = useMemoFirebase(() => {
     if (!db) return null;
-    return query(collection(db, 'turfs'), orderBy('name', 'asc'));
+    return query(collection(db, 'turfs'), orderBy("updatedAt", "desc"));
   }, [db]);
 
   const teamsQuery = useMemoFirebase(() => {
@@ -208,10 +209,10 @@ export default function StudioDashboard() {
         <div className="flex items-center gap-4">
           <Button 
             variant="outline" 
-            onClick={handleExportLeads}
+            onClick={() => window.location.reload()}
             className="h-14 rounded-2xl border-white/5 bg-white/5 font-bold uppercase tracking-widest text-[10px]"
           >
-            <Download className="h-4 w-4 mr-2" /> Data Export
+            <RefreshCcw className="h-4 w-4 mr-2" /> Sync Grid
           </Button>
           <Button asChild className="bg-primary text-black font-black uppercase tracking-widest text-xs rounded-2xl h-14 px-8 shadow-2xl shadow-primary/20 hover:scale-[1.02] transition-transform">
             <Link href="/studio/new">
@@ -331,78 +332,85 @@ export default function StudioDashboard() {
                <p className="text-[9px] font-bold text-white/20 uppercase tracking-widest mt-2">Managing {turfs?.length || 0} active pitches in Mysuru</p>
             </div>
             <Badge className="bg-primary/20 text-primary px-6 py-2 rounded-full font-black text-[10px] uppercase tracking-widest border-none self-start md:self-auto">
-              FULL SYSTEM ACTIVE
+              FIRESTORE SYNC ACTIVE
             </Badge>
           </div>
           <div className="overflow-x-auto">
-            <Table>
-              <TableHeader className="bg-white/5">
-                <TableRow className="border-white/5 hover:bg-transparent">
-                  <TableHead className="p-8 font-black uppercase tracking-widest text-[9px] text-white/30">Arena Identity</TableHead>
-                  <TableHead className="font-black uppercase tracking-widest text-[9px] text-white/30">Location</TableHead>
-                  <TableHead className="font-black uppercase tracking-widest text-[9px] text-white/30">Feature Status</TableHead>
-                  <TableHead className="font-black uppercase tracking-widest text-[9px] text-white/30 text-center">Visits</TableHead>
-                  <TableHead className="font-black uppercase tracking-widest text-[9px] text-white/30 text-center">Leads</TableHead>
-                  <TableHead className="text-right p-8 font-black uppercase tracking-widest text-[9px] text-white/30">Management</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {turfs?.map((turf) => (
-                  <TableRow key={turf.id} className="border-white/5 hover:bg-white/5 transition-colors">
-                    <TableCell className="font-black text-2xl italic tracking-tighter text-white p-8">
-                       {turf.name}
-                       <div className="flex gap-2 mt-2">
-                          {turf.sportTypes?.map((s: string) => (
-                             <span key={s} className="text-[8px] font-bold uppercase tracking-widest px-2 py-0.5 bg-white/5 rounded-md text-white/40">{s}</span>
-                          ))}
-                       </div>
-                    </TableCell>
-                    <TableCell className="text-white/40 font-bold uppercase tracking-widest text-[10px]">{turf.area}</TableCell>
-                    <TableCell>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => togglePopularStatus(turf.id, !!turf.isPopular)}
-                        className={cn(
-                          "rounded-full h-10 w-10 p-0 transition-all",
-                          turf.isPopular ? "text-primary bg-primary/10 shadow-[0_0_15px_rgba(57,255,20,0.3)]" : "text-white/10 hover:text-white"
-                        )}
-                      >
-                        <Star className={cn("h-4 w-4", turf.isPopular && "fill-current")} />
-                      </Button>
-                    </TableCell>
-                    <TableCell className="text-center font-mono font-bold text-white/30">{turf.views || 0}</TableCell>
-                    <TableCell className="text-center font-mono font-bold text-primary">{turf.whatsappClicks || 0}</TableCell>
-                    <TableCell className="text-right p-8">
-                      <div className="flex justify-end gap-3">
-                        <Button variant="ghost" size="icon" className="h-12 w-12 rounded-2xl hover:bg-primary/10 hover:text-primary transition-all bg-white/5 border border-white/5" asChild>
-                          <Link href={`/studio/new?id=${turf.id}`}>
-                            <Edit2 className="h-4 w-4" />
-                          </Link>
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-12 w-12 rounded-2xl hover:bg-destructive/10 hover:text-destructive transition-all bg-white/5 border border-white/5">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent className="glass-card border-white/10 rounded-[2.5rem] bg-black">
-                            <AlertDialogHeader>
-                              <AlertDialogTitle className="text-3xl font-black italic uppercase text-destructive">Terminate Listing?</AlertDialogTitle>
-                              <AlertDialogDescription className="text-white/40 font-medium">Permanent removal of "{turf.name}" from public circuits.</AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter className="mt-8 gap-4">
-                              <AlertDialogCancel className="rounded-2xl font-bold uppercase tracking-widest text-[10px] h-14 bg-white/5 border-white/10">Abort</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDeleteTurf(turf.id, turf.name)} className="bg-destructive text-white rounded-2xl font-bold uppercase tracking-widest text-[10px] h-14">Confirm Wipe</AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </TableCell>
+            {(!turfs || turfs.length === 0) ? (
+              <div className="p-20 text-center space-y-4">
+                <Database className="h-12 w-12 text-white/5 mx-auto" />
+                <p className="text-[10px] font-black uppercase tracking-widest text-white/20">Inventory is empty. Deployed arenas will appear here.</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader className="bg-white/5">
+                  <TableRow className="border-white/5 hover:bg-transparent">
+                    <TableHead className="p-8 font-black uppercase tracking-widest text-[9px] text-white/30">Arena Identity</TableHead>
+                    <TableHead className="font-black uppercase tracking-widest text-[9px] text-white/30">Location</TableHead>
+                    <TableHead className="font-black uppercase tracking-widest text-[9px] text-white/30">Feature Status</TableHead>
+                    <TableHead className="font-black uppercase tracking-widest text-[9px] text-white/30 text-center">Visits</TableHead>
+                    <TableHead className="font-black uppercase tracking-widest text-[9px] text-white/30 text-center">Leads</TableHead>
+                    <TableHead className="text-right p-8 font-black uppercase tracking-widest text-[9px] text-white/30">Management</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {turfs?.map((turf) => (
+                    <TableRow key={turf.id} className="border-white/5 hover:bg-white/5 transition-colors">
+                      <TableCell className="font-black text-2xl italic tracking-tighter text-white p-8">
+                        {turf.name}
+                        <div className="flex gap-2 mt-2">
+                            {turf.sportTypes?.map((s: string) => (
+                              <span key={s} className="text-[8px] font-bold uppercase tracking-widest px-2 py-0.5 bg-white/5 rounded-md text-white/40">{s}</span>
+                            ))}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-white/40 font-bold uppercase tracking-widest text-[10px]">{turf.area}</TableCell>
+                      <TableCell>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => togglePopularStatus(turf.id, !!turf.isPopular)}
+                          className={cn(
+                            "rounded-full h-10 w-10 p-0 transition-all",
+                            turf.isPopular ? "text-primary bg-primary/10 shadow-[0_0_15px_rgba(57,255,20,0.3)]" : "text-white/10 hover:text-white"
+                          )}
+                        >
+                          <Star className={cn("h-4 w-4", turf.isPopular && "fill-current")} />
+                        </Button>
+                      </TableCell>
+                      <TableCell className="text-center font-mono font-bold text-white/30">{turf.views || 0}</TableCell>
+                      <TableCell className="text-center font-mono font-bold text-primary">{turf.whatsappClicks || 0}</TableCell>
+                      <TableCell className="text-right p-8">
+                        <div className="flex justify-end gap-3">
+                          <Button variant="ghost" size="icon" className="h-12 w-12 rounded-2xl hover:bg-primary/10 hover:text-primary transition-all bg-white/5 border border-white/5" asChild>
+                            <Link href={`/studio/new?id=${turf.id}`}>
+                              <Edit2 className="h-4 w-4" />
+                            </Link>
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-12 w-12 rounded-2xl hover:bg-destructive/10 hover:text-destructive transition-all bg-white/5 border border-white/5">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent className="glass-card border-white/10 rounded-[2.5rem] bg-black">
+                              <AlertDialogHeader>
+                                <AlertDialogTitle className="text-3xl font-black italic uppercase text-destructive">Terminate Listing?</AlertDialogTitle>
+                                <AlertDialogDescription className="text-white/40 font-medium">Permanent removal of "{turf.name}" from public circuits.</AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter className="mt-8 gap-4">
+                                <AlertDialogCancel className="rounded-2xl font-bold uppercase tracking-widest text-[10px] h-14 bg-white/5 border-white/10">Abort</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDeleteTurf(turf.id, turf.name)} className="bg-destructive text-white rounded-2xl font-bold uppercase tracking-widest text-[10px] h-14">Confirm Wipe</AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </div>
         </TabsContent>
 
@@ -413,7 +421,7 @@ export default function StudioDashboard() {
                     <CardTitle className="text-2xl font-black italic uppercase flex items-center gap-4">
                        <Users className="h-6 w-6 text-primary" /> Active Squads
                     </CardTitle>
-                 </CardHeader>
+                 </CardHeader> community
                  <CardContent className="px-10 pb-10">
                     <div className="space-y-4">
                        {teams?.slice(0, 5).map((team: any) => (

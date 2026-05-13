@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo } from "react";
@@ -8,6 +9,7 @@ import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection, query, where } from "firebase/firestore";
 import { Loader2, Star, Trophy, Zap } from "lucide-react";
 import { motion } from "framer-motion";
+import { MOCK_TURFS } from "@/lib/data";
 
 export default function FeaturedPage() {
   const db = useFirestore();
@@ -20,14 +22,20 @@ export default function FeaturedPage() {
     );
   }, [db]);
 
-  const { data: rawTurfs, loading } = useCollection(featuredQuery);
+  const { data: firestoreTurfs, loading } = useCollection(featuredQuery);
 
   const turfs = useMemo(() => {
-    if (!rawTurfs) return null;
-    return [...rawTurfs].sort((a: any, b: any) => 
+    // Resilient Fallback: If database is empty or loading, we determine the set to show
+    let source = firestoreTurfs;
+    if (!loading && (!firestoreTurfs || firestoreTurfs.length === 0)) {
+      source = MOCK_TURFS.filter(t => t.isPopular);
+    }
+    
+    if (!source) return null;
+    return [...source].sort((a: any, b: any) => 
       (a.name || "").localeCompare(b.name || "")
     );
-  }, [rawTurfs]);
+  }, [firestoreTurfs, loading]);
 
   return (
     <div className="flex min-h-screen flex-col bg-[#050505] selection:bg-primary selection:text-black">

@@ -17,7 +17,6 @@ import {
   Wind, 
   ShieldCheck, 
   Calendar,
-  MousePointerClick
 } from "lucide-react"
 import { useCollection, useFirestore, useMemoFirebase, useDoc } from "@/firebase"
 import { collection, query, orderBy, doc } from "firebase/firestore"
@@ -25,6 +24,7 @@ import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
+import { MOCK_TURFS } from "@/lib/data"
 
 const SPORT_FILTERS = ["All", "Football", "Cricket", "Pickleball"]
 
@@ -46,7 +46,7 @@ export default function Home() {
   const db = useFirestore()
   const [activeFilter, setActiveFilter] = useState("All")
   
-  // Persistent Source of Truth:settings/branding
+  // Branding Intelligence Source
   const brandingRef = useMemoFirebase(() => {
     if (!db) return null
     return doc(db, "settings", "branding")
@@ -54,15 +54,24 @@ export default function Home() {
 
   const { data: branding } = useDoc(brandingRef)
 
+  // Primary Data Source: Firestore
   const turfsQuery = useMemoFirebase(() => {
     if (!db) return null
     return query(collection(db, "turfs"), orderBy("name", "asc"))
   }, [db])
 
-  const { data: turfs, loading } = useCollection(turfsQuery)
+  const { data: firestoreTurfs, loading } = useCollection(turfsQuery)
+
+  // Resilient Logic: If Firestore is empty, use Mock Data as Fallback
+  const turfs = useMemo(() => {
+    if (!loading && (!firestoreTurfs || firestoreTurfs.length === 0)) {
+      console.log("[Turfista] Firestore inventory empty. Engaging system fallbacks.");
+      return MOCK_TURFS;
+    }
+    return firestoreTurfs || [];
+  }, [firestoreTurfs, loading]);
 
   const filteredTurfs = useMemo(() => {
-    if (!turfs) return []
     if (activeFilter === "All") return turfs
     return turfs.filter(t => t.sportTypes?.includes(activeFilter as any))
   }, [turfs, activeFilter])
@@ -94,7 +103,7 @@ export default function Home() {
             {/* Athlete Container */}
             <div className="absolute top-1/2 right-0 -translate-y-1/2 w-full h-full hidden md:block">
               <div className="relative w-full h-full flex items-center justify-center">
-                 <div className="w-[500px] h-[500px] rounded-full halo-effect" />
+                 <div className="w-[500px] h-[500px] rounded-full halo-effect opacity-0" />
                  
                  <div className="absolute inset-0 flex items-center justify-center">
                     <div className="relative w-[480px] h-[480px] rounded-full overflow-hidden flex items-center justify-center p-12">

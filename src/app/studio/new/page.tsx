@@ -277,7 +277,8 @@ function NewTurfForm() {
     if (!db) return;
     
     setIsSaving(true);
-    console.log("[Studio/New] Dispatching deployment flow...");
+    const isUpdate = !!editId;
+    console.log(`[Studio/New] Dispatching ${isUpdate ? 'update' : 'deployment'} flow...`);
     
     try {
       const id = editId || formData.name.toLowerCase().replace(/\s+/g, '-');
@@ -312,7 +313,7 @@ function NewTurfForm() {
           console.error("[Studio/New] Background sync failure:", serverError);
           const permissionError = new FirestorePermissionError({
             path: turfRef.path,
-            operation: 'write',
+            operation: isUpdate ? 'update' : 'create',
             requestResourceData: dataToSave,
             message: serverError.message
           });
@@ -320,8 +321,8 @@ function NewTurfForm() {
         });
 
       toast({ 
-        title: "Arena Deployed", 
-        description: "The listing is active and syncing to the grid." 
+        title: isUpdate ? "Arena Intelligence Updated" : "Arena Deployed", 
+        description: isUpdate ? "Changes synchronized to the grid." : "The listing is active and syncing to the grid." 
       });
       
       setIsSaving(false);
@@ -332,7 +333,7 @@ function NewTurfForm() {
       setIsSaving(false);
       toast({
         variant: "destructive",
-        title: "Deployment Failed",
+        title: isUpdate ? "Update Failed" : "Deployment Failed",
         description: "Logic error in data preparation."
       });
     }
@@ -348,7 +349,9 @@ function NewTurfForm() {
         </Button>
         <div className="flex items-center gap-3">
           <div className="h-2 w-2 bg-primary rounded-full animate-pulse shadow-[0_0_10px_rgba(57,255,20,1)]" />
-          <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Deployment Console</span>
+          <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">
+            {editId ? "Update Intelligence" : "Deployment Console"}
+          </span>
         </div>
       </div>
 
@@ -588,5 +591,13 @@ function NewTurfForm() {
         </div>
       </form>
     </div>
+  );
+}
+
+export default function NewTurfPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>}>
+      <NewTurfForm />
+    </Suspense>
   );
 }

@@ -180,21 +180,39 @@ export default function BrandingStudioPage() {
     }
   };
 
-  const handleSave = async (e: React.FormEvent) => {
+  const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     if (!db) return;
     setIsSaving(true);
     const docRef = doc(db, "settings", "branding");
-    setDoc(docRef, { ...formData, updatedAt: serverTimestamp() }, { merge: true })
-      .then(() => toast({ title: "Platform Visuals Published" }))
-      .catch((err) => {
+    
+    // Explicitly destructure to ensure only necessary data is sent
+    const { 
+      heroHeadingWhite, heroHeadingNeon, heroHeading2White, heroHeading2Neon, 
+      heroDescription, logoUrl, heroImageUrl, seoTitle, seoDescription, 
+      footerEmail, footerWhatsapp, copyrightText, challenges 
+    } = formData;
+
+    const dataToSave = {
+      heroHeadingWhite, heroHeadingNeon, heroHeading2White, heroHeading2Neon,
+      heroDescription, logoUrl, heroImageUrl, seoTitle, seoDescription,
+      footerEmail, footerWhatsapp, copyrightText, challenges,
+      updatedAt: serverTimestamp()
+    };
+
+    setDoc(docRef, dataToSave, { merge: true })
+      .then(() => {
+        toast({ title: "Platform Visuals Published" });
+        setIsSaving(false);
+      })
+      .catch(async (err) => {
         errorEmitter.emit('permission-error', new FirestorePermissionError({
           path: docRef.path,
-          operation: 'update',
-          requestResourceData: formData
+          operation: 'write',
+          requestResourceData: dataToSave
         }));
-      })
-      .finally(() => setIsSaving(false));
+        setIsSaving(false);
+      });
   };
 
   if (loading) return <div className="flex h-[50vh] items-center justify-center"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>;

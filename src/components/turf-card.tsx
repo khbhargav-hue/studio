@@ -14,6 +14,8 @@ import { useToast } from "@/hooks/use-toast";
 import * as gtag from "@/lib/gtag";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 interface TurfCardProps {
   turf: Turf
@@ -24,7 +26,7 @@ export function TurfCard({ turf }: TurfCardProps) {
   const { toast } = useToast();
   const [isThrottled, setIsThrottled] = useState(false);
 
-  const handleWhatsAppClick = async (e: React.MouseEvent) => {
+  const handleWhatsAppClick = (e: React.MouseEvent) => {
     if (!db || !turf.id) return;
     
     gtag.event({
@@ -47,13 +49,35 @@ export function TurfCard({ turf }: TurfCardProps) {
       deviceInfo: typeof navigator !== 'undefined' ? navigator.userAgent.slice(0, 150) : 'Unknown',
     };
 
-    try {
-      await addDoc(collection(db, "leads"), leadData);
-      const turfRef = doc(db, "turfs", turf.id);
-      const statsRef = doc(db, "analytics", "stats");
-      setDoc(turfRef, { whatsappClicks: increment(1) }, { merge: true }).catch(() => {});
-      setDoc(statsRef, { totalWhatsAppClicks: increment(1) }, { merge: true }).catch(() => {});
-    } catch (err) {}
+    addDoc(collection(db, "leads"), leadData)
+      .catch(async (err) => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: 'leads',
+          operation: 'create',
+          requestResourceData: leadData
+        }));
+      });
+
+    const turfRef = doc(db, "turfs", turf.id);
+    const statsRef = doc(db, "analytics", "stats");
+    
+    setDoc(turfRef, { whatsappClicks: increment(1) }, { merge: true })
+      .catch(async (err) => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: turfRef.path,
+          operation: 'update',
+          requestResourceData: { whatsappClicks: increment(1) }
+        }));
+      });
+
+    setDoc(statsRef, { totalWhatsAppClicks: increment(1) }, { merge: true })
+      .catch(async (err) => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: statsRef.path,
+          operation: 'update',
+          requestResourceData: { totalWhatsAppClicks: increment(1) }
+        }));
+      });
   };
 
   const displayImage = turf.mainImage || "https://picsum.photos/seed/turf-placeholder/800/600";

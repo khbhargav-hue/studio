@@ -28,6 +28,8 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
 import * as gtag from "@/lib/gtag"
+import { errorEmitter } from '@/firebase/error-emitter'
+import { FirestorePermissionError } from '@/firebase/errors'
 
 export default function TurfDetail() {
   const params = useParams()
@@ -55,8 +57,23 @@ export default function TurfDetail() {
         const statsRef = doc(db, "analytics", "stats")
         const turfRef = doc(db, "turfs", id)
         
-        setDoc(turfRef, { views: increment(1) }, { merge: true }).catch(() => {});
-        setDoc(statsRef, { totalViews: increment(1) }, { merge: true }).catch(() => {});
+        setDoc(turfRef, { views: increment(1) }, { merge: true })
+          .catch(async (err) => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+              path: turfRef.path,
+              operation: 'update',
+              requestResourceData: { views: increment(1) }
+            }));
+          });
+
+        setDoc(statsRef, { totalViews: increment(1) }, { merge: true })
+          .catch(async (err) => {
+             errorEmitter.emit('permission-error', new FirestorePermissionError({
+              path: statsRef.path,
+              operation: 'update',
+              requestResourceData: { totalViews: increment(1) }
+            }));
+          });
         
         localStorage.setItem(viewedKey, Date.now().toString());
 
@@ -93,13 +110,35 @@ export default function TurfDetail() {
         deviceInfo: typeof navigator !== 'undefined' ? navigator.userAgent.slice(0, 150) : 'Unknown',
       };
 
-      try {
-        await addDoc(collection(db, "leads"), leadData);
-        const turfRef = doc(db, "turfs", id)
-        const statsRef = doc(db, "analytics", "stats")
-        setDoc(turfRef, { whatsappClicks: increment(1) }, { merge: true }).catch(() => {});
-        setDoc(statsRef, { totalWhatsAppClicks: increment(1) }, { merge: true }).catch(() => {});
-      } catch (err) {}
+      addDoc(collection(db, "leads"), leadData)
+        .catch(async (err) => {
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: 'leads',
+            operation: 'create',
+            requestResourceData: leadData
+          }));
+        });
+
+      const turfRef = doc(db, "turfs", id)
+      const statsRef = doc(db, "analytics", "stats")
+      
+      setDoc(turfRef, { whatsappClicks: increment(1) }, { merge: true })
+        .catch(async (err) => {
+           errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: turfRef.path,
+            operation: 'update',
+            requestResourceData: { whatsappClicks: increment(1) }
+          }));
+        });
+
+      setDoc(statsRef, { totalWhatsAppClicks: increment(1) }, { merge: true })
+        .catch(async (err) => {
+           errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: statsRef.path,
+            operation: 'update',
+            requestResourceData: { totalWhatsAppClicks: increment(1) }
+          }));
+        });
     }
   }
 

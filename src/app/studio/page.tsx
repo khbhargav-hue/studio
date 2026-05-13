@@ -62,6 +62,8 @@ import {
 } from "recharts";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 export default function StudioDashboard() {
   const db = useFirestore();
@@ -156,6 +158,33 @@ export default function StudioDashboard() {
     link.click();
     document.body.removeChild(link);
     toast({ title: "Intelligence Exported" });
+  };
+
+  const togglePopularStatus = (turfId: string, currentStatus: boolean) => {
+    if (!db) return;
+    const turfRef = doc(db, 'turfs', turfId);
+    updateDoc(turfRef, { isPopular: !currentStatus })
+      .then(() => toast({ title: !currentStatus ? 'Venue Promoted' : 'Promotion Ended' }))
+      .catch(async (err) => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: turfRef.path,
+          operation: 'update',
+          requestResourceData: { isPopular: !currentStatus }
+        }));
+      });
+  };
+
+  const handleDeleteTurf = (turfId: string, turfName: string) => {
+    if (!db) return;
+    const turfRef = doc(db, 'turfs', turfId);
+    deleteDoc(turfRef)
+      .then(() => toast({ title: 'Listing Deleted' }))
+      .catch(async (err) => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: turfRef.path,
+          operation: 'delete'
+        }));
+      });
   };
 
   if (turfsLoading) {
@@ -333,12 +362,7 @@ export default function StudioDashboard() {
                       <Button 
                         variant="ghost" 
                         size="sm" 
-                        onClick={() => {
-                           if (!db) return;
-                           const current = turf.isPopular || false;
-                           updateDoc(doc(db, 'turfs', turf.id), { isPopular: !current });
-                           toast({ title: !current ? 'Venue Promoted' : 'Promotion Ended' });
-                        }}
+                        onClick={() => togglePopularStatus(turf.id, !!turf.isPopular)}
                         className={cn(
                           "rounded-full h-10 w-10 p-0 transition-all",
                           turf.isPopular ? "text-primary bg-primary/10 shadow-[0_0_15px_rgba(57,255,20,0.3)]" : "text-white/10 hover:text-white"
@@ -369,9 +393,7 @@ export default function StudioDashboard() {
                             </AlertDialogHeader>
                             <AlertDialogFooter className="mt-8 gap-4">
                               <AlertDialogCancel className="rounded-2xl font-bold uppercase tracking-widest text-[10px] h-14 bg-white/5 border-white/10">Abort</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => {
-                                if (db) deleteDoc(doc(db, 'turfs', turf.id)).then(() => toast({ title: 'Listing Deleted' }));
-                              }} className="bg-destructive text-white rounded-2xl font-bold uppercase tracking-widest text-[10px] h-14">Confirm Wipe</AlertDialogAction>
+                              <AlertDialogAction onClick={() => handleDeleteTurf(turf.id, turf.name)} className="bg-destructive text-white rounded-2xl font-bold uppercase tracking-widest text-[10px] h-14">Confirm Wipe</AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>

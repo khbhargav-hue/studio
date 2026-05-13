@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, Suspense, useCallback, useRef } from "react";
@@ -127,6 +126,7 @@ function NewTurfForm() {
   const { data: existingTurf, loading: loadingExisting } = useDoc(turfDocRef);
 
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
   const [uploadingStates, setUploadingStates] = useState<Record<string, boolean>>({});
 
@@ -263,19 +263,25 @@ function NewTurfForm() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!db) return;
+    setIsSaving(true);
     const id = editId || formData.name.toLowerCase().replace(/\s+/g, '-');
     const turfRef = doc(db, "turfs", id);
-    setDoc(turfRef, { ...formData, id, updatedAt: serverTimestamp() }, { merge: true })
+    
+    const dataToSave = { ...formData, id, updatedAt: serverTimestamp() };
+
+    setDoc(turfRef, dataToSave, { merge: true })
     .then(() => {
       toast({ title: "Arena Deployed" });
+      setIsSaving(false);
       router.push("/studio");
     })
-    .catch(() => {
+    .catch(async (err) => {
       errorEmitter.emit('permission-error', new FirestorePermissionError({
         path: turfRef.path,
         operation: 'write',
-        requestResourceData: formData
+        requestResourceData: dataToSave
       }));
+      setIsSaving(false);
     });
   };
 
@@ -491,8 +497,9 @@ function NewTurfForm() {
         </div>
 
         <div className="flex flex-col md:flex-row gap-6 pt-10">
-          <Button type="submit" className="flex-1 h-20 bg-primary text-black font-black text-2xl rounded-[2rem] shadow-2xl">
-            <Save className="mr-4 h-8 w-8" /> {editId ? "PUBLISH UPDATES" : "DEPLOY ARENA"}
+          <Button type="submit" disabled={isSaving} className="flex-1 h-20 bg-primary text-black font-black text-2xl rounded-[2rem] shadow-2xl">
+            {isSaving ? <Loader2 className="mr-4 h-8 w-8 animate-spin" /> : <Save className="mr-4 h-8 w-8" />}
+            {editId ? "PUBLISH UPDATES" : "DEPLOY ARENA"}
           </Button>
           <Button type="button" variant="outline" onClick={() => router.back()} className="h-20 px-12 border-white/10 bg-white/5 rounded-[2rem] font-black text-xl">
             ABORT
@@ -500,5 +507,13 @@ function NewTurfForm() {
         </div>
       </form>
     </div>
+  );
+}
+
+export default function NewTurfPage() {
+  return (
+    <Suspense fallback={<div className="flex h-screen items-center justify-center"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>}>
+      <NewTurfForm />
+    </Suspense>
   );
 }

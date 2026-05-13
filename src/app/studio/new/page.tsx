@@ -27,9 +27,7 @@ import {
   IndianRupee, 
   Upload, 
   X,
-  Plus,
   AlertCircle,
-  Database,
   ShieldAlert
 } from "lucide-react";
 import { generateTurfDescriptionForAdmin } from "@/ai/flows/generate-turf-description-for-admin";
@@ -169,7 +167,7 @@ function NewTurfForm() {
   const uploadToCloudinary = (file: File, key: string): Promise<string | null> => {
     return new Promise((resolve) => {
       if (!CLOUDINARY_CLOUD_NAME) {
-        toast({ title: "Cloudinary Setup Required in environment.", variant: "destructive" });
+        toast({ title: "Cloudinary Config Missing", variant: "destructive" });
         resolve(null);
         return;
       }
@@ -197,15 +195,15 @@ function NewTurfForm() {
           const response = JSON.parse(xhr.responseText);
           resolve(response.secure_url);
         } else {
-          console.error("[Cloudinary] Upload Error Details:", xhr.responseText);
-          toast({ title: "Media Sync Failed", description: "Verify your Cloudinary environment variables.", variant: "destructive" });
+          console.error("[Cloudinary] Upload Failure:", xhr.responseText);
+          toast({ title: "Media Sync Failed", variant: "destructive" });
           resolve(null);
         }
       };
 
       xhr.onerror = () => {
         setUploadingStates(prev => ({ ...prev, [key]: false }));
-        toast({ title: "Network error during CDN upload.", variant: "destructive" });
+        toast({ title: "Network error during CDN sync.", variant: "destructive" });
         resolve(null);
       };
 
@@ -243,7 +241,7 @@ function NewTurfForm() {
 
   const handleGenerateDescription = async () => {
     if (!formData.name || !formData.area) {
-      toast({ title: "Identity Required", description: "Name and Area must be set for AI context.", variant: "destructive" });
+      toast({ title: "Data Required", description: "Name and Area required for AI context.", variant: "destructive" });
       return;
     }
     setIsGenerating(true);
@@ -256,24 +254,26 @@ function NewTurfForm() {
         amenities: formData.amenities,
       });
       setFormData(prev => ({ ...prev, description: result.description }));
-      toast({ title: "Intelligence Generated" });
+      toast({ title: "Narrative Generated" });
     } finally {
       setIsGenerating(false);
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // BLOCKING PERMANENT SUBMISSION
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!db) return;
     
     setIsSaving(true);
     const isUpdate = !!editId;
-    console.log(`[Studio/New] Dispatching permanent ${isUpdate ? 'update' : 'deployment'} flow...`);
+    console.log(`[Studio] Initiating permanent ${isUpdate ? 'update' : 'deployment'} flow...`);
     
     try {
       const id = editId || formData.name.toLowerCase().replace(/\s+/g, '-');
       const turfRef = doc(db, "turfs", id);
       
+      // Strict data picking for high-integrity storage
       const dataToSave = { 
         id: String(id),
         name: String(formData.name || ""),
@@ -297,37 +297,40 @@ function NewTurfForm() {
         updatedAt: serverTimestamp() 
       };
 
-      // Firestore Write Pattern: Non-blocking mutation with optimistic feedback
-      setDoc(turfRef, dataToSave, { merge: true })
-        .catch(async (serverError) => {
-          console.error("[Studio/New] Sync failure:", serverError);
-          const permissionError = new FirestorePermissionError({
-            path: turfRef.path,
-            operation: isUpdate ? 'update' : 'create',
-            requestResourceData: dataToSave,
-            message: serverError.message
-          });
-          errorEmitter.emit('permission-error', permissionError);
-        });
+      // BLOCKING AWAIT
+      await setDoc(turfRef, dataToSave, { merge: true });
 
       toast({ 
-        title: isUpdate ? "Arena Intelligence Updated" : "Arena Deployed", 
-        description: isUpdate ? "Changes synchronized to the grid." : "The listing is active and syncing permanently." 
+        title: isUpdate ? "Intelligence Synchronized" : "Arena Deployed", 
+        description: "The listing is now a permanent node in the database." 
       });
       
-      setIsSaving(false);
       router.push("/studio");
 
     } catch (err: any) {
-      console.error("[Studio/New] Fatal submission error:", err);
-      setIsSaving(false);
+      console.error("[Studio] Fatal submission error:", err);
       toast({
         variant: "destructive",
-        title: isUpdate ? "Update Failed" : "Deployment Failed",
-        description: "Logic error in data preparation."
+        title: "Synchronization Error",
+        description: "Verify security rules and internet connection."
       });
+      
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: `turfs/${formData.id}`,
+        operation: isUpdate ? 'update' : 'create',
+        requestResourceData: formData,
+        message: err.message
+      }));
+    } finally {
+      setIsSaving(false);
     }
   };
+
+  if (loadingExisting && editId) return (
+    <div className="flex h-screen items-center justify-center bg-black">
+      <Loader2 className="h-10 w-10 animate-spin text-primary opacity-40" />
+    </div>
+  );
 
   const isConfigMissing = !CLOUDINARY_CLOUD_NAME;
 
@@ -340,7 +343,7 @@ function NewTurfForm() {
         <div className="flex items-center gap-3">
           <div className="h-2 w-2 bg-primary rounded-full animate-pulse shadow-[0_0_10px_rgba(57,255,20,1)]" />
           <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">
-            {editId ? "Update Intelligence" : "Deployment Console"}
+            {editId ? "Update Node" : "Deployment Console"}
           </span>
         </div>
       </div>
@@ -349,17 +352,17 @@ function NewTurfForm() {
         {isConfigMissing ? (
           <Alert variant="destructive" className="bg-destructive/10 border-destructive/20 text-destructive rounded-[2rem] p-8">
             <AlertCircle className="h-6 w-6" />
-            <AlertTitle className="font-black uppercase tracking-widest text-xs mb-2">Cloudinary Disconnected</AlertTitle>
+            <AlertTitle className="font-black uppercase tracking-widest text-xs mb-2">Media Bridge Inactive</AlertTitle>
             <AlertDescription className="text-xs opacity-80 leading-relaxed font-medium">
-              Uploads are disabled. Add <strong>NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME</strong> to your environment.
+              Uploads disabled. Check <strong>NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME</strong>.
             </AlertDescription>
           </Alert>
         ) : (
           <Alert className="bg-primary/5 border-primary/20 text-primary rounded-[2rem] p-8">
             <ShieldAlert className="h-6 w-6" />
-            <AlertTitle className="font-black uppercase tracking-widest text-xs mb-2">Media Bridge Diagnostic</AlertTitle>
+            <AlertTitle className="font-black uppercase tracking-widest text-xs mb-2">Database Persistence Active</AlertTitle>
             <AlertDescription className="text-xs opacity-80 leading-relaxed font-medium">
-              Target Cloud: <span className="font-bold">{CLOUDINARY_CLOUD_NAME}</span> • Active Preset: <span className="font-bold underline">{CLOUDINARY_UPLOAD_PRESET}</span>
+              Writes will commit directly to Cloud Firestore and sync permanently across redeploys.
             </AlertDescription>
           </Alert>
         )}
@@ -541,7 +544,7 @@ function NewTurfForm() {
                   <div className="flex items-center justify-between p-6 bg-white/5 rounded-2xl border border-white/5 group hover:border-primary/20 transition-all">
                     <div>
                       <p className="text-sm font-bold uppercase tracking-tight">Elite Promotion</p>
-                      <p className="text-[10px] text-white/40 uppercase tracking-widest mt-1">Feature on city discovery feed</p>
+                      <p className="text-[10px] text-white/40 uppercase tracking-widest mt-1">Feature on discovery feed</p>
                     </div>
                     <Switch checked={formData.isPopular} onCheckedChange={(c) => setFormData({...formData, isPopular: c})} />
                   </div>

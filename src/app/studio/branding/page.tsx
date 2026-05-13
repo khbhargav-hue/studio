@@ -88,10 +88,10 @@ export default function BrandingStudioPage() {
     challenges: DEFAULT_CHALLENGES
   });
 
-  // Critical: Populate form only when Firestore data is available
+  // Critical: Sync form with Firestore once on load
   useEffect(() => {
     if (brandingData) {
-      console.log("[Studio/Branding] Synchronizing with Firestore persistence...");
+      console.log("[Studio] Syncing with Cloud Persistence Document...");
       setFormData(prev => ({ 
         ...prev, 
         ...brandingData,
@@ -103,11 +103,7 @@ export default function BrandingStudioPage() {
   const uploadToCloudinary = (file: File, key: string): Promise<string | null> => {
     return new Promise((resolve) => {
       if (!CLOUDINARY_CLOUD_NAME) {
-        toast({ 
-          title: "Config Missing", 
-          description: "Add NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME to your .env file.", 
-          variant: "destructive" 
-        });
+        toast({ title: "Cloudinary Config Missing", variant: "destructive" });
         resolve(null);
         return;
       }
@@ -135,10 +131,17 @@ export default function BrandingStudioPage() {
           const response = JSON.parse(xhr.responseText);
           resolve(response.secure_url);
         } else {
-          console.error("[Cloudinary] Upload Failure:", xhr.responseText);
+          const errorMsg = xhr.responseText;
+          console.error("[Cloudinary] Upload error details:", errorMsg);
+          
+          let friendlyMsg = "Verify Cloudinary Cloud Name & Unsigned Preset.";
+          if (errorMsg.includes("Upload preset not found")) {
+            friendlyMsg = `The preset '${CLOUDINARY_UPLOAD_PRESET}' was not found. Please create it as an UNSIGNED preset in Cloudinary.`;
+          }
+          
           toast({ 
-            title: "Media Upload Failed", 
-            description: "Check your Cloudinary presets and cloud name.", 
+            title: "Media Sync Error", 
+            description: friendlyMsg, 
             variant: "destructive" 
           });
           resolve(null);
@@ -147,7 +150,7 @@ export default function BrandingStudioPage() {
 
       xhr.onerror = () => {
         setUploadingStates(prev => ({ ...prev, [key]: false }));
-        toast({ title: "Network error during upload.", variant: "destructive" });
+        toast({ title: "Network error during media sync.", variant: "destructive" });
         resolve(null);
       };
 
@@ -161,7 +164,7 @@ export default function BrandingStudioPage() {
     const url = await uploadToCloudinary(file, 'logo');
     if (url) {
       setFormData(prev => ({ ...prev, logoUrl: url }));
-      toast({ title: "Logo Staged", description: "Publish changes to save permanently." });
+      toast({ title: "Logo Captive", description: "Identity staged. Publish to save." });
     }
   };
 
@@ -171,21 +174,22 @@ export default function BrandingStudioPage() {
     const url = await uploadToCloudinary(file, 'hero');
     if (url) {
       setFormData(prev => ({ ...prev, heroImageUrl: url }));
-      toast({ title: "Hero Media Staged", description: "Publish to update live website." });
+      toast({ title: "Hero Media Captive", description: "Athlete identity staged." });
     }
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  // BLOCKING PERMANENT SAVE
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!db) return;
     
     setIsSaving(true);
-    console.log("[Studio/Branding] Initializing permanent publish flow...");
+    console.log("[Studio] Initiating permanent publish flow...");
     
     try {
       const docRef = doc(db, "settings", "branding");
       
-      // Clean and sanitize payload to prevent serialization errors
+      // Strict sanitization layer for persistence
       const dataToSave = {
         heroHeadingWhite: String(formData.heroHeadingWhite || "PLAY"),
         heroHeadingNeon: String(formData.heroHeadingNeon || "MORE."),
@@ -199,7 +203,7 @@ export default function BrandingStudioPage() {
         footerEmail: String(formData.footerEmail || ""),
         footerWhatsapp: String(formData.footerWhatsapp || ""),
         copyrightText: String(formData.copyrightText || ""),
-        challenges: (formData.challenges || []).map(c => ({
+        challenges: formData.challenges.map(c => ({
           name: String(c.name || ""),
           sub: String(c.sub || ""),
           imageUrl: String(c.imageUrl || ""),
@@ -209,34 +213,37 @@ export default function BrandingStudioPage() {
         updatedAt: serverTimestamp()
       };
 
-      // Firestore Write Pattern: Non-blocking mutation with background error handling
-      setDoc(docRef, dataToSave, { merge: true })
-        .catch(async (serverError) => {
-          console.error("[Studio/Branding] Firestore Sync Failure:", serverError);
-          const permissionError = new FirestorePermissionError({
-            path: docRef.path,
-            operation: 'write',
-            requestResourceData: dataToSave,
-            message: serverError.message
-          });
-          errorEmitter.emit('permission-error', permissionError);
-        });
-
-      // Immediate UI update for the admin
-      toast({ title: "Changes Published", description: "Site identity synchronized successfully." });
-      setIsSaving(false);
+      // BLOCKING AWAIT: Wait for DB acknowledgement
+      await setDoc(docRef, dataToSave, { merge: true });
+      
+      toast({ 
+        title: "Platform Identity Synchronized", 
+        description: "Branding is now permanent and live across all nodes." 
+      });
 
     } catch (err: any) {
-      console.error("[Studio/Branding] Fatal preparation error:", err);
+      console.error("[Studio] Persistence failure:", err);
+      toast({ 
+        variant: "destructive", 
+        title: "Synchronization Error", 
+        description: "Check your console for security rule violations." 
+      });
+      
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: 'settings/branding',
+        operation: 'write',
+        requestResourceData: formData,
+        message: err.message
+      }));
+    } finally {
       setIsSaving(false);
-      toast({ variant: "destructive", title: "Error", description: "Could not prepare data for publish." });
     }
   };
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center py-40 gap-6">
       <Loader2 className="h-14 w-14 animate-spin text-primary opacity-40" />
-      <p className="text-[10px] font-black text-primary/40 uppercase tracking-[0.5em]">Establishing Connection to Branding Node...</p>
+      <p className="text-[10px] font-black text-primary/40 uppercase tracking-[0.5em]">Establishing Secure Branding Connection...</p>
     </div>
   );
 
@@ -250,7 +257,7 @@ export default function BrandingStudioPage() {
             <Palette className="h-10 w-10 text-primary" />
             <h1 className="font-headline text-5xl font-bold tracking-tight uppercase italic">Visual <span className="text-primary text-neon">Identity</span></h1>
           </div>
-          <p className="text-muted-foreground text-xl font-medium">Configure global platform narratives and branding. Changes persist across redeploys.</p>
+          <p className="text-muted-foreground text-xl font-medium">Configure global platform narratives. Changes persist through all deployments.</p>
         </div>
       </div>
 
@@ -361,19 +368,19 @@ export default function BrandingStudioPage() {
                         <div className="text-center w-64 p-12">
                           <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-4" />
                           <Progress value={uploadProgress['hero']} className="h-2 bg-white/10" />
-                          <p className="text-[9px] font-black text-primary uppercase tracking-widest mt-4">Uploading...</p>
+                          <p className="text-[9px] font-black text-primary uppercase tracking-widest mt-4">Syncing...</p>
                         </div>
                       ) : formData.heroImageUrl ? (
                         <div className="relative w-full h-full p-12 flex items-center justify-center">
                            <img src={formData.heroImageUrl} className="w-full h-full object-contain drop-shadow-[0_0_30px_rgba(255,255,20,0.2)]" alt="Hero Preview" />
                            <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                              <div className="bg-black/80 px-6 py-3 rounded-full border border-primary/40 text-primary font-black uppercase tracking-widest text-[10px]">Replace Media</div>
+                              <div className="bg-black/80 px-6 py-3 rounded-full border border-primary/40 text-primary font-black uppercase tracking-widest text-[10px]">Replace Athlete</div>
                            </div>
                         </div>
                       ) : (
                         <div className="text-center p-12 opacity-30">
                           <Upload className="h-12 w-12 mx-auto mb-4" />
-                          <p className="text-[10px] font-black uppercase">Click to select hero image</p>
+                          <p className="text-[10px] font-black uppercase">Click to capture hero image</p>
                         </div>
                       )}
                       <input type="file" ref={heroInputRef} onChange={handleHeroUpload} className="hidden" accept="image/*" />

@@ -9,7 +9,6 @@ import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection, query, where } from "firebase/firestore";
 import { Loader2, Star, Trophy, Zap } from "lucide-react";
 import { motion } from "framer-motion";
-import { MOCK_TURFS } from "@/lib/data";
 
 export default function FeaturedPage() {
   const db = useFirestore();
@@ -22,20 +21,7 @@ export default function FeaturedPage() {
     );
   }, [db]);
 
-  const { data: firestoreTurfs, loading } = useCollection(featuredQuery);
-
-  const turfs = useMemo(() => {
-    // Resilient Fallback: If database is empty or loading, we determine the set to show
-    let source = firestoreTurfs;
-    if (!loading && (!firestoreTurfs || firestoreTurfs.length === 0)) {
-      source = MOCK_TURFS.filter(t => t.isPopular);
-    }
-    
-    if (!source) return null;
-    return [...source].sort((a: any, b: any) => 
-      (a.name || "").localeCompare(b.name || "")
-    );
-  }, [firestoreTurfs, loading]);
+  const { data: turfs, loading } = useCollection(featuredQuery);
 
   return (
     <div className="flex min-h-screen flex-col bg-[#050505] selection:bg-primary selection:text-black">
@@ -57,7 +43,7 @@ export default function FeaturedPage() {
               Featured <span className="text-primary text-neon">Arenas</span>
             </h1>
             <p className="text-xl text-white/40 font-medium max-w-2xl mx-auto leading-relaxed">
-              Experience Mysuru's most prestigious sporting surfaces. Scouted for elite performance, professional lighting, and premium amenities.
+              Experience Mysuru's most prestigious sporting surfaces. Committed to the cloud for permanent discovery.
             </p>
           </motion.div>
 
@@ -85,13 +71,12 @@ export default function FeaturedPage() {
                 <Trophy className="h-10 w-10 text-white/10" />
               </div>
               <div>
-                <h3 className="text-3xl font-black text-white/20 uppercase italic tracking-widest mb-4">No Featured Arenas Yet</h3>
-                <p className="text-white/40 font-medium max-w-xs mx-auto">Our scouts are currently verifying new elite venues. Check back soon for the city's best.</p>
+                <h3 className="text-3xl font-black text-white/10 uppercase italic tracking-widest mb-4">Discovery Empty</h3>
+                <p className="text-white/20 font-medium max-w-xs mx-auto">No arenas have been marked as featured in the database yet.</p>
               </div>
             </div>
           )}
 
-          {/* Value Props Section */}
           {!loading && turfs && turfs.length > 0 && (
             <div className="mt-40 grid grid-cols-1 md:grid-cols-3 gap-10 border-t border-white/5 pt-20">
               {[

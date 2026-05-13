@@ -24,7 +24,6 @@ import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
-import { MOCK_TURFS } from "@/lib/data"
 
 const SPORT_FILTERS = ["All", "Football", "Cricket", "Pickleball"]
 
@@ -35,48 +34,33 @@ const FEATURE_CHIPS = [
   { label: "Play & Connect", icon: Users }
 ]
 
-const DEFAULT_CHALLENGES = [
-  { name: "Football", sub: "5v5 Challenge", icon: Zap, image: "https://picsum.photos/seed/ball1/400/400" },
-  { name: "Cricket", sub: "Match Challenge", icon: Target, image: "https://picsum.photos/seed/bat1/400/400" },
-  { name: "Badminton", sub: "Doubles Challenge", icon: Wind, image: "https://picsum.photos/seed/shuttle1/400/400" },
-  { name: "Pickleball", sub: "Dink Challenge", icon: Star, image: "https://picsum.photos/seed/paddle1/400/400" }
-]
-
 export default function Home() {
   const db = useFirestore()
   const [activeFilter, setActiveFilter] = useState("All")
   
-  // Branding Intelligence Source
+  // Branding Intelligence Source: SINGLE SOURCE OF TRUTH
   const brandingRef = useMemoFirebase(() => {
     if (!db) return null
     return doc(db, "settings", "branding")
   }, [db])
 
-  const { data: branding } = useDoc(brandingRef)
+  const { data: branding, loading: brandingLoading } = useDoc(brandingRef)
 
-  // Primary Data Source: Firestore
+  // Primary Data Source: Firestore ONLY
   const turfsQuery = useMemoFirebase(() => {
     if (!db) return null
     return query(collection(db, "turfs"), orderBy("name", "asc"))
   }, [db])
 
-  const { data: firestoreTurfs, loading } = useCollection(turfsQuery)
-
-  // Resilient Logic: If Firestore is empty, use Mock Data as Fallback
-  const turfs = useMemo(() => {
-    if (!loading && (!firestoreTurfs || firestoreTurfs.length === 0)) {
-      console.log("[Turfista] Firestore inventory empty. Engaging system fallbacks.");
-      return MOCK_TURFS;
-    }
-    return firestoreTurfs || [];
-  }, [firestoreTurfs, loading]);
+  const { data: turfs, loading: turfsLoading } = useCollection(turfsQuery)
 
   const filteredTurfs = useMemo(() => {
+    if (!turfs) return []
     if (activeFilter === "All") return turfs
     return turfs.filter(t => t.sportTypes?.includes(activeFilter as any))
   }, [turfs, activeFilter])
 
-  // Reactive Challenge Hub logic
+  // Reactive Challenge Hub logic derived from Firestore
   const challengeCategories = useMemo(() => {
     if (branding?.challenges && Array.isArray(branding.challenges) && branding.challenges.length > 0) {
       return branding.challenges.map((c: any) => ({
@@ -86,25 +70,28 @@ export default function Home() {
         buttonText: c.buttonText || "JOIN NOW"
       }))
     }
-    return DEFAULT_CHALLENGES.map(c => ({ ...c, buttonText: "JOIN NOW" }))
+    return []
   }, [branding])
+
+  if (brandingLoading || turfsLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-black">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    )
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Navbar />
       
-      {/* Reactive Hero Section */}
       <section className="relative pt-32 pb-20 md:pt-48 md:pb-32 px-4 overflow-hidden">
-        {/* Background Visuals */}
         <div className="absolute top-0 right-0 w-full md:w-1/2 h-full pointer-events-none">
           <div className="relative w-full h-full">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] md:w-[600px] md:h-[600px] bg-primary/20 rounded-full blur-[100px] opacity-30" />
             
-            {/* Athlete Container */}
             <div className="absolute top-1/2 right-0 -translate-y-1/2 w-full h-full hidden md:block">
               <div className="relative w-full h-full flex items-center justify-center">
-                 <div className="w-[500px] h-[500px] rounded-full halo-effect opacity-0" />
-                 
                  <div className="absolute inset-0 flex items-center justify-center">
                     <div className="relative w-[480px] h-[480px] rounded-full overflow-hidden flex items-center justify-center p-12">
                       <Image 
@@ -114,6 +101,7 @@ export default function Home() {
                         height={600} 
                         className="w-full h-full object-contain grayscale-[0.2] contrast-125 transition-all duration-1000 drop-shadow-[0_0_50px_rgba(57,255,20,0.2)]"
                         priority
+                        data-ai-hint="athlete football"
                       />
                     </div>
                  </div>
@@ -162,53 +150,53 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Challenges Hub */}
-      <section className="px-4 py-24 bg-black/50 border-t border-white/5">
-        <div className="mx-auto max-w-7xl">
-          <div className="flex items-center justify-between mb-16">
-            <div>
-              <div className="flex items-center gap-4 mb-4">
-                <div className="h-1 w-8 bg-primary rounded-full" />
-                <h2 className="text-3xl md:text-5xl font-black italic uppercase tracking-tighter">CHALLENGES</h2>
-              </div>
-              <p className="text-white/30 font-bold uppercase tracking-widest text-sm">Compete. Win. Earn Respect.</p>
-            </div>
-            <Link href="/challenges" className="hidden md:flex items-center gap-2 text-primary font-black uppercase tracking-widest text-[11px] hover:translate-x-2 transition-transform">
-              VIEW ALL CHALLENGES <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {challengeCategories.map((cat, idx) => (
-              <motion.div 
-                key={cat.name + idx}
-                whileHover={{ y: -10 }}
-                className="glass-card rounded-[2.5rem] p-8 text-center group relative overflow-hidden"
-              >
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-1/2 bg-gradient-to-b from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                
-                <div className="relative aspect-square mb-8 p-4">
-                  <Image 
-                    src={cat.image} 
-                    alt={cat.name} 
-                    fill 
-                    className="object-contain transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6" 
-                  />
+      {challengeCategories.length > 0 && (
+        <section className="px-4 py-24 bg-black/50 border-t border-white/5">
+          <div className="mx-auto max-w-7xl">
+            <div className="flex items-center justify-between mb-16">
+              <div>
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="h-1 w-8 bg-primary rounded-full" />
+                  <h2 className="text-3xl md:text-5xl font-black italic uppercase tracking-tighter">CHALLENGES</h2>
                 </div>
-                
-                <h3 className="text-2xl font-black text-primary italic uppercase tracking-tighter mb-1">{cat.name}</h3>
-                <p className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-8">{cat.sub}</p>
-                
-                <Button asChild variant="ghost" className="w-full h-14 rounded-2xl bg-white/5 hover:bg-primary hover:text-black border border-white/5 transition-all font-black uppercase tracking-widest text-[10px]">
-                  <Link href="/challenges">{cat.buttonText}</Link>
-                </Button>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
+                <p className="text-white/30 font-bold uppercase tracking-widest text-sm">Compete. Win. Earn Respect.</p>
+              </div>
+              <Link href="/challenges" className="hidden md:flex items-center gap-2 text-primary font-black uppercase tracking-widest text-[11px] hover:translate-x-2 transition-transform">
+                VIEW ALL CHALLENGES <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
 
-      {/* Discovery Hub */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+              {challengeCategories.map((cat, idx) => (
+                <motion.div 
+                  key={cat.name + idx}
+                  whileHover={{ y: -10 }}
+                  className="glass-card rounded-[2.5rem] p-8 text-center group relative overflow-hidden"
+                >
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-1/2 bg-gradient-to-b from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  
+                  <div className="relative aspect-square mb-8 p-4">
+                    <Image 
+                      src={cat.image} 
+                      alt={cat.name} 
+                      fill 
+                      className="object-contain transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6" 
+                    />
+                  </div>
+                  
+                  <h3 className="text-2xl font-black text-primary italic uppercase tracking-tighter mb-1">{cat.name}</h3>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-8">{cat.sub}</p>
+                  
+                  <Button asChild variant="ghost" className="w-full h-14 rounded-2xl bg-white/5 hover:bg-primary hover:text-black border border-white/5 transition-all font-black uppercase tracking-widest text-[10px]">
+                    <Link href="/challenges">{cat.buttonText}</Link>
+                  </Button>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       <section id="turfs" className="px-4 py-24 bg-background">
         <div className="mx-auto max-w-7xl">
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-8">
@@ -238,12 +226,7 @@ export default function Home() {
             </div>
           </div>
 
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-40 gap-8">
-              <Loader2 className="h-16 w-16 animate-spin text-primary opacity-20" />
-              <p className="text-[10px] font-black uppercase tracking-[0.5em] text-primary/40">Synchronizing Arena Intel...</p>
-            </div>
-          ) : filteredTurfs.length > 0 ? (
+          {filteredTurfs.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 md:gap-10">
               {filteredTurfs.map((turf) => (
                 <TurfCard key={turf.id} turf={turf as any} />
@@ -253,8 +236,8 @@ export default function Home() {
             <div className="text-center py-48 glass-card rounded-[5rem] border-dashed border-white/10 max-w-4xl mx-auto flex flex-col items-center gap-10">
               <Star className="h-20 w-20 text-white/5" />
               <div className="space-y-4">
-                <h3 className="text-4xl font-black text-white/10 uppercase italic tracking-widest">No Arenas Detected</h3>
-                <p className="text-white/20 max-w-xs mx-auto text-sm font-medium uppercase tracking-widest italic leading-relaxed">Try adjusting your sport filters or area selection.</p>
+                <h3 className="text-4xl font-black text-white/10 uppercase italic tracking-widest">Circuit Empty</h3>
+                <p className="text-white/20 max-w-xs mx-auto text-sm font-medium uppercase tracking-widest italic leading-relaxed">No arenas published in this category yet.</p>
               </div>
             </div>
           )}

@@ -16,12 +16,10 @@ import {
   Star, 
   Loader2,
   Zap,
-  IndianRupee,
-  Navigation,
-  Trophy,
+  ShieldCheck, 
+  Share2,
   Clock,
-  ShieldCheck,
-  Share2
+  Navigation
 } from "lucide-react"
 import { useDoc, useFirestore, useMemoFirebase } from "@/firebase"
 import { doc, increment, setDoc, addDoc, serverTimestamp, collection } from "firebase/firestore"
@@ -29,9 +27,6 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
 import * as gtag from "@/lib/gtag"
-import { errorEmitter } from '@/firebase/error-emitter'
-import { FirestorePermissionError } from '@/firebase/errors'
-import { MOCK_TURFS } from "@/lib/data"
 
 export default function TurfDetail() {
   const params = useParams()
@@ -47,15 +42,7 @@ export default function TurfDetail() {
     return doc(db, "turfs", id)
   }, [db, id])
 
-  const { data: firestoreTurf, loading } = useDoc(turfDocRef)
-
-  // Resilient Recovery: If Firestore doc doesn't exist, check system defaults
-  const turf = useMemo(() => {
-    if (!loading && !firestoreTurf) {
-      return MOCK_TURFS.find(t => t.id === id) || null;
-    }
-    return firestoreTurf;
-  }, [firestoreTurf, loading, id]);
+  const { data: turf, loading } = useDoc(turfDocRef)
 
   useEffect(() => {
     if (db && id && turf && !hasIncremented.current) {
@@ -67,73 +54,42 @@ export default function TurfDetail() {
         const statsRef = doc(db, "analytics", "stats")
         const turfRef = doc(db, "turfs", id)
         
-        // Non-blocking optimistic update for analytics
-        setDoc(turfRef, { views: increment(1) }, { merge: true })
-          .catch(async (err) => {
-            console.warn("[Turfista] Analytics write failed - likely mock data fallback or permission restricted.");
-          });
-
-        setDoc(statsRef, { totalViews: increment(1) }, { merge: true })
-          .catch(async (err) => {
-             // Silence background sync errors for analytics
-          });
+        setDoc(turfRef, { views: increment(1) }, { merge: true });
+        setDoc(statsRef, { totalViews: increment(1) }, { merge: true });
         
         localStorage.setItem(viewedKey, Date.now().toString());
-
-        // Track GA view
-        gtag.event({
-          action: 'view_item',
-          category: 'Engagement',
-          label: turf.name,
-          value: 1
-        })
+        gtag.event({ action: 'view_item', category: 'Engagement', label: turf.name, value: 1 });
       }
     }
   }, [db, id, turf])
 
   const handleWhatsAppClick = async () => {
-    if (db && id && !isThrottled) {
-      gtag.event({
-        action: 'generate_lead',
-        category: 'Booking',
-        label: turf?.name || id,
-        value: 1
-      })
+    if (db && id && !isThrottled && turf) {
+      gtag.event({ action: 'generate_lead', category: 'Booking', label: turf.name, value: 1 });
 
       setIsThrottled(true)
       setTimeout(() => setIsThrottled(false), 5000)
 
       const leadData = {
         turfId: id,
-        turfName: turf?.name || 'Unknown',
-        area: turf?.area || 'Unknown',
-        sportType: turf?.sportTypes?.[0] || 'Unknown',
+        turfName: turf.name || 'Unknown',
+        area: turf.area || 'Unknown',
+        sportType: turf.sportTypes?.[0] || 'Unknown',
         timestamp: serverTimestamp(),
         deviceInfo: typeof navigator !== 'undefined' ? navigator.userAgent.slice(0, 150) : 'Unknown',
       };
 
-      addDoc(collection(db, "leads"), leadData)
-        .catch(async (err) => {
-          errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: 'leads',
-            operation: 'create',
-            requestResourceData: leadData
-          }));
-        });
-
-      const turfRef = doc(db, "turfs", id)
-      const statsRef = doc(db, "analytics", "stats")
-      
-      setDoc(turfRef, { whatsappClicks: increment(1) }, { merge: true });
-      setDoc(statsRef, { totalWhatsAppClicks: increment(1) }, { merge: true });
+      addDoc(collection(db, "leads"), leadData);
+      setDoc(doc(db, "turfs", id), { whatsappClicks: increment(1) }, { merge: true });
+      setDoc(doc(db, "analytics", "stats"), { totalWhatsAppClicks: increment(1) }, { merge: true });
     }
   }
 
   const allImages = useMemo(() => {
-    if (!turf) return [];
+    if (!turf) return ["https://picsum.photos/seed/turf-placeholder/1200/800"];
     const images: string[] = [];
-    if (turf?.mainImage) images.push(turf.mainImage);
-    if (turf?.galleryImages && Array.isArray(turf.galleryImages)) {
+    if (turf.mainImage) images.push(turf.mainImage);
+    if (turf.galleryImages && Array.isArray(turf.galleryImages)) {
       images.push(...turf.galleryImages.filter((img: any) => typeof img === 'string'));
     }
     return images.length > 0 ? images : ["https://picsum.photos/seed/turf-placeholder/1200/800"];
@@ -144,7 +100,7 @@ export default function TurfDetail() {
       return Math.min(...Object.values(turf.courtPricing as Record<string, number>));
     }
     return turf?.pricePerHour || 0;
-  }, [turf?.courtPricing, turf?.pricePerHour]);
+  }, [turf]);
 
   if (loading) {
     return (
@@ -162,8 +118,8 @@ export default function TurfDetail() {
         <div className="flex-1 flex flex-col items-center justify-center p-8">
           <div className="glass-card p-16 rounded-[3rem] text-center border-white/5 max-w-lg">
             <Zap className="h-16 w-16 text-primary opacity-20 mx-auto mb-8" />
-            <h1 className="text-4xl mb-4 font-black italic tracking-tighter uppercase">ARENA <span className="text-primary">NOT FOUND</span></h1>
-            <p className="text-white/40 mb-10 font-medium">The pitch you are looking for is currently offline.</p>
+            <h1 className="text-4xl mb-4 font-black italic tracking-tighter uppercase">ARENA <span className="text-primary">OFFLINE</span></h1>
+            <p className="text-white/40 mb-10 font-medium">This pitch node is not currently registered in the database.</p>
             <Button onClick={() => router.push("/")} className="bg-primary text-black font-black uppercase tracking-widest h-14 px-10 rounded-2xl">Back to Discovery</Button>
           </div>
         </div>
@@ -246,7 +202,7 @@ export default function TurfDetail() {
                   </div>
                   <div className="px-6 py-2 bg-white/5 border border-white/10 rounded-full flex items-center gap-2">
                     <div className="h-1.5 w-1.5 bg-green-500 rounded-full animate-pulse" />
-                    <span className="text-[9px] font-black text-white/40 uppercase tracking-[0.4em]">{openingHours.toLowerCase().includes('open') ? 'Operational' : 'Restricted'}</span>
+                    <span className="text-[9px] font-black text-white/40 uppercase tracking-[0.4em]">Active Persistence</span>
                   </div>
                 </div>
                 

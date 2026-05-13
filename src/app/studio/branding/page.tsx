@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from "react";
@@ -52,7 +53,7 @@ const DEFAULT_CHALLENGES = [
 ];
 
 const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-const CLOUDINARY_UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+const CLOUDINARY_UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'turfista_upload';
 
 export default function BrandingStudioPage() {
   const db = useFirestore();
@@ -99,10 +100,10 @@ export default function BrandingStudioPage() {
 
   const uploadToCloudinary = (file: File, key: string): Promise<string | null> => {
     return new Promise((resolve) => {
-      if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
+      if (!CLOUDINARY_CLOUD_NAME) {
         toast({ 
           title: "Config Missing", 
-          description: "Add NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME and NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET to your .env file.", 
+          description: "Add NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME to your .env file.", 
           variant: "destructive" 
         });
         resolve(null);
@@ -135,7 +136,7 @@ export default function BrandingStudioPage() {
           resolve(response.secure_url);
         } else {
           const errorMsg = xhr.responseText;
-          console.error("[Cloudinary] Upload Error:", errorMsg);
+          console.error("[Cloudinary] Upload Error Details:", errorMsg);
           
           let friendlyMsg = "Verify Cloudinary Cloud Name & Unsigned Preset.";
           if (errorMsg.includes("Upload preset not found")) {
@@ -186,6 +187,7 @@ export default function BrandingStudioPage() {
     if (!db) return;
     
     setIsSaving(true);
+    console.log("[Studio/Branding] Dispatching publish flow...");
     
     try {
       const docRef = doc(db, "settings", "branding");
@@ -213,13 +215,10 @@ export default function BrandingStudioPage() {
         updatedAt: serverTimestamp()
       };
 
+      // OPTIMISTIC UPDATE: Initiate write and immediately feedback to user
       setDoc(docRef, dataToSave, { merge: true })
-        .then(() => {
-          toast({ title: "Changes Published", description: "Site identity synchronized successfully." });
-          setIsSaving(false);
-        })
         .catch(async (serverError) => {
-          setIsSaving(false);
+          console.error("[Studio/Branding] Background sync failure:", serverError);
           const permissionError = new FirestorePermissionError({
             path: docRef.path,
             operation: 'write',
@@ -229,7 +228,11 @@ export default function BrandingStudioPage() {
           errorEmitter.emit('permission-error', permissionError);
         });
 
+      toast({ title: "Changes Published", description: "Site identity synchronized successfully." });
+      setIsSaving(false);
+
     } catch (err: any) {
+      console.error("[Studio/Branding] Fatal preparation error:", err);
       setIsSaving(false);
       toast({ variant: "destructive", title: "Error", description: "Could not prepare data for publish." });
     }
@@ -242,7 +245,7 @@ export default function BrandingStudioPage() {
     </div>
   );
 
-  const isConfigMissing = !CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET;
+  const isConfigMissing = !CLOUDINARY_CLOUD_NAME;
 
   return (
     <div className="max-w-7xl mx-auto pb-32 animate-in fade-in duration-700">
@@ -262,16 +265,16 @@ export default function BrandingStudioPage() {
             <AlertCircle className="h-6 w-6" />
             <AlertTitle className="font-black uppercase tracking-widest text-xs mb-2">Cloudinary Setup Required</AlertTitle>
             <AlertDescription className="text-xs opacity-80 leading-relaxed font-medium">
-              Media flows are inactive. Add <strong>NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME</strong> and <strong>NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET</strong> to your .env file.
+              Media flows are inactive. Add <strong>NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME</strong> to your .env file.
             </AlertDescription>
           </Alert>
         ) : (
           <Alert className="bg-primary/5 border-primary/20 text-primary rounded-[2rem] p-8">
             <ShieldAlert className="h-6 w-6" />
-            <AlertTitle className="font-black uppercase tracking-widest text-xs mb-2">Media Bridge Active</AlertTitle>
+            <AlertTitle className="font-black uppercase tracking-widest text-xs mb-2">Media Bridge Diagnostic</AlertTitle>
             <AlertDescription className="text-xs opacity-80 leading-relaxed font-medium">
-              Cloud: <span className="font-bold">{CLOUDINARY_CLOUD_NAME}</span> • Preset: <span className="font-bold underline">{CLOUDINARY_UPLOAD_PRESET}</span>
-              <p className="mt-2 text-[10px] opacity-60">Note: Ensure this preset is 'Unsigned' in your Cloudinary Dashboard.</p>
+              Cloud Name: <span className="font-bold">{CLOUDINARY_CLOUD_NAME}</span> • Active Preset: <span className="font-bold underline">{CLOUDINARY_UPLOAD_PRESET}</span>
+              <p className="mt-2 text-[10px] opacity-60">Note: Ensure this preset is 'Unsigned' in your Cloudinary Dashboard Settings > Upload.</p>
             </AlertDescription>
           </Alert>
         )}
@@ -341,7 +344,7 @@ export default function BrandingStudioPage() {
                 <CardHeader className="p-10 pb-4">
                   <CardTitle className="font-headline text-3xl font-bold flex items-center gap-4">
                      <ImageIcon className="h-8 w-8 text-primary" />
-                     Hero Backdrop
+                     Hero Precision Hub
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-10 pt-4 space-y-10">

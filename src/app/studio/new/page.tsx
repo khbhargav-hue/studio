@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, Suspense, useCallback, useRef } from "react";
@@ -53,7 +54,7 @@ const COURT_OPTIONS = [
 ];
 
 const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-const CLOUDINARY_UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+const CLOUDINARY_UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'turfista_upload';
 
 function SelectionGroup({ 
   title, 
@@ -168,7 +169,7 @@ function NewTurfForm() {
 
   const uploadToCloudinary = (file: File, key: string): Promise<string | null> => {
     return new Promise((resolve) => {
-      if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
+      if (!CLOUDINARY_CLOUD_NAME) {
         toast({ title: "Cloudinary Setup Required in environment.", variant: "destructive" });
         resolve(null);
         return;
@@ -200,7 +201,7 @@ function NewTurfForm() {
           resolve(response.secure_url);
         } else {
           const errorMsg = xhr.responseText;
-          console.error("[Cloudinary] Upload Error:", errorMsg);
+          console.error("[Cloudinary] Upload Error Details:", errorMsg);
           
           let friendlyMsg = "CDN Upload Failed. Verify configuration.";
           if (errorMsg.includes("Upload preset not found")) {
@@ -305,6 +306,7 @@ function NewTurfForm() {
         updatedAt: serverTimestamp() 
       };
 
+      // OPTIMISTIC UPDATE: Initiate write and immediately feedback to user
       setDoc(turfRef, dataToSave, { merge: true })
         .catch(async (serverError) => {
           console.error("[Studio/New] Background sync failure:", serverError);
@@ -336,7 +338,7 @@ function NewTurfForm() {
     }
   };
 
-  const isConfigMissing = !CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET;
+  const isConfigMissing = !CLOUDINARY_CLOUD_NAME;
 
   return (
     <div className="max-w-6xl mx-auto pb-32 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -356,13 +358,13 @@ function NewTurfForm() {
             <AlertCircle className="h-6 w-6" />
             <AlertTitle className="font-black uppercase tracking-widest text-xs mb-2">Cloudinary Disconnected</AlertTitle>
             <AlertDescription className="text-xs opacity-80 leading-relaxed font-medium">
-              Uploads are disabled. Add <strong>NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME</strong> and <strong>NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET</strong> to your environment.
+              Uploads are disabled. Add <strong>NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME</strong> to your environment.
             </AlertDescription>
           </Alert>
         ) : (
           <Alert className="bg-primary/5 border-primary/20 text-primary rounded-[2rem] p-8">
             <ShieldAlert className="h-6 w-6" />
-            <AlertTitle className="font-black uppercase tracking-widest text-xs mb-2">Media Protocol Verified</AlertTitle>
+            <AlertTitle className="font-black uppercase tracking-widest text-xs mb-2">Media Bridge Diagnostic</AlertTitle>
             <AlertDescription className="text-xs opacity-80 leading-relaxed font-medium">
               Target Cloud: <span className="font-bold">{CLOUDINARY_CLOUD_NAME}</span> • Active Preset: <span className="font-bold underline">{CLOUDINARY_UPLOAD_PRESET}</span>
             </AlertDescription>
@@ -586,13 +588,5 @@ function NewTurfForm() {
         </div>
       </form>
     </div>
-  );
-}
-
-export default function NewTurfPage() {
-  return (
-    <Suspense fallback={null}>
-      <NewTurfForm />
-    </Suspense>
   );
 }

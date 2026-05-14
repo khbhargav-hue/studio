@@ -1,4 +1,3 @@
-
 import { Turf } from './types';
 
 export const MOCK_TURFS: Turf[] = [

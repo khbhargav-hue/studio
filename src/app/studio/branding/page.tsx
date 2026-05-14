@@ -27,13 +27,9 @@ import {
   Mail, 
   Upload, 
   Zap,
-  Target,
-  Wind,
-  Star,
-  CheckCircle2,
-  AlertCircle,
   Info,
-  ShieldAlert
+  ShieldAlert,
+  AlertCircle
 } from "lucide-react";
 import { useFirestore, useDoc, useMemoFirebase } from "@/firebase";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
@@ -114,8 +110,7 @@ export default function BrandingStudioPage() {
           const response = JSON.parse(xhr.responseText);
           resolve(response.secure_url);
         } else {
-          console.error("[Cloudinary] Upload Failure:", xhr.responseText);
-          toast({ title: "Media Sync Failed", description: "Check diagnostic alert for setup instructions.", variant: "destructive" });
+          toast({ title: "Media Sync Failed", variant: "destructive" });
           resolve(null);
         }
       };
@@ -136,7 +131,7 @@ export default function BrandingStudioPage() {
     const url = await uploadToCloudinary(file, 'logo');
     if (url) {
       setFormData(prev => ({ ...prev, logoUrl: url }));
-      toast({ title: "Logo Captive", description: "Identity staged. Publish to persist." });
+      toast({ title: "Logo Staged" });
     }
   };
 
@@ -146,54 +141,46 @@ export default function BrandingStudioPage() {
     const url = await uploadToCloudinary(file, 'hero');
     if (url) {
       setFormData(prev => ({ ...prev, heroImageUrl: url }));
-      toast({ title: "Hero Media Captive", description: "New athlete profile staged." });
+      toast({ title: "Hero Media Staged" });
     }
   };
 
-  const handleSave = async (e: React.FormEvent) => {
+  const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     if (!db) return;
     
     setIsSaving(true);
-    
-    try {
-      const docRef = doc(db, "settings", "branding");
-      const dataToSave = {
-        ...formData,
-        updatedAt: serverTimestamp()
-      };
+    const docRef = doc(db, "settings", "branding");
+    const dataToSave = {
+      ...formData,
+      updatedAt: serverTimestamp()
+    };
 
-      // Perform a blocking high-integrity write to ensure persistence
-      await setDoc(docRef, dataToSave, { merge: true });
-      
-      toast({ 
-        title: "Platform Identity Synchronized", 
-        description: "Your changes are now permanent and live on the network." 
+    // Use non-blocking pattern for Firestore mutation
+    setDoc(docRef, dataToSave, { merge: true })
+      .then(() => {
+        toast({ 
+          title: "Platform Identity Synchronized", 
+          description: "Changes are permanent across the network." 
+        });
+        setIsSaving(false);
+      })
+      .catch(async (err) => {
+        const permissionError = new FirestorePermissionError({
+          path: docRef.path,
+          operation: 'write',
+          requestResourceData: dataToSave,
+          message: err.message
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        setIsSaving(false);
       });
-
-    } catch (err: any) {
-      console.error("[Studio] Persistence failure:", err);
-      toast({ 
-        variant: "destructive", 
-        title: "Synchronization Error", 
-        description: "Secure write failed. Check rules or connection." 
-      });
-      
-      errorEmitter.emit('permission-error', new FirestorePermissionError({
-        path: 'settings/branding',
-        operation: 'write',
-        requestResourceData: formData,
-        message: err.message
-      }));
-    } finally {
-      setIsSaving(false);
-    }
   };
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center py-40 gap-6">
       <Loader2 className="h-14 w-14 animate-spin text-primary opacity-40" />
-      <p className="text-[11px] font-black text-primary/40 uppercase tracking-[0.5em]">Establishing Branding Connection...</p>
+      <p className="text-[11px] font-black text-primary/40 uppercase tracking-[0.5em]">Establishing Connection...</p>
     </div>
   );
 
@@ -203,9 +190,9 @@ export default function BrandingStudioPage() {
         <div>
           <div className="flex items-center gap-3 mb-4">
             <Palette className="h-10 w-10 text-primary" />
-            <h1 className="font-headline text-5xl font-bold tracking-tight uppercase italic">Visual <span className="text-primary text-neon">Identity</span></h1>
+            <h1 className="font-headline text-5xl font-bold tracking-tight uppercase italic">Visual <span className="text-primary">Identity</span></h1>
           </div>
-          <p className="text-muted-foreground text-xl font-medium">Configure global platform narratives. Changes persist through all network builds.</p>
+          <p className="text-muted-foreground text-xl font-medium">Configure global platform narratives. Changes persist through redeployments.</p>
         </div>
       </div>
 
@@ -215,7 +202,7 @@ export default function BrandingStudioPage() {
             <AlertCircle className="h-6 w-6" />
             <AlertTitle className="font-black uppercase tracking-widest text-xs mb-2">Cloudinary Disconnected</AlertTitle>
             <AlertDescription className="text-xs opacity-80 leading-relaxed font-medium">
-              Media flows are inactive. Add <strong>NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME</strong> to your environment to enable uploads.
+              Add <strong>NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME</strong> to enable uploads.
             </AlertDescription>
           </Alert>
         ) : (
@@ -224,19 +211,18 @@ export default function BrandingStudioPage() {
             <AlertTitle className="font-black uppercase tracking-widest text-xs mb-2">Media Protocol Active</AlertTitle>
             <AlertDescription className="text-xs opacity-80 leading-relaxed font-medium">
               Cloud: <span className="font-bold">{CLOUDINARY_CLOUD_NAME}</span> • Active Preset: <span className="font-bold underline">{CLOUDINARY_UPLOAD_PRESET}</span>
-              <p className="mt-2 text-[10px] opacity-60">Note: Ensure your preset is 'Unsigned' in your Cloudinary Dashboard Settings &gt; Upload.</p>
             </AlertDescription>
           </Alert>
         )}
       </div>
 
-      <Tabs defaultValue="hero" className="space-y-10">
-        <TabsList className="bg-white/5 p-1 h-14 rounded-[1.5rem] border border-white/5">
-          <TabsTrigger value="hero" className="px-8 h-full rounded-xl data-[state=active]:bg-primary data-[state=active]:text-black font-bold uppercase tracking-widest text-[10px]">Hero & Logo</TabsTrigger>
-          <TabsTrigger value="seo" className="px-8 h-full rounded-xl data-[state=active]:bg-primary data-[state=active]:text-black font-bold uppercase tracking-widest text-[10px]">SEO & Support</TabsTrigger>
-        </TabsList>
+      <form onSubmit={handleSave} className="space-y-10">
+        <Tabs defaultValue="hero" className="space-y-10">
+          <TabsList className="bg-white/5 p-1 h-14 rounded-[1.5rem] border border-white/5">
+            <TabsTrigger value="hero" className="px-8 h-full rounded-xl data-[state=active]:bg-primary data-[state=active]:text-black font-bold uppercase tracking-widest text-[10px]">Hero & Logo</TabsTrigger>
+            <TabsTrigger value="seo" className="px-8 h-full rounded-xl data-[state=active]:bg-primary data-[state=active]:text-black font-bold uppercase tracking-widest text-[10px]">SEO & Support</TabsTrigger>
+          </TabsList>
 
-        <form onSubmit={handleSave} className="space-y-10">
           <TabsContent value="hero" className="space-y-10">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
               <Card className="glass-card border-white/5 rounded-[3rem] overflow-hidden">
@@ -297,13 +283,12 @@ export default function BrandingStudioPage() {
                         <div className="text-center w-64 p-12">
                           <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-4" />
                           <Progress value={uploadProgress['hero']} className="h-2 bg-white/10" />
-                          <p className="text-[10px] font-black text-primary uppercase tracking-widest mt-6 italic">Syncing Asset...</p>
                         </div>
                       ) : formData.heroImageUrl ? (
                         <div className="relative w-full h-full p-12 flex items-center justify-center">
                            <img src={formData.heroImageUrl} className="w-full h-full object-contain drop-shadow-[0_0_30px_rgba(170,255,0,0.2)]" alt="Hero" />
                            <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                              <div className="bg-black/80 px-8 py-4 rounded-full border border-primary/40 text-primary font-black uppercase tracking-widest text-[11px]">REPLACE ATHLETE</div>
+                              <div className="bg-black/80 px-8 py-4 rounded-full border border-primary/40 text-primary font-black uppercase tracking-widest text-[11px]">REPLACE</div>
                            </div>
                         </div>
                       ) : (
@@ -313,10 +298,6 @@ export default function BrandingStudioPage() {
                         </div>
                       )}
                       <input type="file" ref={heroInputRef} onChange={handleHeroUpload} className="hidden" accept="image/*" />
-                    </div>
-                    <div className="flex items-start gap-4 p-6 bg-white/5 rounded-[2rem] border border-white/10">
-                       <Info className="h-6 w-6 text-primary shrink-0" />
-                       <p className="text-[11px] font-medium text-white/50 leading-relaxed uppercase tracking-widest">Recommended: <span className="text-primary font-black">1200 x 1200px</span>. PNG or WebP with transparent background preferred for premium blending.</p>
                     </div>
                 </CardContent>
               </Card>
@@ -347,7 +328,7 @@ export default function BrandingStudioPage() {
                     <Input className="h-14 bg-white/5 border-white/5 rounded-2xl px-6" value={formData.footerEmail} onChange={e => setFormData({...formData, footerEmail: e.target.value})} />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">WhatsApp Support Signal (91...)</Label>
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">WhatsApp Support Signal</Label>
                     <Input className="h-14 bg-white/5 border-white/5 rounded-2xl px-6" value={formData.footerWhatsapp} onChange={e => setFormData({...formData, footerWhatsapp: e.target.value})} />
                   </div>
                   <div className="space-y-2">
@@ -358,17 +339,17 @@ export default function BrandingStudioPage() {
               </Card>
             </div>
           </TabsContent>
+        </Tabs>
 
-          <Button 
-            type="submit" 
-            disabled={isSaving} 
-            className="w-full h-24 bg-primary text-black font-black text-3xl rounded-[2.5rem] shadow-2xl hover:scale-[1.01] transition-all"
-          >
-            {isSaving ? <Loader2 className="h-10 w-10 animate-spin" /> : <Save className="mr-6 h-10 w-10" />}
-            PUBLISH CHANGES TO NETWORK
-          </Button>
-        </form>
-      </Tabs>
+        <Button 
+          type="submit" 
+          disabled={isSaving} 
+          className="w-full h-24 bg-primary text-black font-black text-3xl rounded-[2.5rem] shadow-2xl hover:scale-[1.01] transition-all"
+        >
+          {isSaving ? <Loader2 className="h-10 w-10 animate-spin" /> : <Save className="mr-6 h-10 w-10" />}
+          PUBLISH CHANGES TO NETWORK
+        </Button>
+      </form>
     </div>
   );
 }

@@ -1,12 +1,11 @@
 'use client';
 
-import { useState, useEffect, Suspense, useCallback, useRef } from "react";
+import { useState, useEffect, Suspense, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { 
   Card, 
@@ -20,18 +19,13 @@ import {
   Loader2, 
   Save, 
   Image as ImageIcon, 
-  Zap, 
-  Trophy, 
-  Settings2, 
   IndianRupee, 
   Upload, 
-  X,
-  AlertCircle,
-  ShieldAlert,
-  Info,
-  MapPin,
+  Settings2, 
   Clock,
-  Layout
+  Layout,
+  MapPin,
+  CheckCircle2
 } from "lucide-react";
 import { generateTurfDescriptionForAdmin } from "@/ai/flows/generate-turf-description-for-admin";
 import { useToast } from "@/hooks/use-toast";
@@ -40,8 +34,7 @@ import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { cn } from "@/lib/utils";
-import { Progress } from "@/components/ui/progress";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const SPORT_OPTIONS = ["Cricket", "Football", "Pickleball", "Badminton"];
 const DAY_OPTIONS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
@@ -68,7 +61,6 @@ function NewTurfForm() {
   const db = useFirestore();
   const editId = searchParams.get("id");
   const mainInputRef = useRef<HTMLInputElement>(null);
-  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   const turfDocRef = useMemoFirebase(() => {
     if (!db || !editId) return null;
@@ -79,7 +71,6 @@ function NewTurfForm() {
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
   const [uploadingStates, setUploadingStates] = useState<Record<string, boolean>>({});
 
   const [formData, setFormData] = useState({
@@ -148,12 +139,8 @@ function NewTurfForm() {
       form.append('file', file);
       form.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
       setUploadingStates(prev => ({ ...prev, [key]: true }));
-      setUploadProgress(prev => ({ ...prev, [key]: 0 }));
       const xhr = new XMLHttpRequest();
       xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, true);
-      xhr.upload.onprogress = (e) => {
-        if (e.lengthComputable) setUploadProgress(prev => ({ ...prev, [key]: Math.round((e.loaded / e.total) * 100) }));
-      };
       xhr.onload = () => {
         setUploadingStates(prev => ({ ...prev, [key]: false }));
         if (xhr.status === 200) resolve(JSON.parse(xhr.responseText).secure_url);
@@ -176,7 +163,7 @@ function NewTurfForm() {
         updatedAt: serverTimestamp(),
         createdAt: existingTurf?.createdAt || serverTimestamp()
       }, { merge: true });
-      toast({ title: editId ? "Intelligence Updated" : "Arena Deployed" });
+      toast({ title: editId ? "Arena Intelligence Updated" : "Arena Deployed" });
       router.push("/studio");
     } catch (err: any) {
       errorEmitter.emit('permission-error', new FirestorePermissionError({
@@ -212,6 +199,8 @@ function NewTurfForm() {
     }
   };
 
+  if (loadingExisting && editId) return <div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+
   return (
     <div className="max-w-7xl mx-auto pb-32 animate-in fade-in duration-700">
       <div className="flex items-center justify-between mb-8">
@@ -227,7 +216,7 @@ function NewTurfForm() {
       <form onSubmit={handleSubmit} className="space-y-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           <div className="lg:col-span-8 space-y-10">
-            <Card className="glass-card border-white/5 rounded-[2rem] overflow-hidden">
+            <Card className="bg-card border-border rounded-[2rem] overflow-hidden">
               <CardHeader className="p-10 pb-0">
                 <CardTitle className="text-2xl font-bold flex items-center gap-4"><Settings2 className="h-6 w-6 text-primary" /> Arena Intelligence</CardTitle>
               </CardHeader>
@@ -235,39 +224,61 @@ function NewTurfForm() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-2">
                     <Label className="label-caps opacity-70">Arena Name</Label>
-                    <Input className="h-12 bg-surface" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required />
+                    <Input className="h-12 bg-surface border-border" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required />
                   </div>
                   <div className="space-y-2">
                     <Label className="label-caps opacity-70">WhatsApp Node</Label>
-                    <Input className="h-12 bg-surface" placeholder="91..." value={formData.whatsapp} onChange={e => setFormData({...formData, whatsapp: e.target.value})} />
+                    <Input className="h-12 bg-surface border-border" placeholder="91..." value={formData.whatsapp} onChange={e => setFormData({...formData, whatsapp: e.target.value})} required />
                   </div>
                 </div>
+                
+                <div className="space-y-4">
+                  <Label className="label-caps opacity-70">Sport Disciplines</Label>
+                  <div className="flex flex-wrap gap-4">
+                    {SPORT_OPTIONS.map(sport => (
+                      <div key={sport} className="flex items-center gap-2 bg-surface p-3 rounded-xl border border-border">
+                        <Checkbox 
+                          id={`sport-${sport}`} 
+                          checked={formData.sports.includes(sport)}
+                          onCheckedChange={(checked) => {
+                            const newSports = checked 
+                              ? [...formData.sports, sport] 
+                              : formData.sports.filter(s => s !== sport);
+                            setFormData({...formData, sports: newSports});
+                          }}
+                        />
+                        <Label htmlFor={`sport-${sport}`} className="text-xs font-bold uppercase cursor-pointer">{sport}</Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="space-y-2">
                   <Label className="label-caps opacity-70">Full Address</Label>
-                  <Input className="h-12 bg-surface" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} />
+                  <Input className="h-12 bg-surface border-border" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} />
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                   <div className="space-y-2">
                     <Label className="label-caps opacity-70">Area</Label>
-                    <Input className="h-12 bg-surface" value={formData.area} onChange={e => setFormData({...formData, area: e.target.value})} />
+                    <Input className="h-12 bg-surface border-border" value={formData.area} onChange={e => setFormData({...formData, area: e.target.value})} required />
                   </div>
                   <div className="space-y-2">
                     <Label className="label-caps opacity-70">City</Label>
-                    <Input className="h-12 bg-surface" value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} />
+                    <Input className="h-12 bg-surface border-border" value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} />
                   </div>
                   <div className="space-y-2">
                     <Label className="label-caps opacity-70">Pincode</Label>
-                    <Input className="h-12 bg-surface" value={formData.pincode} onChange={e => setFormData({...formData, pincode: e.target.value})} />
+                    <Input className="h-12 bg-surface border-border" value={formData.pincode} onChange={e => setFormData({...formData, pincode: e.target.value})} />
                   </div>
                   <div className="space-y-2">
                     <Label className="label-caps opacity-70">Max Players</Label>
-                    <Input type="number" className="h-12 bg-surface" value={formData.maxPlayers} onChange={e => setFormData({...formData, maxPlayers: Number(e.target.value)})} />
+                    <Input type="number" className="h-12 bg-surface border-border" value={formData.maxPlayers} onChange={e => setFormData({...formData, maxPlayers: Number(e.target.value)})} />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="glass-card border-white/5 rounded-[2rem] overflow-hidden">
+            <Card className="bg-card border-border rounded-[2rem] overflow-hidden">
               <CardHeader className="p-10 pb-0 flex flex-row items-center justify-between">
                 <CardTitle className="text-2xl font-bold flex items-center gap-4"><Sparkles className="h-6 w-6 text-primary" /> Narrative</CardTitle>
                 <Button type="button" size="sm" className="bg-primary text-black font-black uppercase text-[10px] tracking-widest px-6" onClick={handleGenerateDescription} disabled={isGenerating}>
@@ -275,40 +286,40 @@ function NewTurfForm() {
                 </Button>
               </CardHeader>
               <CardContent className="p-10">
-                <Textarea className="min-h-[200px] bg-surface p-6 text-lg italic" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
+                <Textarea className="min-h-[200px] bg-surface border-border p-6 text-lg italic" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
               </CardContent>
             </Card>
 
-            <Card className="glass-card border-white/5 rounded-[2rem] overflow-hidden">
+            <Card className="bg-card border-border rounded-[2rem] overflow-hidden">
               <CardHeader className="p-10 pb-0">
                 <CardTitle className="text-2xl font-bold flex items-center gap-4"><IndianRupee className="h-6 w-6 text-primary" /> Pricing Strategy</CardTitle>
               </CardHeader>
               <CardContent className="p-10 grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div className="space-y-2">
                   <Label className="label-caps opacity-70">Base Price / HR</Label>
-                  <Input type="number" className="h-12 bg-surface font-bold text-primary" value={formData.pricePerHour} onChange={e => setFormData({...formData, pricePerHour: Number(e.target.value)})} />
+                  <Input type="number" className="h-12 bg-surface border-border font-bold text-primary" value={formData.pricePerHour} onChange={e => setFormData({...formData, pricePerHour: Number(e.target.value)})} />
                 </div>
                 <div className="space-y-2">
                   <Label className="label-caps opacity-70">Peak Price / HR</Label>
-                  <Input type="number" className="h-12 bg-surface font-bold" value={formData.peakHourPrice} onChange={e => setFormData({...formData, peakHourPrice: Number(e.target.value)})} />
+                  <Input type="number" className="h-12 bg-surface border-border font-bold" value={formData.peakHourPrice} onChange={e => setFormData({...formData, peakHourPrice: Number(e.target.value)})} />
                 </div>
                 <div className="space-y-2">
                   <Label className="label-caps opacity-70">Peak Starts At</Label>
-                  <Input type="time" className="h-12 bg-surface" value={formData.peakHoursStart} onChange={e => setFormData({...formData, peakHoursStart: e.target.value})} />
+                  <Input type="time" className="h-12 bg-surface border-border" value={formData.peakHoursStart} onChange={e => setFormData({...formData, peakHoursStart: e.target.value})} />
                 </div>
               </CardContent>
             </Card>
           </div>
 
           <div className="lg:col-span-4 space-y-10">
-            <Card className="glass-card border-white/5 rounded-[2rem] overflow-hidden">
+            <Card className="bg-card border-border rounded-[2rem] overflow-hidden">
               <CardHeader className="p-8 pb-0">
                 <CardTitle className="text-xl font-bold flex items-center gap-4"><Layout className="h-5 w-5 text-primary" /> Facility Hub</CardTitle>
               </CardHeader>
               <CardContent className="p-8 space-y-6">
                 <div className="grid grid-cols-1 gap-3">
                   {AMENITY_KEYS.map(({ key, label }) => (
-                    <div key={key} className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5">
+                    <div key={key} className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-border">
                       <span className="text-xs font-semibold text-muted-foreground">{label}</span>
                       <Switch 
                         checked={(formData.amenities as any)[key]} 
@@ -320,7 +331,7 @@ function NewTurfForm() {
                     </div>
                   ))}
                 </div>
-                <div className="pt-6 border-t border-white/5 space-y-4">
+                <div className="pt-6 border-t border-border space-y-4">
                   <div className="flex items-center justify-between p-3 bg-primary/5 rounded-xl border border-primary/20">
                     <div>
                       <p className="text-xs font-bold text-primary uppercase">Premium Listing</p>
@@ -332,7 +343,7 @@ function NewTurfForm() {
               </CardContent>
             </Card>
 
-            <Card className="glass-card border-white/5 rounded-[2rem] overflow-hidden">
+            <Card className="bg-card border-border rounded-[2rem] overflow-hidden">
               <CardHeader className="p-8 pb-0">
                 <CardTitle className="text-xl font-bold flex items-center gap-4"><Clock className="h-5 w-5 text-primary" /> Operational Intel</CardTitle>
               </CardHeader>
@@ -340,21 +351,21 @@ function NewTurfForm() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="label-caps opacity-70">Open Time</Label>
-                    <Input type="time" className="h-10 bg-surface" value={formData.openTime} onChange={e => setFormData({...formData, openTime: e.target.value})} />
+                    <Input type="time" className="h-10 bg-surface border-border" value={formData.openTime} onChange={e => setFormData({...formData, openTime: e.target.value})} />
                   </div>
                   <div className="space-y-2">
                     <Label className="label-caps opacity-70">Close Time</Label>
-                    <Input type="time" className="h-10 bg-surface" value={formData.closeTime} onChange={e => setFormData({...formData, closeTime: e.target.value})} />
+                    <Input type="time" className="h-10 bg-surface border-border" value={formData.closeTime} onChange={e => setFormData({...formData, closeTime: e.target.value})} />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label className="label-caps opacity-70">Check-in Buff (Min)</Label>
-                  <Input type="number" className="h-10 bg-surface" value={formData.checkInMinutes} onChange={e => setFormData({...formData, checkInMinutes: Number(e.target.value)})} />
+                  <Input type="number" className="h-10 bg-surface border-border" value={formData.checkInMinutes} onChange={e => setFormData({...formData, checkInMinutes: Number(e.target.value)})} />
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="glass-card border-white/5 rounded-[2rem] overflow-hidden">
+            <Card className="bg-card border-border rounded-[2rem] overflow-hidden">
               <CardHeader className="p-8 pb-0">
                 <CardTitle className="text-xl font-bold flex items-center gap-4"><ImageIcon className="h-5 w-5 text-primary" /> Assets</CardTitle>
               </CardHeader>
@@ -380,10 +391,10 @@ function NewTurfForm() {
         </div>
 
         <div className="flex gap-4 pt-10">
-          <Button type="submit" disabled={isSaving} className="flex-1 h-20 bg-primary text-black font-black text-2xl rounded-2xl shadow-2xl hover:scale-[1.01] transition-all">
-            {isSaving ? <Loader2 className="h-8 w-8 animate-spin" /> : "PUBLISH ARENA"}
+          <Button type="submit" disabled={isSaving} className="btn-primary flex-1 h-20 text-2xl rounded-2xl shadow-2xl">
+            {isSaving ? <Loader2 className="h-8 w-8 animate-spin" /> : editId ? "UPDATE ARENA INTELLIGENCE" : "PUBLISH ARENA"}
           </Button>
-          <Button type="button" variant="outline" className="h-20 px-12 border-white/10 bg-white/5 rounded-2xl font-black text-xl hover:bg-destructive hover:text-white" onClick={() => router.push("/studio")}>
+          <Button type="button" variant="outline" className="btn-secondary h-20 px-12 rounded-2xl text-xl hover:bg-destructive hover:text-white" onClick={() => router.push("/studio")}>
             ABORT
           </Button>
         </div>

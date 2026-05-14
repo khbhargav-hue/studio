@@ -1,9 +1,7 @@
-
 import { MetadataRoute } from 'next';
-import { MOCK_TURFS } from '@/lib/data';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = 'https://turfista.in';
+  const baseUrl = 'https://www.turfista.in';
 
   // Static routes
   const routes = [
@@ -16,6 +14,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     '/privacy',
     '/terms',
     '/disclaimer',
+    '/teams',
+    '/challenges',
+    '/mysuru',
   ].map((route) => ({
     url: `${baseUrl}${route}`,
     lastModified: new Date().toISOString(),
@@ -23,13 +24,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: route === '' ? 1 : 0.8,
   }));
 
-  // Dynamic turf routes from MOCK_TURFS (Source of truth for indexing)
-  const turfRoutes = MOCK_TURFS.map((t) => ({
-    url: `${baseUrl}/turf/${t.id}`,
-    lastModified: new Date().toISOString(),
-    changeFrequency: 'weekly' as const,
-    priority: 0.9,
-  }));
+  // Note: For a fully persistent sitemap with dynamic turfs, 
+  // one would normally fetch the turf IDs from Firestore here.
+  // For the MVP, we prioritize the core discovery routes.
 
-  return [...routes, ...turfRoutes];
+  return [...routes];
 }

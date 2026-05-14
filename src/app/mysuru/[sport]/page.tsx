@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useParams } from "next/navigation";
@@ -9,14 +8,12 @@ import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection, query, where } from "firebase/firestore";
 import { Trophy, Zap, Star, Users, Loader2, ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { useMemo } from "react";
-import { MOCK_TURFS } from "@/lib/data";
 
 const SPORT_CONFIG: Record<string, any> = {
   football: { name: "Football", icon: Zap, theme: "text-blue-500", desc: "Elite 5v5 & 7v7 football turfs in Mysuru. Pro-grade lighting and FIFA certified grass." },
   cricket: { name: "Cricket", icon: Trophy, theme: "text-orange-500", desc: "High-intensity box cricket arenas. Perfect for evening community matches and tournament practice." },
   pickleball: { name: "Pickleball", icon: Star, theme: "text-green-500", desc: "The fastest growing sport in Mysuru. Find specialized pickleball courts with premium synthetic surfaces." },
-  badminton: { name: "Badminton", icon: Users, theme: "text-purple-500", desc: "Coming soon: Premium indoor badminton courts with elite flooring and ventilation." }
+  badminton: { name: "Badminton", icon: Users, theme: "text-purple-500", desc: "Premium indoor badminton courts with elite flooring and ventilation." }
 };
 
 export default function SportGuidePage() {
@@ -29,21 +26,14 @@ export default function SportGuidePage() {
   const turfsQuery = useMemoFirebase(() => {
     if (!db) return null;
     const displayName = config.name;
+    // Query check for 'sports' array as per the latest requirements
     return query(
       collection(db, "turfs"), 
-      where("sportTypes", "array-contains", displayName)
+      where("sports", "array-contains", displayName)
     );
   }, [db, config.name]);
 
-  const { data: firestoreTurfs, loading } = useCollection(turfsQuery);
-
-  const turfs = useMemo(() => {
-    if (loading) return [];
-    if (!firestoreTurfs || firestoreTurfs.length === 0) {
-      return MOCK_TURFS.filter(t => t.sportTypes.includes(config.name as any));
-    }
-    return firestoreTurfs;
-  }, [firestoreTurfs, loading, config.name]);
+  const { data: turfs, loading } = useCollection(turfsQuery);
 
   return (
     <div className="flex min-h-screen flex-col bg-black">

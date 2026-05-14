@@ -1,27 +1,52 @@
-
 export type SportType = 'Cricket' | 'Football' | 'Pickleball' | 'Badminton';
+
+export interface TurfAmenities {
+  parking: boolean;
+  changingRooms: boolean;
+  showers: boolean;
+  drinkingWater: boolean;
+  floodlights: boolean;
+  firstAid: boolean;
+  cafeteria: boolean;
+  washrooms: boolean;
+  ballProvided: boolean;
+  metalStudsOk: boolean;
+}
 
 export interface Turf {
   id: string;
   name: string;
-  location: string;
+  description: string;
+  whatsapp: string;
+  imageUrl: string;
+  images: string[];
+  isActive: boolean;
+  isPremium: boolean;
+  address: string;
   area: string;
-  sportTypes: SportType[];
-  courtTypes: string[];
+  city: string;
+  pincode: string;
+  googleMapsUrl: string;
+  lat?: number;
+  lng?: number;
+  sports: string[];
+  pitchType: string;
+  pitchSizes: string[];
+  dimensions: string;
+  maxPlayers: number;
   pricePerHour: number;
-  courtPricing?: Record<string, number>;
+  peakHourPrice?: number;
+  peakHoursStart?: string;
+  slotDuration: number;
+  openTime: string;
+  closeTime: string;
+  openDays: string[];
+  checkInMinutes: number;
+  amenities: TurfAmenities;
   rating: number;
   reviewCount: number;
-  mainImage: string;
-  galleryImages: string[];
-  description: string;
-  amenities: string[];
-  coachingServices: string[];
-  openingHours: string;
-  contactNumber: string;
-  whatsappNumber: string;
-  mapUrl: string;
-  isPopular?: boolean;
+  rules: string[];
+  createdAt: any;
   views?: number;
   whatsappClicks?: number;
 }
@@ -35,7 +60,6 @@ export interface Team {
   whatsapp: string;
   logoUrl?: string;
   players: string[];
-  turfPreference?: string;
   ownerId: string;
   createdAt: any;
 }
@@ -63,6 +87,4 @@ export interface Lead {
   sportType: string;
   timestamp: any;
   deviceInfo: string;
-  customerName?: string;
-  customerPhone?: string;
 }

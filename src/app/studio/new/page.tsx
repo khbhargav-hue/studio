@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, Suspense, useCallback, useRef } from "react";
@@ -29,7 +28,10 @@ import {
   X,
   AlertCircle,
   ShieldAlert,
-  Info
+  Info,
+  MapPin,
+  Clock,
+  Layout
 } from "lucide-react";
 import { generateTurfDescriptionForAdmin } from "@/ai/flows/generate-turf-description-for-admin";
 import { useToast } from "@/hooks/use-toast";
@@ -42,73 +44,22 @@ import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const SPORT_OPTIONS = ["Cricket", "Football", "Pickleball", "Badminton"];
-const COURT_OPTIONS = [
-  "Cricket Half Court", 
-  "Cricket Full Court", 
-  "Football Half Court", 
-  "Football Full Court",
-  "Pickleball Court",
-  "Badminton Court"
+const DAY_OPTIONS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+const AMENITY_KEYS = [
+  { key: "parking", label: "Parking" },
+  { key: "changingRooms", label: "Changing Rooms" },
+  { key: "showers", label: "Showers" },
+  { key: "drinkingWater", label: "Drinking Water" },
+  { key: "floodlights", label: "Floodlights" },
+  { key: "firstAid", label: "First Aid" },
+  { key: "cafeteria", label: "Cafeteria" },
+  { key: "washrooms", label: "Washrooms" },
+  { key: "ballProvided", label: "Ball Provided" },
+  { key: "metalStudsOk", label: "Metal Studs OK" },
 ];
 
 const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
 const CLOUDINARY_UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'turfista_upload';
-
-function SelectionGroup({ 
-  title, 
-  options, 
-  selected, 
-  onToggle, 
-  icon: Icon 
-}: { 
-  title: string, 
-  options: string[], 
-  selected: string[], 
-  onToggle: (val: string) => void,
-  icon?: any
-}) {
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 mb-2">
-        {Icon && <Icon className="h-4 w-4 text-primary" />}
-        <Label className="text-sm font-bold uppercase tracking-widest opacity-70">{title}</Label>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {options.map((opt) => {
-          const isSelected = selected.includes(opt);
-          const id = `opt-${title.replace(/\s+/g, '-')}-${opt}`;
-          return (
-            <label 
-              key={opt}
-              htmlFor={id}
-              className={cn(
-                "group relative flex items-center space-x-3 p-3 rounded-xl border transition-all cursor-pointer",
-                isSelected 
-                  ? "bg-primary/10 border-primary shadow-[0_0_15px_rgba(57,255,20,0.1)]" 
-                  : "bg-white/5 border-white/5 hover:border-white/20"
-              )}
-            >
-              <Checkbox 
-                id={id}
-                checked={isSelected}
-                onCheckedChange={() => onToggle(opt)}
-                className={cn(isSelected && "border-primary")}
-              />
-              <span 
-                className={cn(
-                  "flex-1 text-xs font-semibold select-none", 
-                  isSelected ? "text-primary" : "text-muted-foreground"
-                )}
-              >
-                {opt}
-              </span>
-            </label>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 function NewTurfForm() {
   const router = useRouter();
@@ -132,38 +83,59 @@ function NewTurfForm() {
   const [uploadingStates, setUploadingStates] = useState<Record<string, boolean>>({});
 
   const [formData, setFormData] = useState({
-    id: "",
     name: "",
-    area: "",
-    location: "",
-    pricePerHour: 1000,
-    courtPricing: {} as Record<string, number>,
     description: "",
-    amenities: ["Flood Lights", "Parking", "Washroom"] as string[],
-    sportTypes: [] as string[],
-    courtTypes: [] as string[],
+    whatsapp: "",
+    imageUrl: "",
+    images: [] as string[],
+    isActive: true,
+    isPremium: false,
+    address: "",
+    area: "",
+    city: "Mysuru",
+    pincode: "",
+    googleMapsUrl: "",
+    lat: 12.2958,
+    lng: 76.6394,
+    sports: [] as string[],
+    pitchType: "Artificial Grass",
+    pitchSizes: [] as string[],
+    dimensions: "",
+    maxPlayers: 10,
+    pricePerHour: 1000,
+    peakHourPrice: 1400,
+    peakHoursStart: "18:00",
+    slotDuration: 60,
+    openTime: "06:00",
+    closeTime: "23:00",
+    openDays: DAY_OPTIONS,
+    checkInMinutes: 15,
+    amenities: {
+      parking: true,
+      changingRooms: true,
+      showers: false,
+      drinkingWater: true,
+      floodlights: true,
+      firstAid: true,
+      cafeteria: false,
+      washrooms: true,
+      ballProvided: true,
+      metalStudsOk: false,
+    },
     rating: 4.5,
     reviewCount: 0,
-    openingHours: "Open 24 Hours",
-    contactNumber: "",
-    whatsappNumber: "",
-    mainImage: "",
-    galleryImages: [] as string[],
-    mapUrl: "",
-    isPopular: false
+    rules: [] as string[],
   });
 
   useEffect(() => {
-    if (existingTurf && editId) {
+    if (existingTurf) {
       setFormData(prev => ({
         ...prev,
         ...existingTurf,
-        id: existingTurf.id || editId,
-        courtPricing: existingTurf.courtPricing || {},
-        galleryImages: existingTurf.galleryImages || []
+        amenities: { ...prev.amenities, ...(existingTurf.amenities || {}) }
       }));
     }
-  }, [existingTurf, editId]);
+  }, [existingTurf]);
 
   const uploadToCloudinary = (file: File, key: string): Promise<string | null> => {
     return new Promise((resolve) => {
@@ -172,73 +144,50 @@ function NewTurfForm() {
         resolve(null);
         return;
       }
-
       const form = new FormData();
       form.append('file', file);
       form.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-
       setUploadingStates(prev => ({ ...prev, [key]: true }));
       setUploadProgress(prev => ({ ...prev, [key]: 0 }));
-
       const xhr = new XMLHttpRequest();
       xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, true);
-
-      xhr.upload.onprogress = (event) => {
-        if (event.lengthComputable) {
-          const progress = Math.round((event.loaded / event.total) * 100);
-          setUploadProgress(prev => ({ ...prev, [key]: progress }));
-        }
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) setUploadProgress(prev => ({ ...prev, [key]: Math.round((e.loaded / e.total) * 100) }));
       };
-
       xhr.onload = () => {
         setUploadingStates(prev => ({ ...prev, [key]: false }));
-        if (xhr.status === 200) {
-          const response = JSON.parse(xhr.responseText);
-          resolve(response.secure_url);
-        } else {
-          console.error("[Cloudinary] Upload Failure:", xhr.responseText);
-          toast({ title: "Media Sync Failed", variant: "destructive" });
-          resolve(null);
-        }
+        if (xhr.status === 200) resolve(JSON.parse(xhr.responseText).secure_url);
+        else resolve(null);
       };
-
-      xhr.onerror = () => {
-        setUploadingStates(prev => ({ ...prev, [key]: false }));
-        toast({ title: "Network error during CDN sync.", variant: "destructive" });
-        resolve(null);
-      };
-
       xhr.send(form);
     });
   };
 
-  const handleMainUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const url = await uploadToCloudinary(file, 'main');
-    if (url) setFormData(prev => ({ ...prev, mainImage: url }));
-  };
-
-  const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
-    
-    for (let i = 0; i < files.length; i++) {
-      const url = await uploadToCloudinary(files[i], `gal-${i}`);
-      if (url) setFormData(prev => ({ ...prev, galleryImages: [...prev.galleryImages, url] }));
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!db) return;
+    setIsSaving(true);
+    const id = editId || formData.name.toLowerCase().replace(/\s+/g, '-');
+    const turfRef = doc(db, "turfs", id);
+    try {
+      await setDoc(turfRef, {
+        ...formData,
+        id,
+        updatedAt: serverTimestamp(),
+        createdAt: existingTurf?.createdAt || serverTimestamp()
+      }, { merge: true });
+      toast({ title: editId ? "Intelligence Updated" : "Arena Deployed" });
+      router.push("/studio");
+    } catch (err: any) {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: `turfs/${id}`,
+        operation: editId ? 'update' : 'create',
+        requestResourceData: formData
+      }));
+    } finally {
+      setIsSaving(false);
     }
   };
-
-  const toggleSelection = useCallback((field: keyof typeof formData, value: string) => {
-    setFormData(prev => {
-      const current = prev[field] as string[];
-      if (current.includes(value)) {
-        return { ...prev, [field]: current.filter(v => v !== value) };
-      } else {
-        return { ...prev, [field]: [...current, value] };
-      }
-    });
-  }, []);
 
   const handleGenerateDescription = async () => {
     if (!formData.name || !formData.area) {
@@ -249,335 +198,192 @@ function NewTurfForm() {
     try {
       const result = await generateTurfDescriptionForAdmin({
         turfName: formData.name,
-        location: `${formData.area}, Mysuru`,
-        sportTypes: formData.sportTypes as any,
+        location: `${formData.area}, ${formData.city}`,
+        sportTypes: formData.sports as any,
         pricePerHour: formData.pricePerHour,
-        amenities: formData.amenities,
+        amenities: Object.entries(formData.amenities).filter(([_, v]) => v).map(([k]) => k),
       });
-      setFormData(prev => ({ ...prev, description: result.description }));
+      setFormData(p => ({ ...p, description: result.description }));
       toast({ title: "Narrative Generated" });
-    } catch (err: any) {
-      console.error("[AI Engine] Generation failure:", err);
-      const isQuotaError = JSON.stringify(err).includes('429') || err.message?.includes('429');
-      
-      toast({ 
-        variant: "destructive",
-        title: isQuotaError ? "AI Quota Exhausted" : "Intelligence Error", 
-        description: isQuotaError 
-          ? "Gemini 1.5 Flash (Rate Limit Reached). Please wait 60 seconds or upgrade your AI Studio plan."
-          : "The AI engine encountered an unexpected error. Check the Studio Health tab for more info."
-      });
+    } catch (err) {
+      toast({ title: "AI Offline", variant: "destructive" });
     } finally {
       setIsGenerating(false);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!db) return;
-    
-    setIsSaving(true);
-    const isUpdate = !!editId;
-    
-    try {
-      const id = editId || formData.name.toLowerCase().replace(/\s+/g, '-');
-      const turfRef = doc(db, "turfs", id);
-      
-      const dataToSave = { 
-        id: String(id),
-        name: String(formData.name || ""),
-        area: String(formData.area || ""),
-        location: String(formData.location || ""),
-        pricePerHour: Number(formData.pricePerHour) || 0,
-        courtPricing: formData.courtPricing || {},
-        description: String(formData.description || ""),
-        amenities: Array.isArray(formData.amenities) ? formData.amenities.map(String) : [],
-        sportTypes: Array.isArray(formData.sportTypes) ? formData.sportTypes.map(String) : [],
-        courtTypes: Array.isArray(formData.courtTypes) ? formData.courtTypes.map(String) : [],
-        rating: Number(formData.rating) || 4.5,
-        reviewCount: Number(formData.reviewCount) || 0,
-        openingHours: String(formData.openingHours || ""),
-        contactNumber: String(formData.contactNumber || ""),
-        whatsappNumber: String(formData.whatsappNumber || ""),
-        mainImage: String(formData.mainImage || ""),
-        galleryImages: Array.isArray(formData.galleryImages) ? formData.galleryImages.map(String) : [],
-        mapUrl: String(formData.mapUrl || ""),
-        isPopular: Boolean(formData.isPopular),
-        updatedAt: serverTimestamp() 
-      };
-
-      await setDoc(turfRef, dataToSave, { merge: true });
-
-      toast({ 
-        title: isUpdate ? "Intelligence Synchronized" : "Arena Deployed", 
-        description: "The listing is now a permanent node in the database." 
-      });
-      
-      router.push("/studio");
-
-    } catch (err: any) {
-      console.error("[Studio] Fatal submission error:", err);
-      toast({
-        variant: "destructive",
-        title: "Synchronization Error",
-        description: "Verify security rules and internet connection."
-      });
-      
-      errorEmitter.emit('permission-error', new FirestorePermissionError({
-        path: `turfs/${formData.id}`,
-        operation: isUpdate ? 'update' : 'create',
-        requestResourceData: formData,
-        message: err.message
-      }));
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  if (loadingExisting && editId) return (
-    <div className="flex h-screen items-center justify-center bg-black">
-      <Loader2 className="h-10 w-10 animate-spin text-primary opacity-40" />
-    </div>
-  );
-
-  const isConfigMissing = !CLOUDINARY_CLOUD_NAME;
-
   return (
-    <div className="max-w-6xl mx-auto pb-32 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="max-w-7xl mx-auto pb-32 animate-in fade-in duration-700">
       <div className="flex items-center justify-between mb-8">
         <Button variant="ghost" onClick={() => router.back()} className="rounded-xl group font-black text-[10px] uppercase tracking-[0.3em] text-white/40 h-12">
           <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" /> Dashboard
         </Button>
         <div className="flex items-center gap-3">
-          <div className="h-2 w-2 bg-primary rounded-full animate-pulse shadow-[0_0_10px_rgba(57,255,20,1)]" />
-          <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">
-            {editId ? "Update Node" : "Deployment Console"}
-          </span>
+          <div className="h-2 w-2 bg-primary rounded-full animate-pulse shadow-[0_0_10px_rgba(170,255,0,1)]" />
+          <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">{editId ? "Update Node" : "Deployment Console"}</span>
         </div>
-      </div>
-
-      <div className="mb-10">
-        {isConfigMissing ? (
-          <Alert variant="destructive" className="bg-destructive/10 border-destructive/20 text-destructive rounded-[2rem] p-8">
-            <AlertCircle className="h-6 w-6" />
-            <AlertTitle className="font-black uppercase tracking-widest text-xs mb-2">Media Bridge Inactive</AlertTitle>
-            <AlertDescription className="text-xs opacity-80 leading-relaxed font-medium">
-              Uploads disabled. Check <strong>NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME</strong>.
-            </AlertDescription>
-          </Alert>
-        ) : (
-          <Alert className="bg-primary/5 border-primary/20 text-primary rounded-[2rem] p-8">
-            <ShieldAlert className="h-6 w-6" />
-            <AlertTitle className="font-black uppercase tracking-widest text-xs mb-2">Database Persistence Active</AlertTitle>
-            <AlertDescription className="text-xs opacity-80 leading-relaxed font-medium">
-              Writes will commit directly to Cloud Firestore and sync permanently across redeploys.
-            </AlertDescription>
-          </Alert>
-        )}
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-          <div className="lg:col-span-7 space-y-10">
-            <Card className="glass-card border-white/5 rounded-[2.5rem] overflow-hidden">
+          <div className="lg:col-span-8 space-y-10">
+            <Card className="glass-card border-white/5 rounded-[2rem] overflow-hidden">
               <CardHeader className="p-10 pb-0">
-                <CardTitle className="font-headline text-3xl font-bold flex items-center gap-4">
-                  <Settings2 className="h-8 w-8 text-primary" />
-                  Arena Intelligence
-                </CardTitle>
+                <CardTitle className="text-2xl font-bold flex items-center gap-4"><Settings2 className="h-6 w-6 text-primary" /> Arena Intelligence</CardTitle>
               </CardHeader>
               <CardContent className="p-10 space-y-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-3">
-                    <Label className="text-xs font-black uppercase tracking-widest text-white/40 ml-1">Turf Identity</Label>
-                    <Input 
-                      placeholder="e.g., Shine Arena" 
-                      className="h-14 bg-background/50 border-white/5 rounded-2xl"
-                      value={formData.name}
-                      onChange={(e) => setFormData({...formData, name: e.target.value})}
-                      required
-                    />
+                  <div className="space-y-2">
+                    <Label className="label-caps opacity-70">Arena Name</Label>
+                    <Input className="h-12 bg-surface" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required />
                   </div>
-                  <div className="space-y-3">
-                    <Label className="text-xs font-black uppercase tracking-widest text-white/40 ml-1">Zone (Area)</Label>
-                    <Input 
-                      placeholder="e.g., Rajiv Nagar" 
-                      className="h-14 bg-background/50 border-white/5 rounded-2xl"
-                      value={formData.area}
-                      onChange={(e) => setFormData({...formData, area: e.target.value})}
-                      required
-                    />
+                  <div className="space-y-2">
+                    <Label className="label-caps opacity-70">WhatsApp Node</Label>
+                    <Input className="h-12 bg-surface" placeholder="91..." value={formData.whatsapp} onChange={e => setFormData({...formData, whatsapp: e.target.value})} />
                   </div>
                 </div>
-                <div className="space-y-3">
-                  <Label className="text-xs font-black uppercase tracking-widest text-white/40 ml-1">Physical Location</Label>
-                  <Input 
-                    placeholder="Full street address..." 
-                    className="h-14 bg-background/50 border-white/5 rounded-2xl"
-                    value={formData.location}
-                    onChange={(e) => setFormData({...formData, location: e.target.value})}
-                  />
+                <div className="space-y-2">
+                  <Label className="label-caps opacity-70">Full Address</Label>
+                  <Input className="h-12 bg-surface" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} />
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-3">
-                    <Label className="text-xs font-black uppercase tracking-widest text-white/40 ml-1">Base Price (₹)</Label>
-                    <div className="relative">
-                      <IndianRupee className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary" />
-                      <Input 
-                        type="number"
-                        className="h-14 pl-12 bg-background/50 border-white/5 rounded-2xl font-black text-xl text-primary"
-                        value={formData.pricePerHour}
-                        onChange={(e) => setFormData({...formData, pricePerHour: Number(e.target.value)})}
-                        required
-                      />
-                    </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                  <div className="space-y-2">
+                    <Label className="label-caps opacity-70">Area</Label>
+                    <Input className="h-12 bg-surface" value={formData.area} onChange={e => setFormData({...formData, area: e.target.value})} />
                   </div>
-                  <div className="space-y-3">
-                    <Label className="text-xs font-black uppercase tracking-widest text-white/40 ml-1">WhatsApp Bridge</Label>
-                    <Input 
-                      placeholder="91..."
-                      className="h-14 bg-background/50 border-white/5 rounded-2xl"
-                      value={formData.whatsappNumber}
-                      onChange={(e) => setFormData({...formData, whatsappNumber: e.target.value})}
-                    />
+                  <div className="space-y-2">
+                    <Label className="label-caps opacity-70">City</Label>
+                    <Input className="h-12 bg-surface" value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="label-caps opacity-70">Pincode</Label>
+                    <Input className="h-12 bg-surface" value={formData.pincode} onChange={e => setFormData({...formData, pincode: e.target.value})} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="label-caps opacity-70">Max Players</Label>
+                    <Input type="number" className="h-12 bg-surface" value={formData.maxPlayers} onChange={e => setFormData({...formData, maxPlayers: Number(e.target.value)})} />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="glass-card border-white/5 rounded-[2.5rem] overflow-hidden">
-              <CardHeader className="p-10 pb-4 flex flex-row items-center justify-between">
-                <CardTitle className="font-headline text-3xl font-bold flex items-center gap-4">
-                  <Sparkles className="h-8 w-8 text-accent" />
-                  Marketing Narrative
-                </CardTitle>
-                <div className="flex items-center gap-4">
-                   <Button 
-                    type="button" 
-                    variant="secondary" 
-                    size="sm" 
-                    className="bg-accent text-accent-foreground font-black uppercase tracking-widest text-[9px] h-10 px-6 rounded-xl"
-                    onClick={handleGenerateDescription}
-                    disabled={isGenerating}
-                  >
-                    {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : "GENERATE WITH AI"}
-                  </Button>
-                </div>
+            <Card className="glass-card border-white/5 rounded-[2rem] overflow-hidden">
+              <CardHeader className="p-10 pb-0 flex flex-row items-center justify-between">
+                <CardTitle className="text-2xl font-bold flex items-center gap-4"><Sparkles className="h-6 w-6 text-primary" /> Narrative</CardTitle>
+                <Button type="button" size="sm" className="bg-primary text-black font-black uppercase text-[10px] tracking-widest px-6" onClick={handleGenerateDescription} disabled={isGenerating}>
+                  {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : "GENERATE AI"}
+                </Button>
               </CardHeader>
-              <CardContent className="p-10 pt-4">
-                <Textarea 
-                  placeholder="The AI engine will craft a premium description..." 
-                  className="min-h-[250px] bg-background/50 border-white/5 rounded-[2rem] p-8 leading-relaxed resize-none italic font-medium"
-                  value={formData.description}
-                  onChange={(e) => setFormData({...formData, description: e.target.value})}
-                />
-                <div className="mt-6 flex items-center gap-3 p-4 rounded-2xl bg-white/5 border border-white/5">
-                   <Info className="h-4 w-4 text-white/30" />
-                   <p className="text-[9px] font-bold text-white/20 uppercase tracking-[0.2em]">Note: AI generation uses Gemini 1.5 Flash. Free tier allows 15 requests per minute.</p>
+              <CardContent className="p-10">
+                <Textarea className="min-h-[200px] bg-surface p-6 text-lg italic" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
+              </CardContent>
+            </Card>
+
+            <Card className="glass-card border-white/5 rounded-[2rem] overflow-hidden">
+              <CardHeader className="p-10 pb-0">
+                <CardTitle className="text-2xl font-bold flex items-center gap-4"><IndianRupee className="h-6 w-6 text-primary" /> Pricing Strategy</CardTitle>
+              </CardHeader>
+              <CardContent className="p-10 grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="space-y-2">
+                  <Label className="label-caps opacity-70">Base Price / HR</Label>
+                  <Input type="number" className="h-12 bg-surface font-bold text-primary" value={formData.pricePerHour} onChange={e => setFormData({...formData, pricePerHour: Number(e.target.value)})} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="label-caps opacity-70">Peak Price / HR</Label>
+                  <Input type="number" className="h-12 bg-surface font-bold" value={formData.peakHourPrice} onChange={e => setFormData({...formData, peakHourPrice: Number(e.target.value)})} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="label-caps opacity-70">Peak Starts At</Label>
+                  <Input type="time" className="h-12 bg-surface" value={formData.peakHoursStart} onChange={e => setFormData({...formData, peakHoursStart: e.target.value})} />
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          <div className="lg:col-span-5 space-y-10">
-            <Card className="glass-card border-white/5 rounded-[2.5rem] overflow-hidden">
-              <CardHeader className="p-8 pb-4">
-                <CardTitle className="font-headline text-2xl font-bold flex items-center gap-4">
-                  <ImageIcon className="h-6 w-6 text-primary" />
-                  Arena Assets
-                </CardTitle>
+          <div className="lg:col-span-4 space-y-10">
+            <Card className="glass-card border-white/5 rounded-[2rem] overflow-hidden">
+              <CardHeader className="p-8 pb-0">
+                <CardTitle className="text-xl font-bold flex items-center gap-4"><Layout className="h-5 w-5 text-primary" /> Facility Hub</CardTitle>
               </CardHeader>
-              <CardContent className="p-8 space-y-10">
-                <div className="space-y-4">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Primary Display (Thumbnail)</Label>
-                  <div 
-                    className={cn(
-                      "relative aspect-video rounded-3xl border-2 border-dashed transition-all overflow-hidden group",
-                      isConfigMissing ? "opacity-20 cursor-not-allowed border-white/10" : "border-primary/20 bg-primary/5 hover:border-primary/50 cursor-pointer"
-                    )}
-                    onClick={() => !uploadingStates['main'] && !isConfigMissing && mainInputRef.current?.click()}
-                  >
-                    {uploadingStates['main'] && (
-                      <div className="absolute inset-0 z-10 bg-black/60 flex flex-col items-center justify-center p-8">
-                        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-                        <Progress value={uploadProgress['main']} className="h-1 w-full bg-white/10" />
-                      </div>
-                    )}
-                    {formData.mainImage ? (
-                      <img src={formData.mainImage} className="w-full h-full object-cover" alt="Turf Preview" />
-                    ) : (
-                      <div className="flex flex-col items-center justify-center h-full gap-4 opacity-40">
-                        <Upload className="h-10 w-10" />
-                        <span className="text-[10px] font-black uppercase tracking-widest">Select Main Image</span>
-                      </div>
-                    )}
-                    <input type="file" ref={mainInputRef} onChange={handleMainUpload} className="hidden" accept="image/*" />
-                  </div>
+              <CardContent className="p-8 space-y-6">
+                <div className="grid grid-cols-1 gap-3">
+                  {AMENITY_KEYS.map(({ key, label }) => (
+                    <div key={key} className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5">
+                      <span className="text-xs font-semibold text-muted-foreground">{label}</span>
+                      <Switch 
+                        checked={(formData.amenities as any)[key]} 
+                        onCheckedChange={(val) => setFormData({
+                          ...formData, 
+                          amenities: { ...formData.amenities, [key]: val }
+                        })} 
+                      />
+                    </div>
+                  ))}
                 </div>
-
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Gallery Node</Label>
-                    <Button 
-                      type="button" 
-                      size="sm" 
-                      variant="outline" 
-                      disabled={isConfigMissing}
-                      className="h-8 px-4 rounded-lg text-[9px] font-black uppercase" 
-                      onClick={() => galleryInputRef.current?.click()}
-                    >
-                       ADD
-                    </Button>
-                    <input type="file" ref={galleryInputRef} onChange={handleGalleryUpload} className="hidden" multiple accept="image/*" />
-                  </div>
-                  <div className="grid grid-cols-3 gap-3">
-                    {formData.galleryImages.map((url, i) => (
-                      <div key={url} className="relative aspect-square rounded-xl overflow-hidden border border-white/5 group">
-                        <img src={url} className="w-full h-full object-cover" alt="Gallery item" />
-                        <button type="button" onClick={() => setFormData(p => ({...p, galleryImages: p.galleryImages.filter(u => u !== url)}))} className="absolute inset-0 bg-destructive/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <X className="h-5 w-5 text-white" />
-                        </button>
-                      </div>
-                    ))}
+                <div className="pt-6 border-t border-white/5 space-y-4">
+                  <div className="flex items-center justify-between p-3 bg-primary/5 rounded-xl border border-primary/20">
+                    <div>
+                      <p className="text-xs font-bold text-primary uppercase">Premium Listing</p>
+                      <p className="text-[8px] text-primary/40 uppercase tracking-widest">Featured on feed</p>
+                    </div>
+                    <Switch checked={formData.isPremium} onCheckedChange={(val) => setFormData({...formData, isPremium: val})} />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="glass-card border-white/5 rounded-[3.5rem] overflow-hidden">
-              <CardHeader className="p-8">
-                <CardTitle className="font-headline text-2xl font-bold flex items-center gap-4">
-                  <Zap className="h-6 w-6 text-primary" />
-                  Platform Logic
-                </CardTitle>
+            <Card className="glass-card border-white/5 rounded-[2rem] overflow-hidden">
+              <CardHeader className="p-8 pb-0">
+                <CardTitle className="text-xl font-bold flex items-center gap-4"><Clock className="h-5 w-5 text-primary" /> Operational Intel</CardTitle>
               </CardHeader>
-              <CardContent className="p-8 space-y-10">
-                <SelectionGroup title="Sport Categories" options={SPORT_OPTIONS} selected={formData.sportTypes} onToggle={(v) => toggleSelection('sportTypes', v)} icon={Trophy} />
-                <SelectionGroup title="Court Formats" options={COURT_OPTIONS} selected={formData.courtTypes} onToggle={(v) => toggleSelection('courtTypes', v)} />
-                <div className="pt-8 border-t border-white/5">
-                  <div className="flex items-center justify-between p-6 bg-white/5 rounded-2xl border border-white/5 group hover:border-primary/20 transition-all">
-                    <div>
-                      <p className="text-sm font-bold uppercase tracking-tight">Elite Promotion</p>
-                      <p className="text-[10px] text-white/40 uppercase tracking-widest mt-1">Feature on discovery feed</p>
-                    </div>
-                    <Switch checked={formData.isPopular} onCheckedChange={(c) => setFormData({...formData, isPopular: c})} />
+              <CardContent className="p-8 space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="label-caps opacity-70">Open Time</Label>
+                    <Input type="time" className="h-10 bg-surface" value={formData.openTime} onChange={e => setFormData({...formData, openTime: e.target.value})} />
                   </div>
+                  <div className="space-y-2">
+                    <Label className="label-caps opacity-70">Close Time</Label>
+                    <Input type="time" className="h-10 bg-surface" value={formData.closeTime} onChange={e => setFormData({...formData, closeTime: e.target.value})} />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="label-caps opacity-70">Check-in Buff (Min)</Label>
+                  <Input type="number" className="h-10 bg-surface" value={formData.checkInMinutes} onChange={e => setFormData({...formData, checkInMinutes: Number(e.target.value)})} />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="glass-card border-white/5 rounded-[2rem] overflow-hidden">
+              <CardHeader className="p-8 pb-0">
+                <CardTitle className="text-xl font-bold flex items-center gap-4"><ImageIcon className="h-5 w-5 text-primary" /> Assets</CardTitle>
+              </CardHeader>
+              <CardContent className="p-8 space-y-6">
+                <div 
+                  className="relative aspect-video rounded-2xl border-2 border-dashed border-primary/20 bg-primary/5 hover:border-primary/50 cursor-pointer overflow-hidden flex flex-col items-center justify-center transition-all"
+                  onClick={() => mainInputRef.current?.click()}
+                >
+                  {uploadingStates['main'] && <Loader2 className="h-8 w-8 animate-spin text-primary absolute z-10" />}
+                  {formData.imageUrl ? (
+                    <img src={formData.imageUrl} className="w-full h-full object-cover" alt="Main" />
+                  ) : (
+                    <Upload className="h-8 w-8 opacity-20" />
+                  )}
+                  <input type="file" ref={mainInputRef} className="hidden" onChange={async (e) => {
+                    const url = await uploadToCloudinary(e.target.files?.[0] as File, 'main');
+                    if (url) setFormData(p => ({ ...p, imageUrl: url }));
+                  }} />
                 </div>
               </CardContent>
             </Card>
           </div>
         </div>
 
-        <div className="flex flex-col md:flex-row gap-6 pt-10">
-          <Button 
-            type="submit" 
-            disabled={isSaving} 
-            className="flex-1 h-20 bg-primary text-black font-black text-2xl rounded-[2rem] shadow-2xl transition-all"
-          >
-            {isSaving ? <Loader2 className="mr-4 h-8 w-8 animate-spin" /> : <Save className="mr-4 h-8 w-8" />}
-            {editId ? "PUBLISH UPDATES" : "DEPLOY ARENA"}
+        <div className="flex gap-4 pt-10">
+          <Button type="submit" disabled={isSaving} className="flex-1 h-20 bg-primary text-black font-black text-2xl rounded-2xl shadow-2xl hover:scale-[1.01] transition-all">
+            {isSaving ? <Loader2 className="h-8 w-8 animate-spin" /> : "PUBLISH ARENA"}
           </Button>
-          <Button type="button" variant="outline" onClick={() => router.back()} className="h-20 px-12 border-white/10 bg-white/5 rounded-[2rem] font-black text-xl hover:bg-destructive hover:text-white hover:border-destructive transition-all">
+          <Button type="button" variant="outline" className="h-20 px-12 border-white/10 bg-white/5 rounded-2xl font-black text-xl hover:bg-destructive hover:text-white" onClick={() => router.push("/studio")}>
             ABORT
           </Button>
         </div>
@@ -588,7 +394,7 @@ function NewTurfForm() {
 
 export default function NewTurfPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>}>
+    <Suspense fallback={<div className="flex items-center justify-center h-screen bg-black"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>}>
       <NewTurfForm />
     </Suspense>
   );

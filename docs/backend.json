@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "Turf": {
@@ -51,13 +52,15 @@
         "rating": { "type": "number" },
         "reviewCount": { "type": "number" },
         "rules": { "type": "array", "items": { "type": "string" } },
-        "createdAt": { "type": "object" }
+        "createdAt": { "type": "object" },
+        "views": { "type": "number" },
+        "whatsappClicks": { "type": "number" }
       },
       "required": ["name", "area", "pricePerHour"]
     },
     "Team": {
       "title": "Team",
-      "description": "A sports team created by a user",
+      "description": "A permanent sports team created by an athlete",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
@@ -69,12 +72,16 @@
         "logoUrl": { "type": "string" },
         "players": { "type": "array", "items": { "type": "string" } },
         "ownerId": { "type": "string" },
+        "wins": { "type": "number" },
+        "matches": { "type": "number" },
+        "turfPreference": { "type": "string" },
         "createdAt": { "type": "object" }
-      }
+      },
+      "required": ["teamName", "sport", "ownerId"]
     },
     "Challenge": {
       "title": "Challenge",
-      "description": "A match challenge issued by a team",
+      "description": "A match negotiation between two teams",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
@@ -84,15 +91,16 @@
         "turf": { "type": "string" },
         "date": { "type": "string" },
         "time": { "type": "string" },
-        "status": { "type": "string" },
-        "area": { "type": "string" },
+        "status": { "type": "string", "enum": ["open", "accepted", "completed"] },
+        "notes": { "type": "string" },
         "ownerId": { "type": "string" },
         "createdAt": { "type": "object" }
-      }
+      },
+      "required": ["teamId", "teamName", "date", "status"]
     },
     "Lead": {
       "title": "Lead",
-      "description": "Information about a booking inquiry",
+      "description": "A conversion metric for turf bookings",
       "type": "object",
       "properties": {
         "turfId": { "type": "string" },
@@ -102,40 +110,35 @@
         "timestamp": { "type": "object" },
         "deviceInfo": { "type": "string" }
       }
-    },
-    "Analytics": {
-      "title": "Analytics",
-      "description": "Global application usage statistics",
-      "type": "object",
-      "properties": {
-        "totalViews": { "type": "number" },
-        "totalWhatsAppClicks": { "type": "number" }
-      }
     }
   },
   "auth": {
-    "providers": ["password", "google"]
+    "providers": ["google", "password"]
   },
   "firestore": {
     "/turfs/{turfId}": {
       "schema": "Turf",
-      "description": "Collection of sports turfs"
+      "description": "Collection of premium sports arenas"
     },
     "/teams/{teamId}": {
       "schema": "Team",
-      "description": "Collection of sports teams"
+      "description": "Collection of permanent athlete squads"
     },
     "/challenges/{challengeId}": {
       "schema": "Challenge",
-      "description": "Collection of match challenges"
+      "description": "Collection of match circuit claims"
     },
     "/leads/{leadId}": {
       "schema": "Lead",
-      "description": "Collection of booking leads"
+      "description": "Collection of conversion leads"
+    },
+    "/settings/branding": {
+      "schema": { "type": "object" },
+      "description": "Global platform identity settings"
     },
     "/analytics/stats": {
-      "schema": "Analytics",
-      "description": "Global usage statistics"
+      "schema": { "type": "object" },
+      "description": "Global platform usage metrics"
     }
   }
 }

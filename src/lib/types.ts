@@ -1,3 +1,4 @@
+
 export type SportType = 'Cricket' | 'Football' | 'Pickleball' | 'Badminton';
 
 export interface TurfAmenities {
@@ -50,6 +51,7 @@ export interface Turf {
   updatedAt?: any;
   views?: number;
   whatsappClicks?: number;
+  isPopular?: boolean; // Legacy support
 }
 
 export interface Team {
@@ -62,6 +64,9 @@ export interface Team {
   logoUrl?: string;
   players: string[];
   ownerId: string;
+  wins?: number;
+  matches?: number;
+  turfPreference?: string;
   createdAt: any;
 }
 
@@ -75,7 +80,6 @@ export interface Challenge {
   time: string;
   notes?: string;
   status: 'open' | 'accepted' | 'completed';
-  area: string;
   ownerId: string;
   createdAt: any;
 }
@@ -88,4 +92,18 @@ export interface Lead {
   sportType: string;
   timestamp: any;
   deviceInfo: string;
+}
+
+export interface BrandingSettings {
+  heroHeadingWhite: string;
+  heroHeadingNeon: string;
+  heroDescription: string;
+  heroImageUrl: string;
+  logoUrl: string;
+  seoTitle: string;
+  seoDescription: string;
+  footerEmail: string;
+  footerWhatsapp: string;
+  copyrightText: string;
+  updatedAt?: any;
 }

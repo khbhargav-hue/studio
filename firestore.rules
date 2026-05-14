@@ -32,7 +32,7 @@ service cloud.firestore {
     }
 
     match /analytics/{docId} {
-      allow read: if isAdmin();
+      allow read: if true;
       allow create, update: if true;
     }
 

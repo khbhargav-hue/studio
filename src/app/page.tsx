@@ -38,7 +38,7 @@ export default function Home() {
   const db = useFirestore()
   const [activeFilter, setActiveFilter] = useState("All")
   
-  // Branding Intelligence Source: SINGLE SOURCE OF TRUTH
+  // PRIMARY SOURCE OF TRUTH: Firestore settings/branding
   const brandingRef = useMemoFirebase(() => {
     if (!db) return null
     return doc(db, "settings", "branding")
@@ -46,7 +46,7 @@ export default function Home() {
 
   const { data: branding, loading: brandingLoading } = useDoc(brandingRef)
 
-  // Primary Data Source: Firestore ONLY
+  // PRIMARY SOURCE OF TRUTH: Firestore turfs collection
   const turfsQuery = useMemoFirebase(() => {
     if (!db) return null
     return query(collection(db, "turfs"), orderBy("name", "asc"))
@@ -60,7 +60,6 @@ export default function Home() {
     return turfs.filter(t => t.sportTypes?.includes(activeFilter as any))
   }, [turfs, activeFilter])
 
-  // Reactive Challenge Hub logic derived from Firestore
   const challengeCategories = useMemo(() => {
     if (branding?.challenges && Array.isArray(branding.challenges) && branding.challenges.length > 0) {
       return branding.challenges.map((c: any) => ({
@@ -76,7 +75,10 @@ export default function Home() {
   if (brandingLoading || turfsLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-black">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <div className="flex flex-col items-center gap-6">
+           <Loader2 className="h-14 w-14 animate-spin text-primary" />
+           <p className="text-[10px] font-black text-primary uppercase tracking-[0.5em] animate-pulse">Syncing City Grid...</p>
+        </div>
       </div>
     )
   }
@@ -93,16 +95,17 @@ export default function Home() {
             <div className="absolute top-1/2 right-0 -translate-y-1/2 w-full h-full hidden md:block">
               <div className="relative w-full h-full flex items-center justify-center">
                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="relative w-[480px] h-[480px] rounded-full overflow-hidden flex items-center justify-center p-12">
-                      <Image 
-                        src={branding?.heroImageUrl || "https://picsum.photos/seed/athlete/800/800"} 
-                        alt="Turfista Hero Athlete" 
-                        width={600} 
-                        height={600} 
-                        className="w-full h-full object-contain grayscale-[0.2] contrast-125 transition-all duration-1000 drop-shadow-[0_0_50px_rgba(57,255,20,0.2)]"
-                        priority
-                        data-ai-hint="athlete football"
-                      />
+                    <div className="relative w-[480px] h-[480px] rounded-full flex items-center justify-center p-12">
+                      {branding?.heroImageUrl && (
+                        <Image 
+                          src={branding.heroImageUrl} 
+                          alt="Turfista Hero Athlete" 
+                          width={600} 
+                          height={600} 
+                          className="w-full h-full object-contain grayscale-[0.2] contrast-125 transition-all duration-1000 drop-shadow-[0_0_50px_rgba(57,255,20,0.2)]"
+                          priority
+                        />
+                      )}
                     </div>
                  </div>
               </div>
@@ -226,7 +229,7 @@ export default function Home() {
             </div>
           </div>
 
-          {filteredTurfs.length > 0 ? (
+          {(filteredTurfs && filteredTurfs.length > 0) ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 md:gap-10">
               {filteredTurfs.map((turf) => (
                 <TurfCard key={turf.id} turf={turf as any} />
@@ -236,8 +239,8 @@ export default function Home() {
             <div className="text-center py-48 glass-card rounded-[5rem] border-dashed border-white/10 max-w-4xl mx-auto flex flex-col items-center gap-10">
               <Star className="h-20 w-20 text-white/5" />
               <div className="space-y-4">
-                <h3 className="text-4xl font-black text-white/10 uppercase italic tracking-widest">Circuit Empty</h3>
-                <p className="text-white/20 max-w-xs mx-auto text-sm font-medium uppercase tracking-widest italic leading-relaxed">No arenas published in this category yet.</p>
+                <h3 className="text-4xl font-black text-white/10 uppercase italic tracking-widest">Inventory Empty</h3>
+                <p className="text-white/20 max-w-xs mx-auto text-sm font-medium uppercase tracking-widest italic leading-relaxed">No arenas published in this category yet. Connect via the Studio to deploy new nodes.</p>
               </div>
             </div>
           )}

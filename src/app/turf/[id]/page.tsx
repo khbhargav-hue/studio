@@ -37,6 +37,7 @@ export default function TurfDetail() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [isThrottled, setIsThrottled] = useState(false)
 
+  // STRICT FETCH: Only from Firestore. No mock fallback for persistence integrity.
   const turfDocRef = useMemoFirebase(() => {
     if (!db || !id) return null
     return doc(db, "turfs", id)
@@ -86,13 +87,13 @@ export default function TurfDetail() {
   }
 
   const allImages = useMemo(() => {
-    if (!turf) return ["https://picsum.photos/seed/turf-placeholder/1200/800"];
+    if (!turf) return [];
     const images: string[] = [];
     if (turf.mainImage) images.push(turf.mainImage);
     if (turf.galleryImages && Array.isArray(turf.galleryImages)) {
       images.push(...turf.galleryImages.filter((img: any) => typeof img === 'string'));
     }
-    return images.length > 0 ? images : ["https://picsum.photos/seed/turf-placeholder/1200/800"];
+    return images;
   }, [turf]);
 
   const minPrice = useMemo(() => {
@@ -119,7 +120,7 @@ export default function TurfDetail() {
           <div className="glass-card p-16 rounded-[3rem] text-center border-white/5 max-w-lg">
             <Zap className="h-16 w-16 text-primary opacity-20 mx-auto mb-8" />
             <h1 className="text-4xl mb-4 font-black italic tracking-tighter uppercase">ARENA <span className="text-primary">OFFLINE</span></h1>
-            <p className="text-white/40 mb-10 font-medium">This pitch node is not currently registered in the database.</p>
+            <p className="text-white/40 mb-10 font-medium">This pitch node is not currently registered in the cloud database.</p>
             <Button onClick={() => router.push("/")} className="bg-primary text-black font-black uppercase tracking-widest h-14 px-10 rounded-2xl">Back to Discovery</Button>
           </div>
         </div>
@@ -159,13 +160,19 @@ export default function TurfDetail() {
                   animate={{ opacity: 1, scale: 1 }}
                   className="relative aspect-video w-full rounded-[2.5rem] overflow-hidden glass-card p-2 border-white/5 shadow-2xl group"
                 >
-                  <Image 
-                    src={selectedImage || allImages[0]} 
-                    alt={name} 
-                    fill 
-                    className="object-cover rounded-[2rem] grayscale-[0.2] hover:grayscale-0 transition-all duration-1000" 
-                    priority 
-                  />
+                  {allImages.length > 0 ? (
+                    <Image 
+                      src={selectedImage || allImages[0]} 
+                      alt={name} 
+                      fill 
+                      className="object-cover rounded-[2rem] grayscale-[0.2] hover:grayscale-0 transition-all duration-1000" 
+                      priority 
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-white/5 flex items-center justify-center rounded-[2rem]">
+                       <ImageIcon className="h-12 w-12 text-white/10" />
+                    </div>
+                  )}
                   <div className="absolute bottom-10 left-10 flex items-center gap-3">
                     <Badge className="bg-black/60 backdrop-blur-md text-[hsl(var(--rating))] border border-white/10 font-black px-4 py-1.5 text-xs rounded-xl shadow-2xl">
                       {turf.rating || 4.5} <Star className="ml-1 h-3 w-3 fill-current" />
@@ -219,7 +226,7 @@ export default function TurfDetail() {
                   <article>
                     <h3 className="text-[10px] text-primary/60 font-black uppercase tracking-[0.5em] mb-8">About this Pitch</h3>
                     <p className="text-white/60 leading-relaxed text-lg md:text-xl font-medium italic border-l-2 border-primary/20 pl-6">
-                      {description}
+                      {description || "No description provided for this arena."}
                     </p>
                   </article>
 
@@ -227,19 +234,19 @@ export default function TurfDetail() {
                     <div className="space-y-8">
                       <h3 className="text-[10px] font-black text-primary/60 uppercase tracking-[0.4em]">Amenities</h3>
                       <div className="grid grid-cols-1 gap-4">
-                        {amenities.map((item: string) => (
+                        {amenities && amenities.length > 0 ? amenities.map((item: string) => (
                           <div key={item} className="flex items-center gap-4 text-white/60 font-bold uppercase tracking-widest text-xs">
                             <div className="h-1 w-1 bg-primary rounded-full shadow-[0_0_5px_rgba(57,255,20,1)]" />
                             {item}
                           </div>
-                        ))}
+                        )) : <p className="text-white/20 text-xs italic">No amenities listed.</p>}
                       </div>
                     </div>
                     <div className="space-y-8">
                       <h3 className="text-[10px] font-black text-primary/60 uppercase tracking-[0.4em]">Availability</h3>
                       <div className="glass-card p-8 rounded-3xl border-white/5 bg-white/5">
                         <Clock className="h-5 w-5 text-primary mb-4" />
-                        <p className="text-2xl font-black italic uppercase text-white">{openingHours}</p>
+                        <p className="text-2xl font-black italic uppercase text-white">{openingHours || "Hours not specified"}</p>
                       </div>
                     </div>
                   </div>
@@ -284,7 +291,7 @@ export default function TurfDetail() {
                       onClick={() => window.open(googleMapsUrl, '_blank')}
                     >
                       <Navigation className="h-5 w-5 text-primary mb-4" />
-                      <p className="text-sm font-medium text-white/40 mb-4 italic line-clamp-2">{location}</p>
+                      <p className="text-sm font-medium text-white/40 mb-4 italic line-clamp-2">{location || "Location pending sync..."}</p>
                       <div className="flex items-center gap-2 text-primary font-black text-[9px] uppercase tracking-[0.4em]">
                         NAVIGATE TO ARENA <ArrowRight className="h-3 w-3" />
                       </div>

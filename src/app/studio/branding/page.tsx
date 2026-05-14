@@ -88,10 +88,9 @@ export default function BrandingStudioPage() {
     challenges: DEFAULT_CHALLENGES
   });
 
-  // Critical: Sync form with Firestore once on load
+  // HYDRATION GUARD: Sync form with Firestore once on load to prevent overwriting with defaults
   useEffect(() => {
     if (brandingData) {
-      console.log("[Studio] Syncing with Cloud Persistence Document...");
       setFormData(prev => ({ 
         ...prev, 
         ...brandingData,
@@ -131,17 +130,10 @@ export default function BrandingStudioPage() {
           const response = JSON.parse(xhr.responseText);
           resolve(response.secure_url);
         } else {
-          const errorMsg = xhr.responseText;
-          console.error("[Cloudinary] Upload error details:", errorMsg);
-          
-          let friendlyMsg = "Verify Cloudinary Cloud Name & Unsigned Preset.";
-          if (errorMsg.includes("Upload preset not found")) {
-            friendlyMsg = `The preset '${CLOUDINARY_UPLOAD_PRESET}' was not found. Please create it as an UNSIGNED preset in Cloudinary.`;
-          }
-          
+          console.error("[Cloudinary] Critical Upload Failure:", xhr.responseText);
           toast({ 
-            title: "Media Sync Error", 
-            description: friendlyMsg, 
+            title: "Media Sync Failed", 
+            description: "Check diagnostic alert for setup instructions.", 
             variant: "destructive" 
           });
           resolve(null);
@@ -164,7 +156,7 @@ export default function BrandingStudioPage() {
     const url = await uploadToCloudinary(file, 'logo');
     if (url) {
       setFormData(prev => ({ ...prev, logoUrl: url }));
-      toast({ title: "Logo Captive", description: "Identity staged. Publish to save." });
+      toast({ title: "Logo Captive", description: "Identity staged. Publish to persist." });
     }
   };
 
@@ -178,27 +170,26 @@ export default function BrandingStudioPage() {
     }
   };
 
-  // BLOCKING PERMANENT SAVE
+  // BLOCKING PERMANENT PUBLISH: No optimistic defaults. Wait for DB sync.
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!db) return;
     
     setIsSaving(true);
-    console.log("[Studio] Initiating permanent publish flow...");
     
     try {
       const docRef = doc(db, "settings", "branding");
       
-      // Strict sanitization layer for persistence
+      // Strict sanitization layer for permanent persistence
       const dataToSave = {
-        heroHeadingWhite: String(formData.heroHeadingWhite || "PLAY"),
-        heroHeadingNeon: String(formData.heroHeadingNeon || "MORE."),
-        heroHeading2White: String(formData.heroHeading2White || "BOOK"),
-        heroHeading2Neon: String(formData.heroHeading2Neon || "EASY."),
+        heroHeadingWhite: String(formData.heroHeadingWhite || ""),
+        heroHeadingNeon: String(formData.heroHeadingNeon || ""),
+        heroHeading2White: String(formData.heroHeading2White || ""),
+        heroHeading2Neon: String(formData.heroHeading2Neon || ""),
         heroDescription: String(formData.heroDescription || ""),
         logoUrl: String(formData.logoUrl || ""),
         heroImageUrl: String(formData.heroImageUrl || ""),
-        seoTitle: String(formData.seoTitle || "Turfista"),
+        seoTitle: String(formData.seoTitle || ""),
         seoDescription: String(formData.seoDescription || ""),
         footerEmail: String(formData.footerEmail || ""),
         footerWhatsapp: String(formData.footerWhatsapp || ""),
@@ -213,7 +204,7 @@ export default function BrandingStudioPage() {
         updatedAt: serverTimestamp()
       };
 
-      // BLOCKING AWAIT: Wait for DB acknowledgement
+      // Blocking await to ensure persistence before UI feedback
       await setDoc(docRef, dataToSave, { merge: true });
       
       toast({ 

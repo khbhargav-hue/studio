@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useParams, useRouter } from "next/navigation"
@@ -17,13 +18,14 @@ import {
   Clock,
   Navigation,
   CheckCircle2,
-  Info
+  Star
 } from "lucide-react"
 import { useDoc, useFirestore, useMemoFirebase } from "@/firebase"
 import { doc, increment, setDoc, addDoc, serverTimestamp, collection } from "firebase/firestore"
 import { useEffect, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
 import * as gtag from "@/lib/gtag"
+import { ReviewSection } from "@/components/review-section"
 
 export default function TurfDetail() {
   const params = useParams()
@@ -89,14 +91,13 @@ export default function TurfDetail() {
     )
   }
 
-  // Schema Injection for Specific Venue
   const schemaMarkup = {
     "@context": "https://schema.org",
     "@type": "SportsActivityLocation",
     "name": turf.name,
     "description": turf.description,
     "image": turf.imageUrl,
-    "priceRange": `₹${turf.pricePerHour}/hr`,
+    "priceRange": turf.pricePerHour > 0 ? `₹${turf.pricePerHour}/hr` : "On Request",
     "address": {
       "@type": "PostalAddress",
       "streetAddress": turf.address,
@@ -135,7 +136,7 @@ export default function TurfDetail() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-          <div className="lg:col-span-8 space-y-12">
+          <div className="lg:col-span-8 space-y-16">
             <section className="relative aspect-video rounded-[32px] overflow-hidden bg-surface border border-border shadow-[0_40px_100px_-20px_rgba(0,0,0,0.5)]">
               <Image 
                 src={turf.imageUrl || "https://picsum.photos/seed/turf/1200/800"} 
@@ -154,6 +155,9 @@ export default function TurfDetail() {
                 {turf.sports?.map((s: string) => (
                   <Badge key={s} className="bg-primary/10 text-primary border-none px-6 py-2 rounded-full font-bold uppercase tracking-widest text-[11px]">{s}</Badge>
                 ))}
+                <div className="flex items-center gap-1.5 px-6 py-2 rounded-full bg-white/5 border border-white/5 text-[11px] font-bold text-primary">
+                  <Star className="h-3.5 w-3.5 fill-current" /> {turf.rating || 4.5} ({turf.reviewCount || 0} reviews)
+                </div>
               </div>
               
               <div className="relative z-10">
@@ -200,6 +204,13 @@ export default function TurfDetail() {
                 </div>
               </div>
             </section>
+
+            {/* REVIEW SECTION */}
+            <ReviewSection 
+              turfId={id} 
+              currentRating={turf.rating || 0} 
+              reviewCount={turf.reviewCount || 0} 
+            />
           </div>
 
           <div className="lg:col-span-4">
@@ -212,10 +223,16 @@ export default function TurfDetail() {
                 <div className="mb-12 relative z-10">
                   <p className="label-caps text-muted-foreground font-bold mb-4">Starting At</p>
                   <div className="flex items-center justify-center gap-2">
-                    <span className="text-7xl font-black text-primary italic tracking-tighter shadow-primary/20">₹{turf.pricePerHour}</span>
-                    <span className="text-muted-foreground font-black text-sm uppercase mt-10">/ HR</span>
+                    {turf.pricePerHour > 0 ? (
+                      <>
+                        <span className="text-7xl font-black text-primary italic tracking-tighter shadow-primary/20">₹{turf.pricePerHour}</span>
+                        <span className="text-muted-foreground font-black text-sm uppercase mt-10">/ HR</span>
+                      </>
+                    ) : (
+                      <span className="text-3xl font-black text-primary italic tracking-tighter">ASK BEFORE BOOKING</span>
+                    )}
                   </div>
-                  {turf.peakHourPrice && (
+                  {turf.pricePerHour > 0 && turf.peakHourPrice > 0 && (
                     <p className="text-[11px] font-black text-muted-foreground/60 uppercase mt-4 tracking-widest">
                       Peak Rate: ₹{turf.peakHourPrice} (from {turf.peakHoursStart})
                     </p>

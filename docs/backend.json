@@ -58,6 +58,21 @@
       },
       "required": ["name", "area", "pricePerHour"]
     },
+    "Review": {
+      "title": "Review",
+      "description": "Player feedback and rating for a sports arena",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userPhoto": { "type": "string" },
+        "rating": { "type": "number" },
+        "comment": { "type": "string" },
+        "timestamp": { "type": "object" }
+      },
+      "required": ["userId", "rating"]
+    },
     "Team": {
       "title": "Team",
       "description": "A permanent sports team created by an athlete",
@@ -119,6 +134,10 @@
     "/turfs/{turfId}": {
       "schema": "Turf",
       "description": "Collection of premium sports arenas"
+    },
+    "/turfs/{turfId}/reviews/{reviewId}": {
+      "schema": "Review",
+      "description": "Sub-collection of player reviews for each arena"
     },
     "/teams/{teamId}": {
       "schema": "Team",

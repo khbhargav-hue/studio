@@ -54,6 +54,16 @@ export interface Turf {
   isPopular?: boolean; // Legacy support
 }
 
+export interface Review {
+  id: string;
+  userId: string;
+  userName: string;
+  userPhoto?: string;
+  rating: number;
+  comment: string;
+  timestamp: any;
+}
+
 export interface Team {
   id: string;
   teamName: string;

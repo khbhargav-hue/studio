@@ -28,7 +28,8 @@ import {
   Upload, 
   X,
   AlertCircle,
-  ShieldAlert
+  ShieldAlert,
+  Info
 } from "lucide-react";
 import { generateTurfDescriptionForAdmin } from "@/ai/flows/generate-turf-description-for-admin";
 import { useToast } from "@/hooks/use-toast";
@@ -255,25 +256,33 @@ function NewTurfForm() {
       });
       setFormData(prev => ({ ...prev, description: result.description }));
       toast({ title: "Narrative Generated" });
+    } catch (err: any) {
+      console.error("[AI Engine] Generation failure:", err);
+      const isQuotaError = JSON.stringify(err).includes('429') || err.message?.includes('429');
+      
+      toast({ 
+        variant: "destructive",
+        title: isQuotaError ? "AI Quota Exhausted" : "Intelligence Error", 
+        description: isQuotaError 
+          ? "Gemini 1.5 Flash (Rate Limit Reached). Please wait 60 seconds or upgrade your AI Studio plan."
+          : "The AI engine encountered an unexpected error. Check the Studio Health tab for more info."
+      });
     } finally {
       setIsGenerating(false);
     }
   };
 
-  // BLOCKING PERMANENT SUBMISSION
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!db) return;
     
     setIsSaving(true);
     const isUpdate = !!editId;
-    console.log(`[Studio] Initiating permanent ${isUpdate ? 'update' : 'deployment'} flow...`);
     
     try {
       const id = editId || formData.name.toLowerCase().replace(/\s+/g, '-');
       const turfRef = doc(db, "turfs", id);
       
-      // Strict data picking for high-integrity storage
       const dataToSave = { 
         id: String(id),
         name: String(formData.name || ""),
@@ -297,7 +306,6 @@ function NewTurfForm() {
         updatedAt: serverTimestamp() 
       };
 
-      // BLOCKING AWAIT
       await setDoc(turfRef, dataToSave, { merge: true });
 
       toast({ 
@@ -443,16 +451,18 @@ function NewTurfForm() {
                   <Sparkles className="h-8 w-8 text-accent" />
                   Marketing Narrative
                 </CardTitle>
-                <Button 
-                  type="button" 
-                  variant="secondary" 
-                  size="sm" 
-                  className="bg-accent text-accent-foreground font-black uppercase tracking-widest text-[9px] h-10 px-6 rounded-xl"
-                  onClick={handleGenerateDescription}
-                  disabled={isGenerating}
-                >
-                  {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : "GENERATE WITH AI"}
-                </Button>
+                <div className="flex items-center gap-4">
+                   <Button 
+                    type="button" 
+                    variant="secondary" 
+                    size="sm" 
+                    className="bg-accent text-accent-foreground font-black uppercase tracking-widest text-[9px] h-10 px-6 rounded-xl"
+                    onClick={handleGenerateDescription}
+                    disabled={isGenerating}
+                  >
+                    {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : "GENERATE WITH AI"}
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent className="p-10 pt-4">
                 <Textarea 
@@ -461,6 +471,10 @@ function NewTurfForm() {
                   value={formData.description}
                   onChange={(e) => setFormData({...formData, description: e.target.value})}
                 />
+                <div className="mt-6 flex items-center gap-3 p-4 rounded-2xl bg-white/5 border border-white/5">
+                   <Info className="h-4 w-4 text-white/30" />
+                   <p className="text-[9px] font-bold text-white/20 uppercase tracking-[0.2em]">Note: AI generation uses Gemini 1.5 Flash. Free tier allows 15 requests per minute.</p>
+                </div>
               </CardContent>
             </Card>
           </div>

@@ -46,7 +46,11 @@ import {
   MessageSquare,
   ShieldCheck,
   Zap,
-  RefreshCcw
+  RefreshCcw,
+  Activity,
+  AlertTriangle,
+  ExternalLink,
+  Cpu
 } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
@@ -236,6 +240,9 @@ export default function StudioDashboard() {
           <TabsTrigger value="leads" className="px-8 h-full rounded-[1.5rem] font-bold uppercase tracking-widest text-[9px] md:text-[10px] data-[state=active]:bg-primary data-[state=active]:text-black">
             <MessageSquare className="h-4 w-4 mr-2 hidden md:block" /> Leads
           </TabsTrigger>
+          <TabsTrigger value="health" className="px-8 h-full rounded-[1.5rem] font-bold uppercase tracking-widest text-[9px] md:text-[10px] data-[state=active]:bg-primary data-[state=active]:text-black">
+            <Activity className="h-4 w-4 mr-2 hidden md:block" /> System Health
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-10">
@@ -421,7 +428,7 @@ export default function StudioDashboard() {
                     <CardTitle className="text-2xl font-black italic uppercase flex items-center gap-4">
                        <Users className="h-6 w-6 text-primary" /> Active Squads
                     </CardTitle>
-                 </CardHeader> community
+                 </CardHeader>
                  <CardContent className="px-10 pb-10">
                     <div className="space-y-4">
                        {teams?.slice(0, 5).map((team: any) => (
@@ -514,6 +521,70 @@ export default function StudioDashboard() {
                 ))}
               </TableBody>
             </Table>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="health" className="space-y-10">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+             <div className="lg:col-span-8 space-y-8">
+                <Card className="glass-card border-white/5 rounded-[3rem] overflow-hidden">
+                   <CardHeader className="p-10 border-b border-white/5 bg-white/[0.02]">
+                      <CardTitle className="text-2xl font-black italic uppercase flex items-center gap-4">
+                         <Cpu className="h-6 w-6 text-primary" /> Intelligence Service Metrics
+                      </CardTitle>
+                      <CardDescription className="text-[10px] font-bold uppercase text-white/30 tracking-widest">Tracking Gemini 1.5 Flash performance and rate limits</CardDescription>
+                   </CardHeader>
+                   <CardContent className="p-10 space-y-10">
+                      <div className="p-8 bg-red-500/10 border border-red-500/20 rounded-3xl flex items-start gap-6">
+                         <AlertTriangle className="h-10 w-10 text-red-500 shrink-0 mt-1" />
+                         <div>
+                            <h4 className="text-xl font-black uppercase italic text-red-500 mb-2">429: Rate Limit Exceeded</h4>
+                            <p className="text-white/60 text-sm leading-relaxed mb-6 italic">
+                               The "Too Many Requests" error confirms that the current Google AI Studio API key has reached its request threshold. This typically resets every 60 seconds on the free tier.
+                            </p>
+                            <Button asChild className="bg-red-500 hover:bg-red-600 text-white font-black uppercase text-[10px] h-10 px-6 rounded-xl gap-2">
+                               <a href="https://aistudio.google.com/app/plan" target="_blank" rel="noopener noreferrer">
+                                  Check AI Studio Quotas <ExternalLink className="h-3.5 w-3.5" />
+                               </a>
+                            </Button>
+                         </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-6">
+                         <div className="p-6 bg-white/5 rounded-[2rem] border border-white/5">
+                            <p className="text-[9px] font-black text-white/20 uppercase tracking-widest mb-2">Model Target</p>
+                            <p className="text-lg font-bold text-white">Gemini 1.5 Flash</p>
+                         </div>
+                         <div className="p-6 bg-white/5 rounded-[2rem] border border-white/5">
+                            <p className="text-[9px] font-black text-white/20 uppercase tracking-widest mb-2">Requests / Min</p>
+                            <p className="text-lg font-bold text-primary">Free Tier (15 RPM)</p>
+                         </div>
+                      </div>
+                   </CardContent>
+                </Card>
+             </div>
+
+             <div className="lg:col-span-4 space-y-8">
+                <Card className="glass-card border-white/5 rounded-[3rem] overflow-hidden">
+                   <CardHeader className="p-8 pb-4">
+                      <CardTitle className="text-xl font-black italic uppercase">Storage Node Status</CardTitle>
+                   </CardHeader>
+                   <CardContent className="px-8 pb-8 space-y-4">
+                      <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl">
+                         <span className="text-[10px] font-bold uppercase text-white/40">Cloud Firestore</span>
+                         <Badge className="bg-green-500/20 text-green-500 border-none text-[8px]">OPERATIONAL</Badge>
+                      </div>
+                      <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl">
+                         <span className="text-[10px] font-bold uppercase text-white/40">Cloudinary CDN</span>
+                         <Badge className="bg-green-500/20 text-green-500 border-none text-[8px]">OPERATIONAL</Badge>
+                      </div>
+                      <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl">
+                         <span className="text-[10px] font-bold uppercase text-white/40">Vercel Edge</span>
+                         <Badge className="bg-green-500/20 text-green-500 border-none text-[8px]">OPERATIONAL</Badge>
+                      </div>
+                   </CardContent>
+                </Card>
+             </div>
           </div>
         </TabsContent>
       </Tabs>

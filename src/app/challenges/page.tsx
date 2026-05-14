@@ -145,15 +145,19 @@ export default function ChallengesPage() {
           <DialogContent className="bg-card border-white/10 p-10 rounded-[3rem] max-w-lg shadow-2xl">
             {!user ? (
               <div className="text-center py-10 space-y-6">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-black uppercase italic tracking-tighter text-center">Athlete Unknown</DialogTitle>
+                </DialogHeader>
                 <ShieldAlert className="h-16 w-16 text-primary opacity-20 mx-auto" />
-                <h3 className="text-2xl font-black uppercase italic tracking-tighter">Athlete Unknown</h3>
                 <p className="text-muted-foreground font-medium italic">You must identify yourself to issue a match claim.</p>
                 <Button asChild className="btn-primary h-14 w-full"><Link href="/profile">VERIFY IDENTITY</Link></Button>
               </div>
             ) : !myTeams || myTeams.length === 0 ? (
               <div className="text-center py-10 space-y-6">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-black uppercase italic tracking-tighter text-center">No Squad Detected</DialogTitle>
+                </DialogHeader>
                 <Trophy className="h-16 w-16 text-primary opacity-20 mx-auto" />
-                <h3 className="text-2xl font-black uppercase italic tracking-tighter">No Squad Detected</h3>
                 <p className="text-muted-foreground font-medium italic">An athlete must belong to a squad to issue a claim.</p>
                 <Button asChild className="btn-primary h-14 w-full"><Link href="/teams">FORM ELITE SQUAD</Link></Button>
               </div>

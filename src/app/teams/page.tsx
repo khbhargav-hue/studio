@@ -110,9 +110,11 @@ export default function TeamsPage() {
             <DialogContent className="bg-card border-white/10 p-10 rounded-[2.5rem] max-w-lg shadow-2xl">
               {!user ? (
                 <div className="text-center py-10 space-y-6">
+                  <DialogHeader>
+                    <DialogTitle className="text-2xl font-bold uppercase italic text-center">Identity Required</DialogTitle>
+                  </DialogHeader>
                   <ShieldCheck className="h-16 w-16 text-primary mx-auto opacity-20" />
-                  <h3 className="text-2xl font-bold uppercase italic">Identity Required</h3>
-                  <p className="text-muted-foreground font-medium">Identify yourself as an athlete to form a squad.</p>
+                  <p className="text-muted-foreground font-medium text-center">Identify yourself as an athlete to form a squad.</p>
                   <Button asChild className="btn-primary w-full h-14"><Link href="/profile">VERIFY IDENTITY</Link></Button>
                 </div>
               ) : (

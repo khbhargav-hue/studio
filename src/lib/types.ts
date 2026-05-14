@@ -47,6 +47,7 @@ export interface Turf {
   reviewCount: number;
   rules: string[];
   createdAt: any;
+  updatedAt?: any;
   views?: number;
   whatsappClicks?: number;
 }

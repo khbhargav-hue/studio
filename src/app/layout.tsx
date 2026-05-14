@@ -8,7 +8,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next"
 import { MobileNav } from '@/components/mobile-nav';
 
 export const viewport: Viewport = {
-  themeColor: '#39FF14',
+  themeColor: '#AAFF00',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
@@ -18,30 +18,11 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.turfista.in'),
-  alternates: {
-    canonical: '/',
-  },
   title: {
-    default: 'Turfista | Premium Sports Community in Mysuru',
+    default: 'Turfista | India\'s Turf Network',
     template: '%s | Turfista'
   },
-  description: 'Discover elite sports arenas, join local teams, and challenge rivals in Mysuru. The all-in-one platform for Football, Cricket, Badminton & Pickleball.',
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'black-translucent',
-    title: 'Turfista',
-  },
-  formatDetection: {
-    telephone: true,
-  },
-  openGraph: {
-    title: 'Turfista | Premium Sports Community in Mysuru',
-    description: 'Find your squad, book your pitch, and dominate the city circuits.',
-    url: 'https://www.turfista.in',
-    siteName: 'Turfista',
-    locale: 'en_IN',
-    type: 'website',
-  },
+  description: 'Find and book elite sports arenas in Mysuru.',
 };
 
 export default function RootLayout({
@@ -54,9 +35,9 @@ export default function RootLayout({
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
-      <body className="font-body bg-background text-foreground selection:bg-primary selection:text-primary-foreground antialiased">
+      <body className="bg-background text-foreground antialiased selection:bg-primary selection:text-primary-foreground">
         <GoogleAnalytics />
         <FirebaseClientProvider>
           <div className="flex flex-col min-h-screen">

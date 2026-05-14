@@ -10,7 +10,7 @@ import Link from 'next/link';
 import { signOut } from 'firebase/auth';
 import { TurfistaLogo } from '@/components/brand-logo';
 
-const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'khbhargav@gmail.com';
+const ADMIN_EMAIL = 'khbhargav@gmail.com';
 
 export default function StudioLayout({ children }: { children: ReactNode }) {
   const { user, loading } = useUser();
@@ -32,87 +32,54 @@ export default function StudioLayout({ children }: { children: ReactNode }) {
 
   const handleLogout = async () => {
     if (auth) {
-      try {
-        await signOut(auth);
-        router.push('/');
-      } catch (error) {
-        console.error("Studio termination failed", error);
-      }
+      await signOut(auth);
+      router.push('/');
     }
   };
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-black">
-        <div className="flex flex-col items-center gap-6">
-          <Loader2 className="h-16 w-16 animate-spin text-primary" />
-          <p className="text-[10px] font-black text-primary uppercase tracking-[0.5em] animate-pulse">Establishing Secure Node...</p>
-        </div>
+      <div className="flex h-screen items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
-  if (!isAuthorized) {
-    return null;
-  }
+  if (!isAuthorized) return null;
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-background selection:bg-primary selection:text-black">
-        <Sidebar className="border-r border-white/5 bg-card/60 backdrop-blur-3xl w-80">
-          <SidebarHeader className="p-12">
-            <Link href="/">
-              <TurfistaLogo size="lg" />
-            </Link>
+      <div className="flex min-h-screen w-full bg-background">
+        <Sidebar className="w-[240px] bg-card border-r border-border">
+          <SidebarHeader className="h-[64px] px-6 flex items-center border-b border-border">
+            <Link href="/"><TurfistaLogo size="sm" /></Link>
           </SidebarHeader>
-          <SidebarContent className="px-6 space-y-3">
+          <SidebarContent className="p-4 space-y-2">
             <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Dashboard" className="h-16 rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[10px] px-6 transition-all hover:bg-primary/5 hover:text-primary">
-                  <Link href="/studio">
-                    <LayoutDashboard className="h-5 w-5 mr-3" />
-                    <span>Intelligence</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Add New Turf" className="h-16 rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[10px] px-6 transition-all hover:bg-primary/5 hover:text-primary">
-                  <Link href="/studio/new">
-                    <PlusCircle className="h-5 w-5 mr-3" />
-                    <span>Deploy Arena</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Branding" className="h-16 rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[10px] px-6 transition-all hover:bg-primary/5 hover:text-primary">
-                  <Link href="/studio/branding">
-                    <Palette className="h-5 w-5 mr-3" />
-                    <span>Visual Identity</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Media Vault" className="h-16 rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[10px] px-6 transition-all hover:bg-primary/5 hover:text-primary">
-                  <Link href="/studio/media">
-                    <Database className="h-5 w-5 mr-3" />
-                    <span>Media Vault</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              {[
+                { label: "Overview", icon: LayoutDashboard, href: "/studio" },
+                { label: "New Turf", icon: PlusCircle, href: "/studio/new" },
+                { label: "Branding", icon: Palette, href: "/studio/branding" },
+                { label: "Media", icon: Database, href: "/studio/media" },
+              ].map((item) => (
+                <SidebarMenuItem key={item.label}>
+                  <SidebarMenuButton asChild className="h-11 rounded-[10px] label-caps text-muted hover:bg-surface hover:text-foreground">
+                    <Link href={item.href}>
+                      <item.icon className="h-4 w-4 mr-3" />
+                      <span>{item.label}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
             </SidebarMenu>
           </SidebarContent>
-          <SidebarFooter className="p-10">
-            <div className="flex flex-col gap-4">
-              <Button asChild variant="outline" className="h-14 rounded-2xl border-white/5 bg-white/5 font-black uppercase tracking-widest text-[9px]">
-                <Link href="/" target="_blank"><Globe className="h-4 w-4 mr-2" /> Live Portal</Link>
-              </Button>
-              <Button onClick={handleLogout} variant="ghost" className="h-14 rounded-2xl font-black uppercase tracking-widest text-[9px] text-destructive hover:bg-destructive/10 hover:text-destructive">
-                <LogOut className="h-4 w-4 mr-2" /> Terminate Access
-              </Button>
-            </div>
+          <SidebarFooter className="p-4 border-t border-border">
+            <Button onClick={handleLogout} variant="ghost" className="w-full justify-start h-11 text-danger hover:bg-danger/10 rounded-[10px]">
+              <LogOut className="h-4 w-4 mr-3" /> Terminate
+            </Button>
           </SidebarFooter>
         </Sidebar>
-        <main className="flex-1 overflow-y-auto px-8 py-12 md:px-16 md:py-20">
+        <main className="flex-1 p-8 overflow-y-auto mt-[64px] md:mt-0">
           {children}
         </main>
       </div>

@@ -13,8 +13,6 @@ import {
   ArrowRight, 
   Star, 
   Users, 
-  Target, 
-  Wind, 
   ShieldCheck, 
   Calendar,
 } from "lucide-react"
@@ -87,33 +85,63 @@ export default function Home() {
     <div className="flex min-h-screen flex-col bg-background">
       <Navbar />
       
-      <section className="relative pt-32 pb-20 md:pt-48 md:pb-32 px-4 overflow-hidden">
-        <div className="absolute top-0 right-0 w-full md:w-1/2 h-full pointer-events-none">
-          <div className="relative w-full h-full">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] md:w-[600px] md:h-[600px] bg-primary/20 rounded-full blur-[100px] opacity-30" />
+      {/* CINEMATIC HERO SECTION */}
+      <section className="relative min-h-[90vh] md:min-h-screen pt-32 pb-20 px-4 overflow-hidden flex items-center">
+        
+        {/* CINEMATIC COMPOSITION LAYER */}
+        <div className="absolute top-0 right-0 w-full md:w-[60%] h-full pointer-events-none z-0">
+          <div className="relative w-full h-full flex items-center justify-center md:justify-end">
             
-            <div className="absolute top-1/2 right-0 -translate-y-1/2 w-full h-full hidden md:block">
-              <div className="relative w-full h-full flex items-center justify-center">
-                 <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="relative w-[480px] h-[480px] rounded-full flex items-center justify-center p-12">
-                      {branding?.heroImageUrl && (
-                        <Image 
-                          src={branding.heroImageUrl} 
-                          alt="Turfista Hero Athlete" 
-                          width={600} 
-                          height={600} 
-                          className="w-full h-full object-contain grayscale-[0.2] contrast-125 transition-all duration-1000 drop-shadow-[0_0_50px_rgba(57,255,20,0.2)]"
-                          priority
-                        />
-                      )}
-                    </div>
-                 </div>
-              </div>
+            {/* AMBIENT BACKGROUND GLOW */}
+            <div className="absolute top-1/2 left-1/2 md:left-2/3 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] md:w-[800px] md:h-[800px] bg-primary/10 rounded-full blur-[120px] opacity-40 animate-pulse" />
+            
+            {/* THE NEON RING (HALO) */}
+            <div className="absolute top-1/2 md:top-[45%] left-1/2 md:left-2/3 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center">
+               <motion.div 
+                 initial={{ opacity: 0, scale: 0.8 }}
+                 animate={{ opacity: 1, scale: 1 }}
+                 transition={{ duration: 1.2, ease: "easeOut" }}
+                 className="relative w-[320px] h-[320px] md:w-[580px] md:h-[580px] rounded-full border-[1px] border-primary/20 shadow-[0_0_80px_rgba(57,255,20,0.15)] flex items-center justify-center"
+               >
+                 {/* INTENSE NEON CORE RING */}
+                 <div className="absolute inset-0 rounded-full border-[6px] border-primary opacity-80 blur-[2px]" />
+                 <div className="absolute inset-0 rounded-full border-[12px] border-primary/40 blur-[15px]" />
+                 <div className="absolute inset-0 rounded-full border-[30px] border-primary/10 blur-[40px]" />
+                 
+                 {/* RING SMOKE EFFECT (CSS RADIALLY GRADIENT) */}
+                 <div className="absolute inset-[-40px] md:inset-[-80px] rounded-full opacity-30 mix-blend-screen bg-[radial-gradient(circle,transparent_50%,rgba(57,255,20,0.15)_70%,transparent_100%)]" />
+               </motion.div>
             </div>
+
+            {/* ATHLETE IMAGE - SEAMLESS BLENDING */}
+            <motion.div 
+              initial={{ opacity: 0, x: 50, scale: 0.95 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
+              className="relative w-full h-full max-h-[85vh] flex items-center justify-center md:justify-end z-10 mr-0 md:mr-[5%]"
+            >
+              {branding?.heroImageUrl && (
+                <div className="relative w-full h-full max-w-[450px] md:max-w-[750px] flex items-end justify-center">
+                  <Image 
+                    src={branding.heroImageUrl} 
+                    alt="Turfista Hero Athlete" 
+                    width={1000} 
+                    height={1000} 
+                    className="w-full h-full object-contain object-bottom contrast-[1.1] drop-shadow-[0_20px_100px_rgba(0,0,0,0.8)]"
+                    priority
+                  />
+                  {/* SOFT BOTTOM FADE BLENDING */}
+                  <div className="absolute bottom-0 left-0 w-full h-[30%] bg-gradient-to-t from-background via-background/40 to-transparent z-20" />
+                </div>
+              )}
+            </motion.div>
+
+            {/* GROUND GLOW */}
+            <div className="absolute bottom-0 right-0 w-full h-[20%] bg-[radial-gradient(ellipse_at_bottom,rgba(57,255,20,0.15)_0%,transparent_70%)] z-10 opacity-60" />
           </div>
         </div>
 
-        <div className="relative z-10 w-full max-w-7xl mx-auto">
+        <div className="relative z-20 w-full max-w-7xl mx-auto">
           <motion.div 
             initial={{ opacity: 0, x: -30 }}
             animate={{ opacity: 1, x: 0 }}

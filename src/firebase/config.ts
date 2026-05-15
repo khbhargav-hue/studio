@@ -1,3 +1,8 @@
+
+/**
+ * Firebase Client Configuration
+ * Uses NEXT_PUBLIC_ prefix for client-side injection in Next.js.
+ */
 export const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,

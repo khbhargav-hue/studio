@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState } from "react"
@@ -13,11 +14,12 @@ import {
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu"
 import { useUser, useAuth } from "@/firebase"
-import { signOut, GoogleAuthProvider, signInWithPopup, signInWithRedirect } from "firebase/auth"
+import { signOut } from "firebase/auth"
 import { useRouter } from "next/navigation"
 import { TurfistaLogo } from "./brand-logo"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
+import { AuthModal } from "./auth-modal"
 
 const NAV_LINKS = [
   { label: "Home", href: "/" },
@@ -34,8 +36,8 @@ export function Navbar() {
   const router = useRouter()
   const pathname = usePathname()
   const { toast } = useToast()
-  const [isSigningIn, setIsSigningIn] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isAuthOpen, setIsAuthOpen] = useState(false)
 
   const handleLogout = async () => {
     if (auth) {
@@ -45,32 +47,14 @@ export function Navbar() {
     }
   }
 
-  const handleGoogleSignIn = async () => {
-    if (!auth) return;
-    setIsSigningIn(true);
-    const provider = new GoogleAuthProvider();
-    try {
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      if (isMobile) {
-        await signInWithRedirect(auth, provider);
-      } else {
-        await signInWithPopup(auth, provider);
-      }
-    } catch (error: any) {
-      console.error("Sign-in error:", error);
-    } finally {
-      setIsSigningIn(false);
-    }
-  }
-
   return (
     <>
-      <nav className="fixed top-0 z-50 w-full h-[64px] glass-navbar px-4 md:px-8">
+      <nav className="fixed top-0 z-50 w-full h-[64px] glass-navbar px-4 md:px-8 bg-[#0A0A0A]/95 backdrop-blur-[12px] border-b border-[#222]">
         <div className="mx-auto flex h-full max-w-7xl items-center justify-between">
           <div className="flex items-center gap-10">
             <Link href="/" className="flex flex-col">
               <TurfistaLogo size="sm" />
-              <span className="hidden md:block text-[10px] font-bold text-muted uppercase tracking-widest -mt-1 ml-11">
+              <span className="hidden md:block text-[10px] font-bold text-[#888] uppercase tracking-widest -mt-1 ml-11">
                 Mysuru's #1 Turf Network
               </span>
             </Link>
@@ -81,8 +65,8 @@ export function Navbar() {
                   key={link.href} 
                   href={link.href} 
                   className={cn(
-                    "label-caps transition-colors hover:text-primary",
-                    pathname === link.href ? "text-primary" : "text-muted"
+                    "text-[11px] font-bold uppercase tracking-[0.2em] transition-colors hover:text-[#AAFF00]",
+                    pathname === link.href ? "text-[#AAFF00]" : "text-[#888]"
                   )}
                 >
                   {link.label}
@@ -92,49 +76,56 @@ export function Navbar() {
           </div>
 
           <div className="flex items-center gap-3">
-            <button className="hidden md:flex h-10 w-10 items-center justify-center text-muted hover:text-primary">
+            <button className="hidden md:flex h-10 w-10 items-center justify-center text-[#888] hover:text-[#AAFF00]">
               <Bell className="h-5 w-5" />
             </button>
 
             {!user ? (
-              <Button onClick={handleGoogleSignIn} disabled={isSigningIn} className="h-10 px-6 font-bold uppercase tracking-widest text-[11px] rounded-button">
-                {isSigningIn ? <Loader2 className="h-4 w-4 animate-spin" /> : "Identify"}
-              </Button>
+              <AuthModal open={isAuthOpen} onOpenChange={setIsAuthOpen}>
+                <Button 
+                  onClick={() => setIsAuthOpen(true)}
+                  className="h-10 px-6 font-black uppercase tracking-widest text-[11px] rounded-[10px] bg-[#AAFF00] text-black"
+                >
+                  Identify
+                </Button>
+              </AuthModal>
             ) : (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="h-10 w-10 rounded-full border border-border overflow-hidden bg-secondary">
+                  <button className="h-10 w-10 rounded-full border border-[#222] overflow-hidden bg-[#1A1A1A]">
                     {user.photoURL ? (
                       <img src={user.photoURL} alt="User" className="h-full w-full object-cover" />
                     ) : (
-                      <UserCircle className="h-full w-full p-2 text-muted-foreground" />
+                      <UserCircle className="h-full w-full p-2 text-[#888]" />
                     )}
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 bg-card border-border rounded-modal mt-2">
+                <DropdownMenuContent align="end" className="w-56 bg-[#111] border-[#222] rounded-[24px] mt-2 p-2">
                   <div className="p-3">
-                    <p className="label-caps text-muted-foreground mb-1">Athlete</p>
-                    <p className="font-semibold truncate text-[14px]">{user.displayName || "Active User"}</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-[#888] mb-1">Athlete</p>
+                    <p className="font-bold truncate text-[14px] text-white uppercase italic">{user.displayName || "Active User"}</p>
                   </div>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild className="cursor-pointer">
-                    <Link href="/profile">Profile Node</Link>
+                  <DropdownMenuSeparator className="bg-[#222]" />
+                  <DropdownMenuItem asChild className="cursor-pointer rounded-[8px] focus:bg-[#1A1A1A] focus:text-[#AAFF00]">
+                    <Link href="/profile" className="w-full flex items-center font-bold uppercase text-[10px] tracking-widest py-3">Profile Node</Link>
                   </DropdownMenuItem>
                   {user.email === 'khbhargav@gmail.com' && (
-                    <DropdownMenuItem asChild className="cursor-pointer">
-                      <Link href="/studio">Admin Studio</Link>
+                    <DropdownMenuItem asChild className="cursor-pointer rounded-[8px] focus:bg-[#1A1A1A] focus:text-[#AAFF00]">
+                      <Link href="/studio" className="w-full flex items-center font-bold uppercase text-[10px] tracking-widest py-3">Admin Studio</Link>
                     </DropdownMenuItem>
                   )}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive cursor-pointer">
-                    <LogOut className="h-4 w-4 mr-2" /> Terminate
+                  <DropdownMenuSeparator className="bg-[#222]" />
+                  <DropdownMenuItem onClick={handleLogout} className="text-[#FF4444] focus:text-[#FF4444] cursor-pointer rounded-[8px] focus:bg-[#FF4444]/10">
+                    <div className="w-full flex items-center font-bold uppercase text-[10px] tracking-widest py-3">
+                      <LogOut className="h-4 w-4 mr-2" /> Terminate
+                    </div>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
 
             <button 
-              className="lg:hidden h-10 w-10 flex items-center justify-center text-foreground"
+              className="lg:hidden h-10 w-10 flex items-center justify-center text-white"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
               {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -145,7 +136,7 @@ export function Navbar() {
 
       {/* Mobile Overlay Menu */}
       {isMenuOpen && (
-        <div className="fixed inset-0 z-40 bg-background pt-[64px] lg:hidden animate-in fade-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-40 bg-[#0A0A0A] pt-[64px] lg:hidden animate-in fade-in zoom-in-95 duration-200">
           <div className="flex flex-col p-6 gap-2">
             {NAV_LINKS.map((link) => (
               <Link 
@@ -153,8 +144,8 @@ export function Navbar() {
                 href={link.href}
                 onClick={() => setIsMenuOpen(false)}
                 className={cn(
-                  "flex items-center h-14 px-6 rounded-card text-2xl font-bold uppercase tracking-tighter italic transition-colors",
-                  pathname === link.href ? "bg-primary text-background" : "text-foreground hover:bg-surface"
+                  "flex items-center h-14 px-6 rounded-[16px] text-2xl font-black uppercase tracking-tighter italic transition-colors",
+                  pathname === link.href ? "bg-[#AAFF00] text-black" : "text-white hover:bg-[#1A1A1A]"
                 )}
               >
                 {link.label}
@@ -163,9 +154,11 @@ export function Navbar() {
             
             {!user && (
               <Button 
-                onClick={handleGoogleSignIn} 
-                disabled={isSigningIn}
-                className="mt-6 h-14 text-xl font-bold uppercase tracking-widest rounded-button"
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  setIsAuthOpen(true);
+                }}
+                className="mt-6 h-16 text-xl font-black uppercase tracking-widest rounded-[10px] bg-[#AAFF00] text-black"
               >
                 Identify with Google
               </Button>

@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, limit, where } from 'firebase/firestore';
 import { TurfCard } from './turf-card';
@@ -22,9 +23,17 @@ export function TurfListing() {
   const [pageSize, setPageSize] = useState(12);
 
   // Firestore Queries
+  // Note: This composite query requires an index: turfs | isActive ASC, rating DESC
   const turfsQuery = useMemoFirebase(() => {
     if (!db) return null;
-    let q = query(collection(db, 'turfs'), orderBy('rating', 'desc'), limit(pageSize));
+    let q = query(
+      collection(db, 'turfs'), 
+      where("isActive", "==", true),
+      orderBy('rating', 'desc'), 
+      limit(pageSize)
+    );
+    
+    // Additional server-side filters if available
     if (activeSport !== 'all') {
       q = query(q, where('sports', 'array-contains', activeSport));
     }
@@ -46,6 +55,12 @@ export function TurfListing() {
 
   const { data: rawTurfs, loading: loadingTurfs } = useCollection(turfsQuery);
   const { data: ads } = useCollection(adsQuery);
+
+  useEffect(() => {
+    if (rawTurfs) {
+      console.log("Turfs fetched from circuit:", rawTurfs.length);
+    }
+  }, [rawTurfs]);
 
   // Client-side filtering
   const filteredTurfs = useMemo(() => {

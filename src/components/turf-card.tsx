@@ -1,3 +1,4 @@
+
 'use client';
 
 import Image from "next/image";
@@ -15,20 +16,27 @@ import {
 import { Button } from "@/components/ui/button";
 import { Turf } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface TurfCardProps {
   turf: Turf;
 }
 
+const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1529900748604-07564a03e7a6?w=800&q=75";
+
 export function TurfCard({ turf }: TurfCardProps) {
   const [isSaved, setIsSaved] = useState(false);
+  const [imgSrc, setImgSrc] = useState<string>(FALLBACK_IMAGE);
 
   const displayImage = turf.imageUrl 
     ? (turf.imageUrl.includes('cloudinary.com') 
         ? turf.imageUrl.replace('/upload/', '/upload/f_webp,w_800,q_75/') 
         : turf.imageUrl)
-    : "https://picsum.photos/seed/turf-placeholder/800/600";
+    : FALLBACK_IMAGE;
+
+  useEffect(() => {
+    setImgSrc(displayImage);
+  }, [displayImage]);
 
   const whatsappUrl = `https://wa.me/${turf.whatsapp}?text=${encodeURIComponent(`Hi! I want to book ${turf.name} at ${turf.area}.`)}`;
   const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(turf.address || `${turf.name} ${turf.area}`)}`;
@@ -38,12 +46,13 @@ export function TurfCard({ turf }: TurfCardProps) {
       {/* 1. Image Overlay */}
       <div className="relative aspect-[16/10] w-full bg-[#1A1A1A] overflow-hidden">
         <Image
-          src={displayImage}
+          src={imgSrc}
           alt={turf.name}
           fill
           loading="lazy"
           className="object-cover group-hover:scale-105 transition-transform duration-700"
           sizes="(max-width: 768px) 100vw, 33vw"
+          onError={() => setImgSrc(FALLBACK_IMAGE)}
         />
         
         {/* Top-Left: Sport Badge */}
@@ -106,7 +115,7 @@ export function TurfCard({ turf }: TurfCardProps) {
           </div>
           <div className="flex items-center gap-3">
             <Users className="h-4 w-4 text-primary" />
-            <span>Squad Limit: {turf.maxPlayers} Athletes</span>
+            <span>Squad Limit: {turf.maxPlayers || 14} Athletes</span>
           </div>
         </div>
 

@@ -78,7 +78,7 @@ export default function StudioDashboard() {
   };
 
   if (turfsLoading) {
-    return <div className="flex h-screen items-center justify-center bg-background"><Loader2 className="h-12 w-12 animate-spin text-primary opacity-20" /></div>;
+    return <div className="flex h-screen items-center justify-center bg-background"><Loader2 className="h-8 w-8 animate-spin text-primary opacity-20" /></div>;
   }
 
   return (

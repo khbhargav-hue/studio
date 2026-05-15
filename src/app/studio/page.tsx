@@ -134,8 +134,8 @@ export default function StudioDashboard() {
     } catch (err: any) {
       console.error("Seed error:", err);
       toast({ 
-        title: "Transmission Interrupted", 
-        description: err.message || "The platform could not reach the Firestore circuit.",
+        title: "Connection Alert", 
+        description: err.message || "Circuit transmission failed. Check network stability.",
         variant: "destructive" 
       });
     } finally {
@@ -173,7 +173,7 @@ export default function StudioDashboard() {
         <div className="flex items-center gap-4">
           {isOffline && (
             <div className="flex items-center gap-2 px-4 py-2 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive text-[10px] font-black uppercase tracking-widest">
-              <WifiOff className="h-4 w-4" /> Client Reporting Offline
+              <WifiOff className="h-4 w-4" /> Circuit Node Offline
             </div>
           )}
           <Button 

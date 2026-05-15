@@ -1,5 +1,12 @@
 import { doc, getDoc, setDoc, serverTimestamp, Firestore, enableNetwork } from "firebase/firestore";
 
+/**
+ * Normalizes sport strings to match platform UI filters
+ */
+const normalizeSports = (sports: string[]) => {
+  return sports.map(s => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase());
+};
+
 export const mysuuruTurfs = [
   {
     name: "Matchbox Sports Arena — Vijayanagar",
@@ -238,86 +245,50 @@ export const seedTeams = [
  * Prevents overwrites and handles network interruptions gracefully.
  */
 export async function seedCircuitData(db: Firestore) {
+  // 1. Connectivity Handshake
   try {
-    // 1. Connectivity Check
-    // Attempt a light read to verify server connectivity.
-    // We ignore the error if it's just 'not-found', which means we ARE online.
-    try {
-      await getDoc(doc(db, "_connectivity_test", "ping"));
-    } catch (err: any) {
-      if (err.code === 'unavailable') {
-        // Explicitly try to wake up the network if it's stuck
-        await enableNetwork(db);
-        // Wait a small buffer for handshake
-        await new Promise(r => setTimeout(r, 1000));
-      }
-    }
+    await enableNetwork(db);
+  } catch (err) {
+    // Ignore error if network was already enabled
+  }
 
-    // 2. Seeding Turfs
-    for (const turf of mysuuruTurfs) {
-      const id = turf.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-      const docRef = doc(db, "turfs", id);
+  const safeSeed = async (coll: string, item: any) => {
+    const id = item.id || item.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const docRef = doc(db, coll, id);
+    
+    try {
       const snap = await getDoc(docRef);
       if (!snap.exists()) {
         await setDoc(docRef, {
-          ...turf,
+          ...item,
           id,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
-          views: 0,
-          whatsappClicks: 0
+          ...(coll === 'turfs' ? { views: 0, whatsappClicks: 0 } : {})
         });
+        return true;
       }
-    }
-
-    // 3. Seeding Pools
-    for (const pool of mysuuruPools) {
-      const id = pool.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-      const docRef = doc(db, "pools", id);
-      const snap = await getDoc(docRef);
-      if (!snap.exists()) {
-        await setDoc(docRef, {
-          ...pool,
-          id,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp()
-        });
+      return false;
+    } catch (error: any) {
+      if (error.message.includes('offline')) {
+        throw new Error("The Firestore circuit is currently unreachable. If you are using a proxy or restricted network, please ensure WebSockets/Long-polling is permitted.");
       }
+      throw error;
     }
+  };
 
-    // 4. Seeding Coaches
-    for (const coach of seedCoaches) {
-      const id = coach.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-      const docRef = doc(db, "coaches", id);
-      const snap = await getDoc(docRef);
-      if (!snap.exists()) {
-        await setDoc(docRef, {
-          ...coach,
-          id,
-          createdAt: serverTimestamp()
-        });
-      }
-    }
+  try {
+    // Execute all seed sequences optimistically
+    for (const turf of mysuuruTurfs) await safeSeed("turfs", turf);
+    for (const pool of mysuuruPools) await safeSeed("pools", pool);
+    for (const coach of seedCoaches) await safeSeed("coaches", coach);
+    for (const team of seedTeams) await safeSeed("teams", team);
 
-    // 5. Seeding Teams
-    for (const team of seedTeams) {
-      const id = team.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-      const docRef = doc(db, "teams", id);
-      const snap = await getDoc(docRef);
-      if (!snap.exists()) {
-        await setDoc(docRef, {
-          ...team,
-          id,
-          createdAt: serverTimestamp()
-        });
-      }
-    }
-
-    // 6. Seeding a dummy challenge
+    // Seed initial match claim
     const challengeId = "seed-challenge-1";
     const challengeRef = doc(db, "challenges", challengeId);
-    const challengeSnap = await getDoc(challengeRef);
-    if (!challengeSnap.exists()) {
+    const chalSnap = await getDoc(challengeRef);
+    if (!chalSnap.exists()) {
       await setDoc(challengeRef, {
         id: challengeId,
         title: "Vijayanagar Weekend Cup",
@@ -335,7 +306,6 @@ export async function seedCircuitData(db: Firestore) {
       });
     }
   } catch (error: any) {
-    // Return the actual error message for better dashboard visibility
     throw new Error(error.message || "Circuit transmission failed.");
   }
 }

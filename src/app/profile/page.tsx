@@ -52,7 +52,7 @@ export default function ProfilePage() {
               <p className="text-[10px] font-black uppercase tracking-widest text-primary">Resolution Steps:</p>
               <ol className="text-[10px] list-decimal pl-4 space-y-2 uppercase tracking-tight">
                 <li>Access Firebase Console</li>
-                <li>Authentication {'>'} Settings {'>'} Authorized Domains</li>
+                <li>Authentication {'->'} Settings {'->'} Authorized Domains</li>
                 <li>Add {domain}</li>
               </ol>
               <Button asChild variant="link" className="text-primary text-[10px] h-auto p-0 flex justify-start uppercase font-black">
@@ -105,7 +105,7 @@ export default function ProfilePage() {
               <p className="text-[10px] font-black uppercase tracking-widest text-primary">Resolution Steps:</p>
               <ol className="text-[10px] list-decimal pl-4 space-y-2 uppercase tracking-tight">
                 <li>Access Firebase Console</li>
-                <li>Authentication {'>'} Settings {'>'} Authorized Domains</li>
+                <li>Authentication {'->'} Settings {'->'} Authorized Domains</li>
                 <li>Add {domain}</li>
               </ol>
               <Button asChild variant="link" className="text-primary text-[10px] h-auto p-0 flex justify-start uppercase font-black">

@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Trophy, Loader2, LogIn, AlertCircle, ShieldCheck, ExternalLink } from "lucide-react";
-import { useAuth, useUser, useFirestore } from "@/firebase";
+import { useAuth, useUser } from "@/firebase";
 import { signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 
@@ -81,7 +81,7 @@ function LoginForm() {
               <p className="text-[10px] font-black uppercase tracking-widest text-primary">Resolution Steps:</p>
               <ol className="text-[10px] list-decimal pl-4 space-y-2 uppercase tracking-tight">
                 <li>Access Firebase Console</li>
-                <li>Authentication {'>'} Settings {'>'} Authorized Domains</li>
+                <li>Authentication {'->'} Settings {'->'} Authorized Domains</li>
                 <li>Add {domain}</li>
               </ol>
               <a 

@@ -113,17 +113,25 @@
       },
       "required": ["teamId", "teamName", "date", "status"]
     },
-    "Lead": {
-      "title": "Lead",
-      "description": "A conversion metric for turf bookings",
+    "Coach": {
+      "title": "Coach",
+      "description": "An elite specialized trainer in the Mysuru network",
       "type": "object",
       "properties": {
-        "turfId": { "type": "string" },
-        "turfName": { "type": "string" },
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "sport": { "type": "string" },
+        "photoUrl": { "type": "string" },
+        "rating": { "type": "number" },
+        "reviewCount": { "type": "number" },
         "area": { "type": "string" },
-        "sportType": { "type": "string" },
-        "timestamp": { "type": "object" },
-        "deviceInfo": { "type": "string" }
+        "city": { "type": "string" },
+        "pricePerSession": { "type": "number" },
+        "bio": { "type": "string" },
+        "whatsapp": { "type": "string" },
+        "isAvailable": { "type": "boolean" },
+        "specialization": { "type": "string" },
+        "createdAt": { "type": "object" }
       }
     }
   },
@@ -147,17 +155,13 @@
       "schema": "Challenge",
       "description": "Collection of match circuit claims"
     },
+    "/coaches/{coachId}": {
+      "schema": "Coach",
+      "description": "Collection of elite specialized trainers"
+    },
     "/leads/{leadId}": {
       "schema": "Lead",
       "description": "Collection of conversion leads"
-    },
-    "/settings/branding": {
-      "schema": { "type": "object" },
-      "description": "Global platform identity settings"
-    },
-    "/analytics/stats": {
-      "schema": { "type": "object" },
-      "description": "Global platform usage metrics"
     }
   }
 }

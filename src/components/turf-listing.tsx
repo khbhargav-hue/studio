@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, limit, where } from 'firebase/firestore';
 import { TurfCard } from './turf-card';
+import { ListingAdCard } from './ads/listing-ad-card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FilterSystem } from './filter-system';
@@ -20,26 +21,33 @@ export function TurfListing() {
   const [ratingFilter, setRatingFilter] = useState('all');
   const [pageSize, setPageSize] = useState(12);
 
-  // Firestore Query
+  // Firestore Queries
   const turfsQuery = useMemoFirebase(() => {
     if (!db) return null;
-    
     let q = query(collection(db, 'turfs'), orderBy('rating', 'desc'), limit(pageSize));
-
     if (activeSport !== 'all') {
       q = query(q, where('sports', 'array-contains', activeSport));
     }
-    
     if (areaFilter !== 'all') {
       q = query(q, where('area', '==', areaFilter));
     }
-
     return q;
   }, [db, activeSport, areaFilter, pageSize]);
 
-  const { data: rawTurfs, loading } = useCollection(turfsQuery);
+  const adsQuery = useMemoFirebase(() => {
+    if (!db) return null;
+    return query(
+      collection(db, 'ads'), 
+      where('placement', '==', 'listing_card'), 
+      where('isActive', '==', true),
+      limit(5)
+    );
+  }, [db]);
 
-  // Client-side filtering for Search, Price, and Rating (more flexible than Firestore composite indexes)
+  const { data: rawTurfs, loading: loadingTurfs } = useCollection(turfsQuery);
+  const { data: ads } = useCollection(adsQuery);
+
+  // Client-side filtering
   const filteredTurfs = useMemo(() => {
     if (!rawTurfs) return [];
     
@@ -58,6 +66,21 @@ export function TurfListing() {
       return matchesSearch && matchesRating && matchesPrice;
     });
   }, [rawTurfs, searchQuery, priceFilter, ratingFilter]);
+
+  // Interleave ads every 6th card
+  const itemsWithAds = useMemo(() => {
+    const result = [];
+    const availableAds = [...(ads || [])];
+    
+    filteredTurfs.forEach((turf, index) => {
+      result.push({ type: 'turf', data: turf });
+      if ((index + 1) % 6 === 0 && availableAds.length > 0) {
+        result.push({ type: 'ad', data: availableAds.shift() });
+      }
+    });
+    
+    return result;
+  }, [filteredTurfs, ads]);
 
   const handleClearAll = () => {
     setActiveSport('all');
@@ -85,7 +108,6 @@ export function TurfListing() {
 
       <section className="flex-1 py-12 px-4 md:px-8 bg-background">
         <div className="max-w-7xl mx-auto">
-          {/* Status Header */}
           <div className="mb-8 flex items-center justify-between">
             <h2 className="text-xl font-bold uppercase tracking-tight flex items-center gap-2">
               <Zap className="h-5 w-5 text-primary" />
@@ -94,15 +116,18 @@ export function TurfListing() {
             </h2>
           </div>
 
-          {/* Grid */}
-          {loading && filteredTurfs.length === 0 ? (
+          {loadingTurfs && filteredTurfs.length === 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {[...Array(6)].map((_, i) => <SkeletonCard key={i} />)}
             </div>
-          ) : filteredTurfs.length > 0 ? (
+          ) : itemsWithAds.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredTurfs.map((turf) => (
-                <TurfCard key={turf.id} turf={turf as any} />
+              {itemsWithAds.map((item, idx) => (
+                item.type === 'turf' ? (
+                  <TurfCard key={item.data.id} turf={item.data as any} />
+                ) : (
+                  <ListingAdCard key={item.data.id} ad={item.data as any} />
+                )
               ))}
             </div>
           ) : (
@@ -120,8 +145,7 @@ export function TurfListing() {
             </div>
           )}
 
-          {/* Load More */}
-          {!loading && rawTurfs && rawTurfs.length >= pageSize && (
+          {!loadingTurfs && rawTurfs && rawTurfs.length >= pageSize && (
             <div className="mt-16 flex justify-center">
               <Button 
                 onClick={() => setPageSize(prev => prev + 12)}
@@ -147,14 +171,6 @@ function SkeletonCard() {
           <Skeleton className="h-4 w-8" />
         </div>
         <Skeleton className="h-3 w-1/3" />
-        <div className="flex gap-2">
-          <Skeleton className="h-5 w-16" />
-          <Skeleton className="h-5 w-16" />
-        </div>
-        <div className="pt-4 border-t border-border flex justify-between">
-          <Skeleton className="h-8 w-1/3" />
-          <Skeleton className="h-8 w-8" />
-        </div>
       </div>
     </div>
   );

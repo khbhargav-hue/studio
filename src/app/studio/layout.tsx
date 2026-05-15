@@ -7,15 +7,12 @@ import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarMenu, S
 import { Button } from '@/components/ui/button';
 import { 
   LayoutDashboard, 
-  PlusCircle, 
   LogOut, 
   Loader2, 
-  Palette, 
   Trophy, 
   Users, 
   Zap, 
   Waves, 
-  Database,
   Globe,
   TrendingUp,
   UserCheck
@@ -37,7 +34,6 @@ export default function StudioLayout({ children }: { children: ReactNode }) {
       if (!user) {
         router.replace('/login');
       } else if (user.email !== ADMIN_EMAIL) {
-        // Fallback for demo, in production we use users/{uid}.role === "admin"
         router.replace('/');
       } else {
         setIsAuthorized(true);
@@ -64,14 +60,13 @@ export default function StudioLayout({ children }: { children: ReactNode }) {
 
   const MENU_ITEMS = [
     { label: "Dashboard", icon: LayoutDashboard, href: "/studio" },
-    { label: "Turfs", icon: Zap, href: "/studio/inventory?tab=turfs" },
-    { label: "Teams", icon: Users, href: "/studio/inventory?tab=teams" },
-    { label: "Challenges", icon: Trophy, href: "/studio/inventory?tab=challenges" },
-    { label: "Coaching", icon: UserCheck, href: "/studio/inventory?tab=coaching" },
-    { label: "Pools", icon: Waves, href: "/studio/inventory?tab=pools" },
-    { label: "Users", icon: Users, href: "/studio/inventory?tab=users" },
+    { label: "Turfs", icon: Zap, href: "/studio" }, // Dashboard has turf list
+    { label: "Teams", icon: Users, href: "/studio" },
+    { label: "Challenges", icon: Trophy, href: "/studio" },
+    { label: "Coaching", icon: UserCheck, href: "/studio" },
+    { label: "Pools", icon: Waves, href: "/studio" },
     { label: "SEO", icon: Globe, href: "/studio/branding" },
-    { label: "Ads", icon: TrendingUp, href: "/studio/media" },
+    { label: "Ads", icon: TrendingUp, href: "/studio/media" }, // Reusing media path for ads for now
   ];
 
   return (

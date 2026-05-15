@@ -10,6 +10,7 @@ import { useFirestore, useDoc, useMemoFirebase } from "@/firebase"
 import { doc } from "firebase/firestore"
 import { motion } from "framer-motion"
 import { TurfListing } from "@/components/turf-listing"
+import { HeroBannerAd } from "@/components/ads/hero-banner-ad"
 
 export default function Home() {
   const db = useFirestore()
@@ -34,7 +35,6 @@ export default function Home() {
     <div className="flex min-h-screen flex-col bg-[#0A0A0A] selection:bg-primary selection:text-black">
       <Navbar />
       
-      {/* 1. HERO SECTION (100VH) */}
       <section className="relative h-screen flex flex-col items-center justify-center px-4 overflow-hidden">
         <div className="absolute inset-0 z-0">
           <Image 
@@ -124,7 +124,8 @@ export default function Home() {
         </motion.div>
       </section>
 
-      {/* 2. QUICK STATS BAR */}
+      <HeroBannerAd />
+
       <section className="bg-[#111] border-t border-b border-[#222] py-12 md:py-20 px-4">
         <div className="max-w-7xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-12 text-center">
           <div>
@@ -146,7 +147,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 3. LISTINGS SECTION (Filters + Grid) */}
       <div id="listings" className="scroll-mt-[64px]">
         <TurfListing />
       </div>

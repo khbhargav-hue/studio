@@ -3,8 +3,6 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { FirebaseClientProvider } from "@/firebase"
 import GoogleAnalytics from '@/components/google-analytics';
-import { Analytics } from "@vercel/analytics/react"
-import { SpeedInsights } from "@vercel/speed-insights/next"
 import { FaviconProvider } from '@/components/favicon-provider';
 import Script from 'next/script';
 
@@ -67,7 +65,6 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-        {/* Local Business Schema (JSON-LD) */}
         <Script
           id="json-ld"
           type="application/ld+json"
@@ -101,8 +98,6 @@ export default function RootLayout({
             <Toaster />
           </div>
         </FirebaseClientProvider>
-        <Analytics />
-        <SpeedInsights />
       </body>
     </html>
   );

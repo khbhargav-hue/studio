@@ -1,8 +1,7 @@
 "use client"
 
-import { useState } from "react"
 import Link from "next/link"
-import { User, Menu, LogOut, ShieldCheck, MapPinned, Users, Trophy, UserCircle, Loader2 } from "lucide-react"
+import { UserCircle, LogOut, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { 
   DropdownMenu, 
@@ -16,6 +15,7 @@ import { signOut, GoogleAuthProvider, signInWithPopup, signInWithRedirect } from
 import { useRouter } from "next/navigation"
 import { TurfistaLogo } from "./brand-logo"
 import { useToast } from "@/hooks/use-toast"
+import { useState } from "react"
 
 export function Navbar() {
   const { user } = useUser()
@@ -28,7 +28,7 @@ export function Navbar() {
     if (auth) {
       await signOut(auth)
       router.push("/")
-      toast({ title: "Logged Out" })
+      toast({ title: "Session Terminated" })
     }
   }
 
@@ -45,74 +45,62 @@ export function Navbar() {
       }
     } catch (error: any) {
       console.error("Sign-in error:", error);
-      if (error.code === 'auth/unauthorized-domain') {
-        const domain = window.location.hostname;
-        toast({
-          variant: "destructive",
-          title: "Whitelist Required",
-          description: `Add ${domain} to your Firebase authorized domains.`,
-        });
-      }
     } finally {
       setIsSigningIn(false);
     }
   }
 
   return (
-    <nav className="fixed top-0 z-50 w-full h-[64px] bg-background/95 backdrop-blur-[12px] border-b border-border px-4 md:px-8">
+    <nav className="fixed top-0 z-50 w-full h-[64px] glass-navbar px-4 md:px-8">
       <div className="mx-auto flex h-full max-w-7xl items-center justify-between">
-        <div className="flex items-center gap-8">
+        <div className="flex items-center gap-12">
           <Link href="/">
             <TurfistaLogo size="sm" />
           </Link>
-          <div className="hidden md:flex items-center gap-6">
-            <Link href="/" className="label-caps text-muted hover:text-foreground">Arenas</Link>
-            <Link href="/teams" className="label-caps text-muted hover:text-foreground">Squads</Link>
-            <Link href="/challenges" className="label-caps text-muted hover:text-foreground">Match Feed</Link>
+          <div className="hidden md:flex items-center gap-8">
+            <Link href="/" className="label-caps text-muted-foreground hover:text-primary transition-colors">Arenas</Link>
+            <Link href="/teams" className="label-caps text-muted-foreground hover:text-primary transition-colors">Squads</Link>
+            <Link href="/challenges" className="label-caps text-muted-foreground hover:text-primary transition-colors">Match Feed</Link>
           </div>
         </div>
 
         <div className="flex items-center gap-4">
           {!user ? (
-            <Button onClick={handleGoogleSignIn} disabled={isSigningIn} className="btn-primary h-[40px] px-6 text-xs">
-              {isSigningIn ? <Loader2 className="h-4 w-4 animate-spin" /> : "SIGN IN"}
+            <Button onClick={handleGoogleSignIn} disabled={isSigningIn} className="h-10 px-6 font-bold uppercase tracking-widest text-[11px]">
+              {isSigningIn ? <Loader2 className="h-4 w-4 animate-spin" /> : "Identify"}
             </Button>
           ) : (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="h-10 w-10 rounded-full border border-border overflow-hidden bg-surface">
+                <button className="h-10 w-10 rounded-full border border-border overflow-hidden bg-secondary">
                   {user.photoURL ? (
                     <img src={user.photoURL} alt="User" className="h-full w-full object-cover" />
                   ) : (
-                    <UserCircle className="h-full w-full p-2 text-muted" />
+                    <UserCircle className="h-full w-full p-2 text-muted-foreground" />
                   )}
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 bg-card border-border rounded-xl mt-2">
+              <DropdownMenuContent align="end" className="w-56 bg-card border-border rounded-[10px] mt-2">
                 <div className="p-3">
-                  <p className="label-caps text-muted mb-1">Athlete</p>
-                  <p className="font-semibold truncate">{user.displayName || "User"}</p>
+                  <p className="label-caps text-muted-foreground mb-1">Athlete</p>
+                  <p className="font-semibold truncate text-[14px]">{user.displayName || "Active User"}</p>
                 </div>
-                <DropdownMenuSeparator className="bg-border" />
-                <DropdownMenuItem asChild className="cursor-pointer hover:bg-surface">
-                  <Link href="/profile">Dashboard</Link>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild className="cursor-pointer">
+                  <Link href="/profile">Profile Node</Link>
                 </DropdownMenuItem>
                 {user.email === 'khbhargav@gmail.com' && (
-                  <DropdownMenuItem asChild className="cursor-pointer hover:bg-surface">
+                  <DropdownMenuItem asChild className="cursor-pointer">
                     <Link href="/studio">Admin Studio</Link>
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuSeparator className="bg-border" />
-                <DropdownMenuItem onClick={handleLogout} className="text-danger focus:text-danger cursor-pointer hover:bg-surface">
-                  <LogOut className="h-4 w-4 mr-2" /> Log Out
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive cursor-pointer">
+                  <LogOut className="h-4 w-4 mr-2" /> Terminate
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           )}
-          
-          <div className="md:hidden">
-            <Menu className="h-6 w-6 text-muted" />
-          </div>
         </div>
       </div>
     </nav>

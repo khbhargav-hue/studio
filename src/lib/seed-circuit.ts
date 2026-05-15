@@ -1,3 +1,4 @@
+
 import { doc, getDoc, setDoc, getDocs, collection, query, limit, serverTimestamp, Firestore, enableNetwork } from "firebase/firestore";
 
 /**
@@ -246,21 +247,17 @@ export const seedTeams = [
 
 /**
  * Hardened Circuit Seeding Logic
- * Uses a collection query test to verify connection before seeding.
  */
 export async function seedCircuitData(db: Firestore) {
-  // 1. Establish Handshake
   try {
     await enableNetwork(db);
-    // Simple connectivity test: try to list turfs (even if empty)
+    // Ping collections to verify handshake
     await getDocs(query(collection(db, 'turfs'), limit(1)));
   } catch (err: any) {
-    console.error("Connectivity Test Failed:", err);
-    throw new Error("The Firestore circuit is currently unreachable. Please verify that your project is active and your network allows WebSockets or Long-polling.");
+    throw new Error(`Circuit Handshake Failed: ${err.message}. Ensure permissions are set correctly.`);
   }
 
   const safeSeed = async (coll: string, item: any) => {
-    // Generate a URL-friendly slug ID
     const id = item.id || item.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
     const docRef = doc(db, coll, id);
     
@@ -278,13 +275,12 @@ export async function seedCircuitData(db: Firestore) {
       }
       return false;
     } catch (error: any) {
-      console.warn(`Node deployment failed for ${id}:`, error.message);
+      console.warn(`Node deployment failed for [${coll}/${id}]:`, error.message);
       return false;
     }
   };
 
   try {
-    // 2. Optimistic Circuit Deployment
     let seededCount = 0;
     
     for (const turf of mysuuruTurfs) if (await safeSeed("turfs", turf)) seededCount++;
@@ -292,7 +288,6 @@ export async function seedCircuitData(db: Firestore) {
     for (const coach of seedCoaches) if (await safeSeed("coaches", coach)) seededCount++;
     for (const team of seedTeams) if (await safeSeed("teams", team)) seededCount++;
 
-    // 3. Seed Initial Match Claim
     const challengeId = "seed-challenge-1";
     const challengeRef = doc(db, "challenges", challengeId);
     try {
@@ -319,6 +314,6 @@ export async function seedCircuitData(db: Firestore) {
 
     return seededCount;
   } catch (error: any) {
-    throw new Error(error.message || "Circuit transmission interrupted.");
+    throw new Error(`Circuit Transmission Interrupted: ${error.message}`);
   }
 }

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, Suspense, useRef } from "react";
@@ -159,7 +160,7 @@ function NewTurfForm() {
     e.preventDefault();
     if (!db) return;
     setIsSaving(true);
-    const id = editId || formData.name.toLowerCase().replace(/\s+/g, '-');
+    const id = editId || formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
     const turfRef = doc(db, "turfs", id);
     const dataToSave = {
       ...formData,
@@ -168,19 +169,22 @@ function NewTurfForm() {
       createdAt: existingTurf?.createdAt || serverTimestamp()
     };
 
-    try {
-      await setDoc(turfRef, dataToSave, { merge: true });
-      toast({ title: editId ? "Intel Synchronized" : "Arena Deployed" });
-      router.push("/studio");
-    } catch (err: any) {
-      errorEmitter.emit('permission-error', new FirestorePermissionError({
-        path: `turfs/${id}`,
-        operation: editId ? 'update' : 'create',
-        requestResourceData: dataToSave
-      }));
-    } finally {
-      setIsSaving(false);
-    }
+    setDoc(turfRef, dataToSave, { merge: true })
+      .then(() => {
+        toast({ title: editId ? "Intel Synchronized" : "Arena Deployed" });
+        setIsSaving(false);
+        router.push("/studio");
+      })
+      .catch(async (err) => {
+        setIsSaving(false);
+        const permissionError = new FirestorePermissionError({
+          path: turfRef.path,
+          operation: editId ? 'update' : 'create',
+          requestResourceData: dataToSave,
+          message: err.message
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      });
   };
 
   const handleGenerateDescription = async () => {

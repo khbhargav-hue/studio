@@ -13,7 +13,7 @@ service cloud.firestore {
     match /turfs/{turfId} {
       allow read: if true;
       allow update: if (
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views', 'whatsappClicks', 'updatedAt'])
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views', 'whatsappClicks', 'updatedAt', 'rating', 'reviewCount'])
       ) || isAdmin();
       allow create, delete: if isAdmin();
     }
@@ -40,6 +40,17 @@ service cloud.firestore {
     match /coaches/{coachId} {
       allow read: if true;
       allow write: if isAdmin();
+    }
+
+    match /pools/{poolId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /ads/{adId} {
+      allow read: if true;
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['clickCount']) || isAdmin();
+      allow create, delete: if isAdmin();
     }
 
     match /analytics/{docId} {

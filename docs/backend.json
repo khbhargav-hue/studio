@@ -79,20 +79,20 @@
       "type": "object",
       "properties": {
         "id": { "type": "string" },
-        "teamName": { "type": "string" },
+        "name": { "type": "string" },
         "sport": { "type": "string" },
         "area": { "type": "string" },
         "captain": { "type": "string" },
         "whatsapp": { "type": "string" },
         "logoUrl": { "type": "string" },
-        "players": { "type": "array", "items": { "type": "string" } },
+        "members": { "type": "array", "items": { "type": "string" } },
         "ownerId": { "type": "string" },
         "wins": { "type": "number" },
-        "matches": { "type": "number" },
-        "turfPreference": { "type": "string" },
+        "matchesPlayed": { "type": "number" },
+        "description": { "type": "string" },
         "createdAt": { "type": "object" }
       },
-      "required": ["teamName", "sport", "ownerId"]
+      "required": ["name", "sport", "ownerId"]
     },
     "Challenge": {
       "title": "Challenge",
@@ -113,25 +113,40 @@
       },
       "required": ["teamId", "teamName", "date", "status"]
     },
-    "Coach": {
-      "title": "Coach",
-      "description": "An elite specialized trainer in the Mysuru network",
+    "Pool": {
+      "title": "Pool",
+      "description": "An aquatic center for public or academy use",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
         "name": { "type": "string" },
-        "sport": { "type": "string" },
-        "photoUrl": { "type": "string" },
+        "area": { "type": "string" },
+        "address": { "type": "string" },
+        "city": { "type": "string" },
+        "poolTypes": { "type": "array", "items": { "type": "string" } },
+        "coachingAvailable": { "type": "boolean" },
+        "genderPolicy": { "type": "string" },
+        "entryFee": { "type": "number" },
+        "openTime": { "type": "string" },
+        "closeTime": { "type": "string" },
         "rating": { "type": "number" },
         "reviewCount": { "type": "number" },
-        "area": { "type": "string" },
-        "city": { "type": "string" },
-        "pricePerSession": { "type": "number" },
-        "bio": { "type": "string" },
         "whatsapp": { "type": "string" },
-        "isAvailable": { "type": "boolean" },
-        "specialization": { "type": "string" },
-        "createdAt": { "type": "object" }
+        "isActive": { "type": "boolean" }
+      }
+    },
+    "Ad": {
+      "title": "Ad",
+      "description": "A native advertisement node",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "targetUrl": { "type": "string" },
+        "placement": { "type": "string" },
+        "isActive": { "type": "boolean" },
+        "clickCount": { "type": "number" }
       }
     }
   },
@@ -158,6 +173,14 @@
     "/coaches/{coachId}": {
       "schema": "Coach",
       "description": "Collection of elite specialized trainers"
+    },
+    "/pools/{poolId}": {
+      "schema": "Pool",
+      "description": "Collection of aquatic centers"
+    },
+    "/ads/{adId}": {
+      "schema": "Ad",
+      "description": "Collection of native sponsored nodes"
     },
     "/leads/{leadId}": {
       "schema": "Lead",

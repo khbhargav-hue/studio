@@ -1,4 +1,3 @@
-
 import { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
@@ -9,22 +8,17 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: '/',
     display: 'standalone',
     background_color: '#000000',
-    theme_color: '#39FF14',
+    theme_color: '#AAFF00',
     orientation: 'portrait',
     icons: [
       {
-        src: '/favicon.ico',
-        sizes: 'any',
-        type: 'image/x-icon',
-      },
-      {
-        src: 'https://picsum.photos/seed/turf-icon-192/192/192',
+        src: 'https://res.cloudinary.com/turfista/image/upload/v1/favicon.png',
         sizes: '192x192',
         type: 'image/png',
         purpose: 'maskable'
       },
       {
-        src: 'https://picsum.photos/seed/turf-icon-512/512/512',
+        src: 'https://res.cloudinary.com/turfista/image/upload/v1/favicon.png',
         sizes: '512x512',
         type: 'image/png',
         purpose: 'any'

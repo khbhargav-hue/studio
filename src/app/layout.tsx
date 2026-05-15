@@ -6,6 +6,7 @@ import GoogleAnalytics from '@/components/google-analytics';
 import { Analytics } from "@vercel/analytics/react"
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { MobileNav } from '@/components/mobile-nav';
+import { FaviconProvider } from '@/components/favicon-provider';
 
 export const viewport: Viewport = {
   themeColor: '#AAFF00',
@@ -75,6 +76,7 @@ export default function RootLayout({
       <body className="bg-background text-foreground antialiased selection:bg-primary selection:text-primary-foreground">
         <GoogleAnalytics />
         <FirebaseClientProvider>
+          <FaviconProvider />
           <div className="flex flex-col min-h-screen">
             <main className="flex-1 pb-24 md:pb-0">
               {children}

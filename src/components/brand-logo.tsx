@@ -1,11 +1,14 @@
-
 'use client';
 
 import { cn } from "@/lib/utils";
 import { useFirestore, useDoc, useMemoFirebase } from "@/firebase";
 import { doc } from "firebase/firestore";
-import Image from "next/image";
 
+/**
+ * TurfistaLogo
+ * Central logo component that fetches branding from Firestore.
+ * Ensures the brand identity is permanent and consistent globally.
+ */
 export function TurfistaLogo({ className, iconOnly = false, size = "md" }: { className?: string; iconOnly?: boolean; size?: "sm" | "md" | "lg" | "xl" }) {
   const db = useFirestore();
   
@@ -17,10 +20,10 @@ export function TurfistaLogo({ className, iconOnly = false, size = "md" }: { cla
   const { data: branding } = useDoc(brandingRef);
 
   const sizeClasses = {
-    sm: "h-6",
-    md: "h-8",
-    lg: "h-12",
-    xl: "h-20"
+    sm: "h-8 w-8",
+    md: "h-10 w-10",
+    lg: "h-16 w-16",
+    xl: "h-24 w-24"
   };
 
   const textSizes = {
@@ -30,24 +33,31 @@ export function TurfistaLogo({ className, iconOnly = false, size = "md" }: { cla
     xl: "text-[48px]"
   };
 
+  // Cloudinary Optimization for Logo
+  const logoSrc = branding?.logoUrl 
+    ? (branding.logoUrl.includes('cloudinary.com') 
+        ? branding.logoUrl.replace('/upload/', '/upload/f_auto,q_auto,w_200/') 
+        : branding.logoUrl)
+    : null;
+
   return (
     <div className={cn("flex items-center gap-3 select-none", className)}>
       <div className={cn(
-        "bg-primary rounded-[8px] flex items-center justify-center overflow-hidden",
-        size === "sm" ? "h-8 w-8" : "h-10 w-10"
+        "bg-primary rounded-[10px] flex items-center justify-center overflow-hidden transition-all",
+        sizeClasses[size]
       )}>
-        {branding?.logoUrl ? (
+        {logoSrc ? (
           <img 
-            src={branding.logoUrl} 
-            alt="Logo" 
-            className="h-full w-full object-contain p-1"
+            src={logoSrc} 
+            alt="Turfista Logo" 
+            className="h-full w-full object-contain p-1.5"
           />
         ) : (
           <svg 
             viewBox="0 0 24 24" 
             fill="none" 
             xmlns="http://www.w3.org/2000/svg" 
-            className="text-background h-6 w-6"
+            className="text-black h-3/5 w-3/5"
           >
             <path 
               d="M12 2L4 5V11C4 16.1 7.4 20.9 12 22C16.6 20.9 20 16.1 20 11V5L12 2Z" 
@@ -59,7 +69,7 @@ export function TurfistaLogo({ className, iconOnly = false, size = "md" }: { cla
         )}
       </div>
       {!iconOnly && (
-        <div className={cn("font-bold tracking-tight text-foreground uppercase italic", textSizes[size])}>
+        <div className={cn("font-black tracking-tighter text-foreground uppercase italic", textSizes[size])}>
           TURF<span className="text-primary">ISTA</span>
         </div>
       )}

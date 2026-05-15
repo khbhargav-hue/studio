@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef } from "react";
@@ -78,7 +77,12 @@ export default function BrandingStudioPage() {
 
   useEffect(() => {
     if (brandingData) {
-      setFormData(prev => ({ ...prev, ...brandingData }));
+      setFormData(prev => ({ 
+        ...prev, 
+        ...brandingData,
+        logoUrl: brandingData.logoUrl || prev.logoUrl,
+        faviconUrl: brandingData.faviconUrl || prev.faviconUrl
+      }));
     }
   }, [brandingData]);
 
@@ -142,10 +146,11 @@ export default function BrandingStudioPage() {
     };
 
     try {
+      // Blocking await ensures data is committed before UI confirmation
       await setDoc(docRef, dataToSave, { merge: true });
       toast({ 
-        title: "Platform Identity Synchronized", 
-        description: "Changes are permanent across the network." 
+        title: "Platform Identity Published", 
+        description: "Your brand identity is now locked into the network circuit." 
       });
     } catch (err: any) {
       const permissionError = new FirestorePermissionError({

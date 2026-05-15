@@ -26,7 +26,9 @@ import {
   MapPin,
   Trophy,
   Zap,
-  Activity
+  Activity,
+  Swords,
+  Users
 } from "lucide-react"
 import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase"
 import { collection, query, orderBy, addDoc, serverTimestamp, where } from "firebase/firestore"
@@ -41,12 +43,14 @@ export default function ChallengesPage() {
   const [isPosting, setIsPosting] = useState(false)
   const [showPostDialog, setShowPostDialog] = useState(false)
   const [newChallenge, setNewChallenge] = useState({
-    teamName: "",
+    title: "",
     sport: "Football",
+    format: "5-a-side",
     turf: "",
     area: "",
     date: "",
     time: "",
+    entryFee: "0",
     notes: ""
   })
 
@@ -57,7 +61,7 @@ export default function ChallengesPage() {
 
   const myTeamsQuery = useMemoFirebase(() => {
     if (!db || !user) return null
-    return query(collection(db, "teams"), where("ownerId", "==", user.uid))
+    return query(collection(db, "teams"), where("createdBy", "==", user.uid))
   }, [db, user])
 
   const { data: rawChallenges, loading } = useCollection(challengesQuery)
@@ -65,7 +69,7 @@ export default function ChallengesPage() {
 
   const challenges = useMemo(() => {
     if (!rawChallenges) return []
-    return rawChallenges.filter((c: any) => c.status === "open")
+    return rawChallenges
   }, [rawChallenges])
 
   const handlePostChallenge = async (e: React.FormEvent) => {
@@ -82,14 +86,14 @@ export default function ChallengesPage() {
       await addDoc(collection(db, "challenges"), {
         ...newChallenge,
         teamId: team.id,
-        teamName: team.teamName,
+        teamName: team.name,
         ownerId: user.uid,
         status: "open",
         createdAt: serverTimestamp()
       })
       toast({ title: "Match Claim Posted", description: "Your challenge is live on the circuit." })
       setShowPostDialog(false)
-      setNewChallenge({ teamName: "", sport: "Football", turf: "", area: "", date: "", time: "", notes: "" })
+      setNewChallenge({ title: "", sport: "Football", format: "5-a-side", turf: "", area: "", date: "", time: "", entryFee: "0", notes: "" })
     } catch (err) {
       toast({ title: "Transmission Failed", variant: "destructive" })
     } finally {
@@ -102,13 +106,14 @@ export default function ChallengesPage() {
       <Navbar />
       
       <main className="flex-1 pt-32 pb-32 max-w-7xl mx-auto w-full px-4">
+        {/* Section Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-8">
           <div className="space-y-4">
-            <div className="inline-flex items-center gap-2 label-caps text-primary bg-primary/10 border border-primary/20 px-5 py-2 rounded-full">
-              <Activity className="h-3 w-3 animate-pulse" /> Live Match Circuit
-            </div>
-            <h1 className="text-5xl md:text-7xl font-bold tracking-tighter uppercase italic">Open <span className="text-primary text-neon">Challenges</span></h1>
-            <p className="text-muted max-w-xl text-xl font-medium italic">
+            <div className="text-[11px] font-black uppercase tracking-[0.4em] text-primary">CHALLENGES</div>
+            <h1 className="text-4xl md:text-6xl font-extrabold tracking-tighter uppercase italic leading-none">
+              Compete & <span className="text-primary">Win</span> <br />in Mysuru
+            </h1>
+            <p className="text-muted max-w-xl text-lg font-medium italic">
               Identify a rival, negotiate the terms, and hit the pitch. The network is watching.
             </p>
           </div>
@@ -126,71 +131,78 @@ export default function ChallengesPage() {
             ))}
           </div>
         ) : (
-          <div className="py-40 text-center glass-card rounded-[4rem] border-dashed border-white/10 max-w-3xl mx-auto flex flex-col items-center gap-8">
-            <ShieldAlert className="h-20 w-20 text-white/5" />
-            <div>
-              <h3 className="text-3xl font-black uppercase italic text-white/10 tracking-widest mb-2">No Active Claims</h3>
-              <p className="text-white/20 font-medium italic">The circuit is currently silent. Be the first to issue a match claim.</p>
-            </div>
+          <div className="py-40 text-center border border-dashed border-border rounded-[24px] max-w-2xl mx-auto">
+            <ShieldAlert className="h-16 w-16 text-white/5 mx-auto mb-6" />
+            <h3 className="text-2xl font-black uppercase italic text-white/10 tracking-widest">No Active Claims</h3>
+            <p className="text-white/20 font-medium italic mt-2">The circuit is currently silent. Be the first to issue a match claim.</p>
           </div>
         )}
 
         {/* FAB Button */}
         <Dialog open={showPostDialog} onOpenChange={setShowPostDialog}>
           <DialogTrigger asChild>
-            <button className="fixed bottom-12 right-12 h-20 w-20 bg-primary text-background rounded-full shadow-[0_20px_50px_rgba(170,255,0,0.4)] flex items-center justify-center hover:scale-110 active:scale-95 transition-transform z-50">
-              <Plus className="h-10 w-10" />
+            <button 
+              className="fixed bottom-12 right-12 h-14 w-14 bg-primary text-black rounded-full shadow-[0_20px_50px_rgba(170,255,0,0.4)] flex items-center justify-center hover:scale-110 active:scale-95 transition-transform z-50 group"
+              title="Post Challenge"
+            >
+              <Plus className="h-6 w-6" />
+              <span className="sr-only">Post Challenge</span>
             </button>
           </DialogTrigger>
-          <DialogContent className="bg-card border-white/10 p-10 rounded-[3rem] max-w-lg shadow-2xl">
-            <DialogHeader className="sr-only">
-              <DialogTitle>Issue Match Challenge</DialogTitle>
+          <DialogContent className="bg-card border-border p-10 rounded-[24px] max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-black uppercase italic tracking-tighter mb-6">
+                Post <span className="text-primary">Match Claim</span>
+              </DialogTitle>
             </DialogHeader>
             {!user ? (
               <div className="text-center py-10 space-y-6">
-                <DialogHeader>
-                  <DialogTitle className="text-2xl font-black uppercase italic tracking-tighter text-center">Athlete Unknown</DialogTitle>
-                </DialogHeader>
-                <ShieldAlert className="h-16 w-16 text-primary opacity-20 mx-auto" />
-                <p className="text-muted-foreground font-medium italic">You must identify yourself to issue a match claim.</p>
-                <Button asChild className="btn-primary h-14 w-full"><Link href="/profile">VERIFY IDENTITY</Link></Button>
+                <ShieldAlert className="h-16 w-16 text-primary mx-auto opacity-20" />
+                <p className="text-muted font-medium">Identify yourself to issue a match claim.</p>
+                <Button asChild className="bg-primary text-black w-full h-14 font-black uppercase tracking-widest">
+                  <Link href="/profile">Verify Identity</Link>
+                </Button>
               </div>
             ) : !myTeams || myTeams.length === 0 ? (
               <div className="text-center py-10 space-y-6">
-                <DialogHeader>
-                  <DialogTitle className="text-2xl font-black uppercase italic tracking-tighter text-center">No Squad Detected</DialogTitle>
-                </DialogHeader>
-                <Trophy className="h-16 w-16 text-primary opacity-20 mx-auto" />
-                <p className="text-muted-foreground font-medium italic">An athlete must belong to a squad to issue a claim.</p>
-                <Button asChild className="btn-primary h-14 w-full"><Link href="/teams">FORM ELITE SQUAD</Link></Button>
+                <Trophy className="h-16 w-16 text-primary mx-auto opacity-20" />
+                <p className="text-muted font-medium">An athlete must belong to a squad to issue a claim.</p>
+                <Button asChild className="bg-primary text-black w-full h-14 font-black uppercase tracking-widest">
+                  <Link href="/teams">Form Elite Squad</Link>
+                </Button>
               </div>
             ) : (
-              <form onSubmit={handlePostChallenge} className="space-y-8">
-                <DialogHeader>
-                  <DialogTitle className="text-3xl font-black uppercase italic tracking-tighter">Post <span className="text-primary">Match Claim</span></DialogTitle>
-                </DialogHeader>
-                <div className="space-y-6">
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label className="label-caps opacity-40 ml-1">Target Date</Label>
-                      <Input type="date" className="bg-surface border-white/5 h-14 rounded-2xl font-bold" value={newChallenge.date} onChange={e => setNewChallenge({...newChallenge, date: e.target.value})} required />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="label-caps opacity-40 ml-1">Kick-off Time</Label>
-                      <Input type="time" className="bg-surface border-white/5 h-14 rounded-2xl font-bold" value={newChallenge.time} onChange={e => setNewChallenge({...newChallenge, time: e.target.value})} required />
-                    </div>
+              <form onSubmit={handlePostChallenge} className="space-y-6">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted ml-1">Challenge Title</Label>
+                  <Input placeholder="e.g. Koramangala Cup #3" className="bg-surface border-border h-12" value={newChallenge.title} onChange={e => setNewChallenge({...newChallenge, title: e.target.value})} required />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted ml-1">Date</Label>
+                    <Input type="date" className="bg-surface border-border h-12" value={newChallenge.date} onChange={e => setNewChallenge({...newChallenge, date: e.target.value})} required />
                   </div>
                   <div className="space-y-2">
-                    <Label className="label-caps opacity-40 ml-1">Target Arena / Territory</Label>
-                    <Input placeholder="e.g. Shine Arena or Vijaynagar" className="bg-surface border-white/5 h-14 rounded-2xl" value={newChallenge.turf} onChange={e => setNewChallenge({...newChallenge, turf: e.target.value})} required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="label-caps opacity-40 ml-1">Strategic Intel / Notes</Label>
-                    <Textarea className="bg-surface border-white/5 p-6 h-32 rounded-[2rem] text-sm italic" placeholder="Split cost? 5v5 Intensity? Competitive or Friendly?" value={newChallenge.notes} onChange={e => setNewChallenge({...newChallenge, notes: e.target.value})} />
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted ml-1">Time</Label>
+                    <Input type="time" className="bg-surface border-border h-12" value={newChallenge.time} onChange={e => setNewChallenge({...newChallenge, time: e.target.value})} required />
                   </div>
                 </div>
-                <Button type="submit" disabled={isPosting} className="btn-primary w-full h-[64px] text-xs font-black uppercase tracking-[0.2em] rounded-2xl shadow-xl">
-                  {isPosting ? <Loader2 className="h-6 w-6 animate-spin" /> : "TRANSMIT CLAIM TO CIRCUIT"}
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted ml-1">Target Arena</Label>
+                  <Input placeholder="e.g. Matchbox Mysore" className="bg-surface border-border h-12" value={newChallenge.turf} onChange={e => setNewChallenge({...newChallenge, turf: e.target.value})} required />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted ml-1">Entry Fee (₹)</Label>
+                    <Input type="number" placeholder="200" className="bg-surface border-border h-12" value={newChallenge.entryFee} onChange={e => setNewChallenge({...newChallenge, entryFee: e.target.value})} required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted ml-1">Format</Label>
+                    <Input placeholder="5-a-side" className="bg-surface border-border h-12" value={newChallenge.format} onChange={e => setNewChallenge({...newChallenge, format: e.target.value})} required />
+                  </div>
+                </div>
+                <Button type="submit" disabled={isPosting} className="bg-primary text-black w-full h-14 text-xs font-black uppercase tracking-widest">
+                  {isPosting ? <Loader2 className="h-5 w-5 animate-spin" /> : "Transmit Claim to Circuit"}
                 </Button>
               </form>
             )}
@@ -204,39 +216,54 @@ export default function ChallengesPage() {
 }
 
 function ChallengeCard({ challenge }: { challenge: any }) {
-  const whatsappUrl = `https://wa.me/917411322492?text=${encodeURIComponent(`Hi! I'm interested in accepting the ${challenge.sport} match claim from ${challenge.teamName} on ${challenge.date}. Let's play!`)}`
-  
+  const statusColors = {
+    open: "bg-green-500/10 text-green-500",
+    active: "bg-yellow-500/10 text-yellow-500",
+    closed: "bg-red-500/10 text-red-500",
+    completed: "bg-primary/10 text-primary"
+  }
+
+  const statusLabel = challenge.status?.toUpperCase() || "OPEN"
+
   return (
-    <div className="flat-card border-l-4 border-l-primary bg-[#080808] p-10 flex flex-col justify-between rounded-[2.5rem] group hover:bg-[#0c0c0c] transition-all">
-      <div className="space-y-8">
-        <div className="flex items-center justify-between">
-          <div className="label-caps text-primary bg-primary/10 border border-primary/20 px-4 py-1.5 rounded-full text-[9px] tracking-[0.3em] font-black">{challenge.sport}</div>
-          <div className="flex items-center gap-2">
-             <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-             <span className="text-[9px] font-black text-primary uppercase tracking-widest">LIVE CLAIM</span>
-          </div>
-        </div>
-        
-        <div>
-          <h3 className="text-3xl font-black italic uppercase tracking-tighter text-white mb-3 group-hover:text-primary transition-colors">{challenge.teamName}</h3>
-          <div className="flex items-center text-white/30 font-bold uppercase tracking-widest text-[11px] gap-6">
-            <div className="flex items-center gap-2"><Calendar className="h-4 w-4 text-primary/40" /> {challenge.date}</div>
-            <div className="flex items-center gap-2"><Clock className="h-4 w-4 text-primary/40" /> {challenge.time}</div>
-          </div>
-        </div>
-
-        <div className="p-6 bg-white/[0.02] rounded-[2rem] border border-white/5">
-          <p className="text-sm text-white/50 italic leading-relaxed">"{challenge.notes || "Ready for a high-intensity friendly. Let's hit the pitch."}"</p>
-        </div>
-
-        <div className="flex items-center gap-3 text-white/40 font-bold uppercase tracking-widest text-[10px]">
-          <MapPin className="h-4 w-4 text-primary" />
-          <span>{challenge.turf || "Mysuru Territory"}</span>
+    <div className="bg-card border border-border border-l-4 border-l-primary rounded-[16px] p-8 flex flex-col transition-all hover:bg-surface/50 group">
+      <div className="flex justify-between items-start mb-6">
+        <h3 className="text-xl font-bold uppercase italic tracking-tighter text-white group-hover:text-primary transition-colors">
+          {challenge.title || "Match Claim"}
+        </h3>
+        <div className={cn("text-[9px] font-black px-2 py-0.5 rounded-[4px] tracking-widest", statusColors[challenge.status as keyof typeof statusColors] || statusColors.open)}>
+          {statusLabel}
         </div>
       </div>
 
-      <Button asChild className="btn-primary w-full mt-10 h-[64px] text-xs font-black uppercase tracking-[0.2em] rounded-2xl shadow-xl">
-        <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">ACCEPT MATCH CLAIM</a>
+      <div className="space-y-4 mb-8">
+        <div className="flex items-center gap-2 text-[12px] font-bold text-muted uppercase tracking-widest">
+          <Zap className="h-3.5 w-3.5 text-primary" />
+          <span>{challenge.sport} • {challenge.format}</span>
+        </div>
+        <div className="flex items-center gap-2 text-[12px] font-bold text-muted uppercase tracking-widest">
+          <Calendar className="h-3.5 w-3.5 text-primary" />
+          <span>{challenge.date || "Sun 22 Dec"} • {challenge.time || "6:00 PM"}</span>
+        </div>
+        <div className="flex items-center gap-2 text-[12px] font-bold text-muted uppercase tracking-widest">
+          <MapPin className="h-3.5 w-3.5 text-primary" />
+          <span>{challenge.turf || "Matchbox Mysore"}</span>
+        </div>
+      </div>
+
+      <div className="py-6 border-y border-border mb-8 space-y-2">
+        <div className="flex justify-between items-center">
+          <span className="text-[10px] font-black text-muted uppercase tracking-widest">Matchup</span>
+          <span className="text-sm font-bold text-white uppercase italic">{challenge.teamName} <span className="text-primary mx-2">VS</span> ???</span>
+        </div>
+        <div className="flex justify-between items-center">
+          <span className="text-[10px] font-black text-muted uppercase tracking-widest">Entry Fee</span>
+          <span className="text-sm font-bold text-white italic">₹{challenge.entryFee || "200"}/team</span>
+        </div>
+      </div>
+
+      <Button className="mt-auto bg-transparent border border-primary text-primary hover:bg-primary hover:text-black w-full h-12 text-[11px] font-black uppercase tracking-widest rounded-[10px] transition-all">
+        🏆 Accept Challenge
       </Button>
     </div>
   )

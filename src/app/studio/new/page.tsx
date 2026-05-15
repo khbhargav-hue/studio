@@ -227,26 +227,26 @@ function NewTurfForm() {
             {/* Core Identity */}
             <Card className="bg-card border-border rounded-[24px] overflow-hidden">
               <CardHeader className="p-8 pb-0">
-                <CardTitle className="text-xl font-black italic flex items-center gap-3 uppercase"><Settings2 className="h-5 w-5 text-primary" /> Arena Intelligence</CardTitle>
+                <CardTitle className="text-xl font-black italic flex items-center gap-3 uppercase text-white"><Settings2 className="h-5 w-5 text-primary" /> Arena Intelligence</CardTitle>
               </CardHeader>
               <CardContent className="p-8 space-y-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted ml-1">Turf Identity*</Label>
-                    <Input className="h-12 bg-surface border-border rounded-xl focus:border-primary/50" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required />
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Turf Identity*</Label>
+                    <Input placeholder="e.g. Matchbox Arena" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted ml-1">WhatsApp Hub* (Digits Only)</Label>
-                    <Input className="h-12 bg-surface border-border rounded-xl focus:border-primary/50" placeholder="917411..." value={formData.whatsapp} onChange={e => setFormData({...formData, whatsapp: e.target.value})} required />
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">WhatsApp Hub* (Digits Only)</Label>
+                    <Input placeholder="917411..." value={formData.whatsapp} onChange={e => setFormData({...formData, whatsapp: e.target.value})} required />
                   </div>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-3">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted ml-1">Sport Disciplines</Label>
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Sport Disciplines</Label>
                     <div className="flex flex-wrap gap-2">
                       {SPORT_OPTIONS.map(sport => (
-                        <div key={sport} className="flex items-center gap-2 bg-surface px-3 py-2 rounded-lg border border-border">
+                        <div key={sport} className="flex items-center gap-2 bg-[#1A1A1A] px-3 py-2 rounded-lg border border-border">
                           <Checkbox 
                             id={`sport-${sport}`} 
                             checked={formData.sports.includes(sport)}
@@ -257,16 +257,16 @@ function NewTurfForm() {
                               setFormData({...formData, sports: newSports});
                             }}
                           />
-                          <Label htmlFor={`sport-${sport}`} className="text-[10px] font-bold uppercase cursor-pointer">{sport}</Label>
+                          <Label htmlFor={`sport-${sport}`} className="text-[10px] font-bold uppercase cursor-pointer text-white">{sport}</Label>
                         </div>
                       ))}
                     </div>
                   </div>
                   <div className="space-y-3">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted ml-1">Pitch Formats</Label>
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Pitch Formats</Label>
                     <div className="flex flex-wrap gap-2">
                       {PITCH_SIZES.map(size => (
-                        <div key={size} className="flex items-center gap-2 bg-surface px-3 py-2 rounded-lg border border-border">
+                        <div key={size} className="flex items-center gap-2 bg-[#1A1A1A] px-3 py-2 rounded-lg border border-border">
                           <Checkbox 
                             id={`size-${size}`} 
                             checked={formData.pitchSizes.includes(size)}
@@ -277,7 +277,7 @@ function NewTurfForm() {
                               setFormData({...formData, pitchSizes: newSizes});
                             }}
                           />
-                          <Label htmlFor={`size-${size}`} className="text-[10px] font-bold uppercase cursor-pointer">{size}</Label>
+                          <Label htmlFor={`size-${size}`} className="text-[10px] font-bold uppercase cursor-pointer text-white">{size}</Label>
                         </div>
                       ))}
                     </div>
@@ -285,27 +285,27 @@ function NewTurfForm() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted ml-1">Full Physical Address*</Label>
-                  <Input className="h-12 bg-surface border-border rounded-xl" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} required />
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Full Physical Address*</Label>
+                  <Input placeholder="Enter street and landmark" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} required />
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted ml-1">Area in Mysuru*</Label>
-                    <Input className="h-12 bg-surface border-border rounded-xl" value={formData.area} onChange={e => setFormData({...formData, area: e.target.value})} required />
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Area in Mysuru*</Label>
+                    <Input placeholder="e.g. Vijayanagar" value={formData.area} onChange={e => setFormData({...formData, area: e.target.value})} required />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted ml-1">Surface Type</Label>
-                    <select className="h-12 w-full bg-surface border border-border rounded-xl px-4 text-xs font-bold uppercase" value={formData.pitchType} onChange={e => setFormData({...formData, pitchType: e.target.value})}>
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Surface Type</Label>
+                    <select className="h-12 w-full bg-[#F5F5F5] text-[#0A0A0A] border border-border rounded-[10px] px-4 text-xs font-bold uppercase focus:ring-2 focus:ring-[#AAFF00]" value={formData.pitchType} onChange={e => setFormData({...formData, pitchType: e.target.value})}>
                       {PITCH_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                     </select>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted ml-1">Dimensions</Label>
-                    <Input className="h-12 bg-surface border-border rounded-xl" placeholder="60 x 40 ft" value={formData.dimensions} onChange={e => setFormData({...formData, dimensions: e.target.value})} />
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Dimensions</Label>
+                    <Input placeholder="60 x 40 ft" value={formData.dimensions} onChange={e => setFormData({...formData, dimensions: e.target.value})} />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted ml-1">Max Athletes</Label>
-                    <Input type="number" className="h-12 bg-surface border-border rounded-xl font-bold" value={formData.maxPlayers} onChange={e => setFormData({...formData, maxPlayers: Number(e.target.value)})} />
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Max Athletes</Label>
+                    <Input type="number" className="font-bold" value={formData.maxPlayers} onChange={e => setFormData({...formData, maxPlayers: Number(e.target.value)})} />
                   </div>
                 </div>
               </CardContent>
@@ -314,24 +314,24 @@ function NewTurfForm() {
             {/* Narrative AI */}
             <Card className="bg-card border-border rounded-[24px] overflow-hidden">
               <CardHeader className="p-8 pb-0 flex flex-row items-center justify-between">
-                <CardTitle className="text-xl font-black italic flex items-center gap-3 uppercase"><Sparkles className="h-5 w-5 text-primary" /> Strategy Narrative</CardTitle>
+                <CardTitle className="text-xl font-black italic flex items-center gap-3 uppercase text-white"><Sparkles className="h-5 w-5 text-primary" /> Strategy Narrative</CardTitle>
                 <Button type="button" onClick={handleGenerateDescription} disabled={isGenerating} className="h-9 px-4 bg-primary text-black font-black uppercase text-[9px] tracking-widest rounded-lg">
                   {isGenerating ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : <Sparkles className="h-3 w-3 mr-2" />}
                   Generate AI
                 </Button>
               </CardHeader>
               <CardContent className="p-8">
-                <Textarea className="min-h-[160px] bg-surface border-border p-6 rounded-xl text-sm italic leading-relaxed" placeholder="Detailed marketing description..." value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
+                <Textarea placeholder="Detailed marketing description..." value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
               </CardContent>
             </Card>
 
             {/* Rules */}
             <Card className="bg-card border-border rounded-[24px] overflow-hidden">
               <CardHeader className="p-8 pb-0">
-                <CardTitle className="text-xl font-black italic flex items-center gap-3 uppercase"><ShieldCheck className="h-5 w-5 text-primary" /> Arena Regulations</CardTitle>
+                <CardTitle className="text-xl font-black italic flex items-center gap-3 uppercase text-white"><ShieldCheck className="h-5 w-5 text-primary" /> Arena Regulations</CardTitle>
               </CardHeader>
               <CardContent className="p-8">
-                <Textarea className="min-h-[120px] bg-surface border-border p-6 rounded-xl text-sm italic" placeholder="One rule per line..." value={formData.rules.join('\n')} onChange={e => setFormData({...formData, rules: e.target.value.split('\n')})} />
+                <Textarea placeholder="One rule per line..." value={formData.rules.join('\n')} onChange={e => setFormData({...formData, rules: e.target.value.split('\n')})} />
               </CardContent>
             </Card>
           </div>
@@ -340,20 +340,20 @@ function NewTurfForm() {
             {/* Financial Deck */}
             <Card className="bg-card border-border rounded-[24px] overflow-hidden">
               <CardHeader className="p-6 pb-0">
-                <CardTitle className="text-lg font-black italic flex items-center gap-3 uppercase"><IndianRupee className="h-4 w-4 text-primary" /> Pricing Strategy</CardTitle>
+                <CardTitle className="text-lg font-black italic flex items-center gap-3 uppercase text-white"><IndianRupee className="h-4 w-4 text-primary" /> Pricing Strategy</CardTitle>
               </CardHeader>
               <CardContent className="p-6 space-y-6">
                 <div className="space-y-2">
-                  <Label className="text-[9px] font-black uppercase tracking-widest text-muted ml-1">Base Price / HR*</Label>
-                  <Input type="number" className="h-10 bg-surface border-border font-black text-primary text-lg rounded-lg" value={formData.pricePerHour} onChange={e => setFormData({...formData, pricePerHour: Number(e.target.value)})} />
+                  <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">Base Price / HR*</Label>
+                  <Input type="number" className="font-black text-primary text-lg" value={formData.pricePerHour} onChange={e => setFormData({...formData, pricePerHour: Number(e.target.value)})} />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[9px] font-black uppercase tracking-widest text-muted ml-1">Peak Price / HR</Label>
-                  <Input type="number" className="h-10 bg-surface border-border font-black text-white text-lg rounded-lg" value={formData.peakHourPrice} onChange={e => setFormData({...formData, peakHourPrice: Number(e.target.value)})} />
+                  <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">Peak Price / HR</Label>
+                  <Input type="number" className="font-black text-[#0A0A0A] text-lg" value={formData.peakHourPrice} onChange={e => setFormData({...formData, peakHourPrice: Number(e.target.value)})} />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[9px] font-black uppercase tracking-widest text-muted ml-1">Peak Cycle Starts</Label>
-                  <Input type="time" className="h-10 bg-surface border-border rounded-lg font-bold" value={formData.peakHoursStart} onChange={e => setFormData({...formData, peakHoursStart: e.target.value})} />
+                  <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">Peak Cycle Starts</Label>
+                  <Input type="time" className="font-bold" value={formData.peakHoursStart} onChange={e => setFormData({...formData, peakHoursStart: e.target.value})} />
                 </div>
               </CardContent>
             </Card>
@@ -361,24 +361,24 @@ function NewTurfForm() {
             {/* Ops Deck */}
             <Card className="bg-card border-border rounded-[24px] overflow-hidden">
               <CardHeader className="p-6 pb-0">
-                <CardTitle className="text-lg font-black italic flex items-center gap-3 uppercase"><Clock className="h-4 w-4 text-primary" /> Operational Intel</CardTitle>
+                <CardTitle className="text-lg font-black italic flex items-center gap-3 uppercase text-white"><Clock className="h-4 w-4 text-primary" /> Operational Intel</CardTitle>
               </CardHeader>
               <CardContent className="p-6 space-y-6">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-[9px] font-black uppercase tracking-widest text-muted ml-1">Open</Label>
-                    <Input type="time" className="h-10 bg-surface border-border rounded-lg font-bold" value={formData.openTime} onChange={e => setFormData({...formData, openTime: e.target.value})} />
+                    <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">Open</Label>
+                    <Input type="time" className="font-bold" value={formData.openTime} onChange={e => setFormData({...formData, openTime: e.target.value})} />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[9px] font-black uppercase tracking-widest text-muted ml-1">Close</Label>
-                    <Input type="time" className="h-10 bg-surface border-border rounded-lg font-bold" value={formData.closeTime} onChange={e => setFormData({...formData, closeTime: e.target.value})} />
+                    <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">Close</Label>
+                    <Input type="time" className="font-bold" value={formData.closeTime} onChange={e => setFormData({...formData, closeTime: e.target.value})} />
                   </div>
                 </div>
                 <div className="space-y-3">
-                  <Label className="text-[9px] font-black uppercase tracking-widest text-muted ml-1">Operating Days</Label>
+                  <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">Operating Days</Label>
                   <div className="grid grid-cols-2 gap-2">
                     {DAY_OPTIONS.map(day => (
-                      <div key={day} className="flex items-center gap-2 bg-surface p-2 rounded-lg border border-border">
+                      <div key={day} className="flex items-center gap-2 bg-[#1A1A1A] p-2 rounded-lg border border-border">
                         <Checkbox 
                           id={`day-${day}`} 
                           checked={formData.openDays.includes(day)}
@@ -387,14 +387,14 @@ function NewTurfForm() {
                             setFormData({...formData, openDays: newDays});
                           }}
                         />
-                        <Label htmlFor={`day-${day}`} className="text-[8px] font-bold uppercase cursor-pointer">{day.slice(0,3)}</Label>
+                        <Label htmlFor={`day-${day}`} className="text-[8px] font-bold uppercase cursor-pointer text-white">{day.slice(0,3)}</Label>
                       </div>
                     ))}
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[9px] font-black uppercase tracking-widest text-muted ml-1">Check-in Buff (Min)</Label>
-                  <Input type="number" className="h-10 bg-surface border-border rounded-lg font-bold" value={formData.checkInMinutes} onChange={e => setFormData({...formData, checkInMinutes: Number(e.target.value)})} />
+                  <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">Check-in Buff (Min)</Label>
+                  <Input type="number" className="font-bold" value={formData.checkInMinutes} onChange={e => setFormData({...formData, checkInMinutes: Number(e.target.value)})} />
                 </div>
               </CardContent>
             </Card>
@@ -402,12 +402,12 @@ function NewTurfForm() {
             {/* Facility Hub */}
             <Card className="bg-card border-border rounded-[24px] overflow-hidden">
               <CardHeader className="p-6 pb-0">
-                <CardTitle className="text-lg font-black italic flex items-center gap-3 uppercase"><Layout className="h-4 w-4 text-primary" /> Amenities</CardTitle>
+                <CardTitle className="text-lg font-black italic flex items-center gap-3 uppercase text-white"><Layout className="h-4 w-4 text-primary" /> Amenities</CardTitle>
               </CardHeader>
               <CardContent className="p-6 space-y-3">
                 {AMENITY_KEYS.map(({ key, label }) => (
-                  <div key={key} className="flex items-center justify-between p-2.5 bg-surface rounded-lg border border-border">
-                    <span className="text-[10px] font-bold uppercase tracking-tight text-muted">{label}</span>
+                  <div key={key} className="flex items-center justify-between p-2.5 bg-[#1A1A1A] rounded-lg border border-border">
+                    <span className="text-[10px] font-bold uppercase tracking-tight text-white/60">{label}</span>
                     <Switch 
                       checked={(formData.amenities as any)[key]} 
                       onCheckedChange={(val) => setFormData({
@@ -425,7 +425,7 @@ function NewTurfForm() {
                     </div>
                     <Switch checked={formData.isPremium} onCheckedChange={(val) => setFormData({...formData, isPremium: val})} />
                   </div>
-                  <div className="flex items-center justify-between p-3 bg-surface rounded-xl border border-border">
+                  <div className="flex items-center justify-between p-3 bg-[#1A1A1A] rounded-xl border border-border">
                     <div>
                       <p className="text-[10px] font-black text-white uppercase">Active Status</p>
                       <p className="text-[8px] text-muted uppercase tracking-widest">Public discovery</p>
@@ -439,11 +439,11 @@ function NewTurfForm() {
             {/* Thumbnail */}
             <Card className="bg-card border-border rounded-[24px] overflow-hidden">
               <CardHeader className="p-6 pb-0">
-                <CardTitle className="text-lg font-black italic flex items-center gap-3 uppercase"><ImageIcon className="h-4 w-4 text-primary" /> Media</CardTitle>
+                <CardTitle className="text-lg font-black italic flex items-center gap-3 uppercase text-white"><ImageIcon className="h-4 w-4 text-primary" /> Media</CardTitle>
               </CardHeader>
               <CardContent className="p-6">
                 <div 
-                  className="relative aspect-video rounded-xl border-2 border-dashed border-border bg-surface hover:border-primary/50 cursor-pointer overflow-hidden flex flex-col items-center justify-center transition-all group"
+                  className="relative aspect-video rounded-xl border-2 border-dashed border-border bg-[#1A1A1A] hover:border-primary/50 cursor-pointer overflow-hidden flex flex-col items-center justify-center transition-all group"
                   onClick={() => mainInputRef.current?.click()}
                 >
                   {uploadingStates['main'] && <Loader2 className="h-6 w-6 animate-spin text-primary absolute z-10" />}
@@ -451,8 +451,8 @@ function NewTurfForm() {
                     <img src={formData.imageUrl} className="w-full h-full object-cover group-hover:opacity-50 transition-opacity" alt="Main" />
                   ) : (
                     <div className="flex flex-col items-center gap-2">
-                      <Upload className="h-6 w-6 text-muted" />
-                      <span className="text-[9px] font-black uppercase text-muted tracking-widest">Upload Identity</span>
+                      <Upload className="h-6 w-6 text-muted-foreground" />
+                      <span className="text-[9px] font-black uppercase text-muted-foreground tracking-widest">Upload Identity</span>
                     </div>
                   )}
                   <input type="file" ref={mainInputRef} className="hidden" onChange={async (e) => {

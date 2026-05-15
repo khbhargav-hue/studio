@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from "react";
@@ -125,11 +124,11 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-[#888] ml-1">Email</Label>
                 <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#888]" />
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#888] z-10" />
                   <Input 
                     type="email" 
                     placeholder="name@email.com" 
-                    className="bg-[#1A1A1A] border-[#222] h-12 pl-12 rounded-[10px] focus:border-[#AAFF00]/50" 
+                    className="pl-12" 
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -142,11 +141,11 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
                   <button type="button" onClick={handleForgotPassword} className="text-[9px] font-bold text-[#AAFF00] uppercase hover:underline">Forgot?</button>
                 </div>
                 <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#888]" />
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#888] z-10" />
                   <Input 
                     type="password" 
                     placeholder="••••••••" 
-                    className="bg-[#1A1A1A] border-[#222] h-12 pl-12 rounded-[10px] focus:border-[#AAFF00]/50" 
+                    className="pl-12" 
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
@@ -164,11 +163,11 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-[#888] ml-1">Full Name</Label>
                 <div className="relative">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#888]" />
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#888] z-10" />
                   <Input 
                     type="text" 
                     placeholder="John Doe" 
-                    className="bg-[#1A1A1A] border-[#222] h-12 pl-12 rounded-[10px] focus:border-[#AAFF00]/50" 
+                    className="pl-12" 
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required
@@ -178,11 +177,11 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-[#888] ml-1">Email</Label>
                 <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#888]" />
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#888] z-10" />
                   <Input 
                     type="email" 
                     placeholder="name@email.com" 
-                    className="bg-[#1A1A1A] border-[#222] h-12 pl-12 rounded-[10px] focus:border-[#AAFF00]/50" 
+                    className="pl-12" 
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -192,11 +191,11 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-[#888] ml-1">Secure Passcode</Label>
                 <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#888]" />
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#888] z-10" />
                   <Input 
                     type="password" 
                     placeholder="Min. 8 characters" 
-                    className="bg-[#1A1A1A] border-[#222] h-12 pl-12 rounded-[10px] focus:border-[#AAFF00]/50" 
+                    className="pl-12" 
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required

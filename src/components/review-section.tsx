@@ -37,7 +37,6 @@ export function ReviewSection({ turfId, currentRating, reviewCount }: { turfId: 
 
     setIsSubmitting(true);
     try {
-      // 1. Add Review
       const reviewRef = collection(db, 'turfs', turfId, 'reviews');
       await addDoc(reviewRef, {
         userId: user.uid,
@@ -48,7 +47,6 @@ export function ReviewSection({ turfId, currentRating, reviewCount }: { turfId: 
         timestamp: serverTimestamp()
       });
 
-      // 2. Update Turf Aggregates
       const turfRef = doc(db, 'turfs', turfId);
       const newCount = reviewCount + 1;
       const newAverage = ((currentRating * reviewCount) + rating) / newCount;
@@ -69,15 +67,15 @@ export function ReviewSection({ turfId, currentRating, reviewCount }: { turfId: 
   };
 
   return (
-    <div className="space-y-12">
-      <div className="flex items-center gap-4">
-        <MessageSquare className="h-6 w-6 text-primary" />
-        <h2 className="text-2xl font-black italic uppercase tracking-tighter">Player <span className="text-white/20">Feedback</span></h2>
+    <div className="space-y-8">
+      <div className="flex items-center gap-3">
+        <MessageSquare className="h-5 w-5 text-[#AAFF00]" />
+        <h2 className="text-xl font-[800] italic uppercase tracking-tighter">Athlete <span className="text-[#888888]">Feedback</span></h2>
       </div>
 
       {/* Review Form */}
       {user ? (
-        <form onSubmit={handleSubmit} className="glass-card p-8 rounded-[2rem] border-white/5 bg-white/[0.02] space-y-6">
+        <form onSubmit={handleSubmit} className="bg-[#111111] p-8 rounded-[16px] border border-[#222222] space-y-6">
           <div className="flex items-center gap-2">
             {[1, 2, 3, 4, 5].map((s) => (
               <button
@@ -86,15 +84,15 @@ export function ReviewSection({ turfId, currentRating, reviewCount }: { turfId: 
                 onClick={() => setRating(s)}
                 className="focus:outline-none transition-transform hover:scale-110"
               >
-                <Star className={cn("h-8 w-8", s <= rating ? "fill-primary text-primary" : "text-white/10")} />
+                <Star className={cn("h-6 w-6", s <= rating ? "fill-[#AAFF00] text-[#AAFF00]" : "text-white/5")} />
               </button>
             ))}
-            <span className="ml-4 label-caps opacity-40">Select Performance Rating</span>
+            <span className="ml-4 text-[10px] font-black uppercase tracking-widest opacity-40">Rate Performance</span>
           </div>
           
           <Textarea 
             placeholder="Describe the turf condition, lighting quality, or match experience..."
-            className="bg-surface border-white/5 rounded-2xl p-6 min-h-[120px] italic text-base"
+            className="bg-[#1A1A1A] border-[#222222] rounded-[10px] p-6 min-h-[100px] italic text-sm text-[#F5F5F5] focus:border-[#AAFF00]/50"
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             required
@@ -103,54 +101,54 @@ export function ReviewSection({ turfId, currentRating, reviewCount }: { turfId: 
           <Button 
             type="submit" 
             disabled={isSubmitting || rating === 0} 
-            className="btn-primary w-full h-14 rounded-xl font-black uppercase tracking-widest text-xs"
+            className="w-full h-14 bg-[#AAFF00] text-black rounded-[10px] font-black uppercase tracking-widest text-[11px]"
           >
-            {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <><Send className="h-4 w-4 mr-2" /> TRANSMIT FEEDBACK</>}
+            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Transmit Feedback"}
           </Button>
         </form>
       ) : (
-        <div className="p-10 border border-dashed border-white/5 rounded-[2rem] text-center bg-white/[0.01]">
-          <p className="text-white/30 font-medium italic">Join the network to submit arena feedback.</p>
+        <div className="p-10 border border-dashed border-[#222222] rounded-[16px] text-center bg-[#111111]/50">
+          <p className="text-[#888888] text-xs font-bold uppercase tracking-widest italic">Join the network to submit arena feedback.</p>
         </div>
       )}
 
       {/* Review List */}
-      <div className="space-y-6">
+      <div className="space-y-4">
         {loading ? (
           <div className="flex justify-center py-10">
-            <Loader2 className="h-8 w-8 animate-spin text-primary opacity-20" />
+            <Loader2 className="h-6 w-6 animate-spin text-[#AAFF00] opacity-20" />
           </div>
         ) : reviews && reviews.length > 0 ? (
           reviews.map((review: any) => (
-            <div key={review.id} className="p-8 rounded-[2rem] bg-white/[0.02] border border-white/5 space-y-4">
+            <div key={review.id} className="p-6 rounded-[16px] bg-[#111111] border border-[#222222] space-y-4">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="h-10 w-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden">
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-full bg-[#1A1A1A] border border-[#222222] flex items-center justify-center overflow-hidden">
                     {review.userPhoto ? (
                       <img src={review.userPhoto} alt={review.userName} className="h-full w-full object-cover" />
                     ) : (
-                      <User className="h-5 w-5 text-white/20" />
+                      <User className="h-4 w-4 text-[#888888]" />
                     )}
                   </div>
                   <div>
-                    <p className="text-sm font-black italic uppercase text-white">{review.userName}</p>
-                    <p className="text-[9px] font-bold text-white/20 uppercase tracking-widest">
+                    <p className="text-xs font-black italic uppercase text-[#F5F5F5]">{review.userName}</p>
+                    <p className="text-[8px] font-bold text-[#888888] uppercase tracking-widest">
                       {review.timestamp?.seconds ? format(new Date(review.timestamp.seconds * 1000), 'MMM dd, yyyy') : 'Recently'}
                     </p>
                   </div>
                 </div>
                 <div className="flex gap-0.5">
                   {[1, 2, 3, 4, 5].map((s) => (
-                    <Star key={s} className={cn("h-3 w-3", s <= review.rating ? "fill-primary text-primary" : "text-white/5")} />
+                    <Star key={s} className={cn("h-2.5 w-2.5", s <= review.rating ? "fill-[#AAFF00] text-[#AAFF00]" : "text-white/5")} />
                   ))}
                 </div>
               </div>
-              <p className="text-sm text-white/60 italic leading-relaxed">"{review.comment}"</p>
+              <p className="text-xs text-[#888888] italic leading-relaxed">"{review.comment}"</p>
             </div>
           ))
         ) : (
-          <div className="text-center py-20 opacity-20">
-            <MessageSquare className="h-10 w-10 mx-auto mb-4" />
+          <div className="text-center py-12 border border-dashed border-[#222222] rounded-[16px] opacity-30">
+            <MessageSquare className="h-8 w-8 mx-auto mb-3" />
             <p className="text-[10px] font-black uppercase tracking-widest">No Intelligence Logs Yet</p>
           </div>
         )}

@@ -5,7 +5,6 @@ import { FirebaseClientProvider } from "@/firebase"
 import GoogleAnalytics from '@/components/google-analytics';
 import { Analytics } from "@vercel/analytics/react"
 import { SpeedInsights } from "@vercel/speed-insights/next"
-import { MobileNav } from '@/components/mobile-nav';
 import { FaviconProvider } from '@/components/favicon-provider';
 import Script from 'next/script';
 
@@ -51,13 +50,6 @@ export const metadata: Metadata = {
   robots: {
     index: true,
     follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
-    },
   },
   alternates: {
     canonical: 'https://turfista.in/',
@@ -103,10 +95,9 @@ export default function RootLayout({
         <FirebaseClientProvider>
           <FaviconProvider />
           <div className="flex flex-col min-h-screen">
-            <main className="flex-1 pb-24 md:pb-0">
+            <main className="flex-1 pb-20 md:pb-0">
               {children}
             </main>
-            <MobileNav />
             <Toaster />
           </div>
         </FirebaseClientProvider>

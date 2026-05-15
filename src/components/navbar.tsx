@@ -1,10 +1,9 @@
-
 "use client"
 
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Menu, X, Bell, UserCircle, LogOut, Loader2 } from "lucide-react"
+import { Menu, X, Bell, UserCircle, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { 
   DropdownMenu, 
@@ -23,7 +22,7 @@ import { AuthModal } from "./auth-modal"
 
 const NAV_LINKS = [
   { label: "Home", href: "/" },
-  { label: "Turfs", href: "/turfs" },
+  { label: "Turfs", href: "/#listings" },
   { label: "Teams", href: "/teams" },
   { label: "Challenges", href: "/challenges" },
   { label: "Coaching", href: "/coaching" },
@@ -52,17 +51,17 @@ export function Navbar() {
       <nav className="fixed top-0 z-50 w-full h-[64px] glass-navbar px-4 md:px-8 bg-[#0A0A0A]/95 backdrop-blur-[12px] border-b border-[#222]">
         <div className="mx-auto flex h-full max-w-7xl items-center justify-between">
           <div className="flex items-center gap-10">
-            <Link href="/" className="flex flex-col">
+            <Link href="/" className="flex items-center gap-4">
               <TurfistaLogo size="sm" />
-              <span className="hidden md:block text-[10px] font-bold text-[#888] uppercase tracking-widest -mt-1 ml-11">
-                Mysuru's #1 Turf Network
+              <span className="hidden md:block text-[10px] font-bold text-[#888] uppercase tracking-widest leading-none border-l border-[#222] pl-4">
+                Mysuru's #1 <br />Turf Network
               </span>
             </Link>
             
             <div className="hidden lg:flex items-center gap-6">
               {NAV_LINKS.map((link) => (
                 <Link 
-                  key={link.href} 
+                  key={link.label} 
                   href={link.href} 
                   className={cn(
                     "text-[11px] font-bold uppercase tracking-[0.2em] transition-colors hover:text-[#AAFF00]",
@@ -75,8 +74,8 @@ export function Navbar() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <button className="hidden md:flex h-10 w-10 items-center justify-center text-[#888] hover:text-[#AAFF00]">
+          <div className="flex items-center gap-2">
+            <button className="h-10 w-10 flex items-center justify-center text-[#888] hover:text-[#AAFF00]">
               <Bell className="h-5 w-5" />
             </button>
 
@@ -84,7 +83,7 @@ export function Navbar() {
               <AuthModal open={isAuthOpen} onOpenChange={setIsAuthOpen}>
                 <Button 
                   onClick={() => setIsAuthOpen(true)}
-                  className="h-10 px-6 font-black uppercase tracking-widest text-[11px] rounded-[10px] bg-[#AAFF00] text-black"
+                  className="hidden md:flex h-10 px-6 font-black uppercase tracking-widest text-[11px] rounded-[10px] bg-[#AAFF00] text-black"
                 >
                   Identify
                 </Button>
@@ -107,16 +106,16 @@ export function Navbar() {
                   </div>
                   <DropdownMenuSeparator className="bg-[#222]" />
                   <DropdownMenuItem asChild className="cursor-pointer rounded-[8px] focus:bg-[#1A1A1A] focus:text-[#AAFF00]">
-                    <Link href="/profile" className="w-full flex items-center font-bold uppercase text-[10px] tracking-widest py-3">Profile Node</Link>
+                    <Link href="/profile" className="w-full flex items-center font-bold uppercase text-[10px] tracking-widest py-3 px-2">Profile Node</Link>
                   </DropdownMenuItem>
                   {user.email === 'khbhargav@gmail.com' && (
                     <DropdownMenuItem asChild className="cursor-pointer rounded-[8px] focus:bg-[#1A1A1A] focus:text-[#AAFF00]">
-                      <Link href="/studio" className="w-full flex items-center font-bold uppercase text-[10px] tracking-widest py-3">Admin Studio</Link>
+                      <Link href="/studio" className="w-full flex items-center font-bold uppercase text-[10px] tracking-widest py-3 px-2">Admin Studio</Link>
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuSeparator className="bg-[#222]" />
                   <DropdownMenuItem onClick={handleLogout} className="text-[#FF4444] focus:text-[#FF4444] cursor-pointer rounded-[8px] focus:bg-[#FF4444]/10">
-                    <div className="w-full flex items-center font-bold uppercase text-[10px] tracking-widest py-3">
+                    <div className="w-full flex items-center font-bold uppercase text-[10px] tracking-widest py-3 px-2">
                       <LogOut className="h-4 w-4 mr-2" /> Terminate
                     </div>
                   </DropdownMenuItem>
@@ -136,33 +135,51 @@ export function Navbar() {
 
       {/* Mobile Overlay Menu */}
       {isMenuOpen && (
-        <div className="fixed inset-0 z-40 bg-[#0A0A0A] pt-[64px] lg:hidden animate-in fade-in zoom-in-95 duration-200">
-          <div className="flex flex-col p-6 gap-2">
+        <div className="fixed inset-0 z-[60] bg-[#0A0A0A] pt-[64px] lg:hidden animate-in fade-in slide-in-from-top duration-200">
+          <div className="flex flex-col p-6 gap-2 h-full overflow-y-auto pb-20">
             {NAV_LINKS.map((link) => (
               <Link 
-                key={link.href} 
+                key={link.label} 
                 href={link.href}
                 onClick={() => setIsMenuOpen(false)}
                 className={cn(
-                  "flex items-center h-14 px-6 rounded-[16px] text-2xl font-black uppercase tracking-tighter italic transition-colors",
-                  pathname === link.href ? "bg-[#AAFF00] text-black" : "text-white hover:bg-[#1A1A1A]"
+                  "flex items-center min-h-[56px] px-6 rounded-[16px] text-2xl font-black uppercase tracking-tighter italic transition-colors",
+                  pathname === link.href ? "bg-[#AAFF00] text-black" : "text-white active:bg-[#1A1A1A]"
                 )}
               >
                 {link.label}
               </Link>
             ))}
             
-            {!user && (
-              <Button 
-                onClick={() => {
-                  setIsMenuOpen(false);
-                  setIsAuthOpen(true);
-                }}
-                className="mt-6 h-16 text-xl font-black uppercase tracking-widest rounded-[10px] bg-[#AAFF00] text-black"
-              >
-                Identify with Google
-              </Button>
-            )}
+            <div className="mt-8 pt-8 border-t border-[#222] space-y-4">
+               <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#888] px-6 mb-4">Identity Hub</p>
+               {!user ? (
+                 <Button 
+                   onClick={() => {
+                     setIsMenuOpen(false);
+                     setIsAuthOpen(true);
+                   }}
+                   className="h-16 w-full text-xl font-black uppercase tracking-widest rounded-[16px] bg-[#AAFF00] text-black"
+                 >
+                   Verify Athlete
+                 </Button>
+               ) : (
+                 <Button 
+                   onClick={() => {
+                     setIsMenuOpen(false);
+                     router.push("/profile");
+                   }}
+                   variant="outline"
+                   className="h-16 w-full text-xl font-black uppercase tracking-widest rounded-[16px] border-[#222]"
+                 >
+                   My Profile
+                 </Button>
+               )}
+            </div>
+
+            <div className="mt-auto p-6 text-center">
+               <p className="text-[10px] font-bold text-[#444] uppercase tracking-widest">© 2026 Turfista Network · Mysuru 🟢</p>
+            </div>
           </div>
         </div>
       )}

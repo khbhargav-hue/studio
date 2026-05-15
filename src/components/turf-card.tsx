@@ -24,7 +24,6 @@ interface TurfCardProps {
 export function TurfCard({ turf }: TurfCardProps) {
   const [isSaved, setIsSaved] = useState(false);
 
-  // Cloudinary Optimization Flag Injector
   const displayImage = turf.imageUrl 
     ? (turf.imageUrl.includes('cloudinary.com') 
         ? turf.imageUrl.replace('/upload/', '/upload/f_webp,w_800,q_75/') 
@@ -36,7 +35,7 @@ export function TurfCard({ turf }: TurfCardProps) {
 
   return (
     <div className="group relative bg-[#111111] border border-[#222222] rounded-[16px] overflow-hidden transition-all duration-150 ease-in-out hover:border-[#AAFF00]/30 flex flex-col h-full">
-      {/* 1. Image & Badges Overlay */}
+      {/* 1. Image Overlay */}
       <div className="relative aspect-[16/10] w-full bg-[#1A1A1A] overflow-hidden">
         <Image
           src={displayImage}
@@ -44,7 +43,7 @@ export function TurfCard({ turf }: TurfCardProps) {
           fill
           loading="lazy"
           className="object-cover group-hover:scale-105 transition-transform duration-700"
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          sizes="(max-width: 768px) 100vw, 33vw"
         />
         
         {/* Top-Left: Sport Badge */}
@@ -70,10 +69,10 @@ export function TurfCard({ turf }: TurfCardProps) {
       </div>
 
       {/* 2. Content Section */}
-      <div className="p-4 flex-1 flex flex-col">
-        <div className="flex justify-between items-start mb-1">
+      <div className="p-5 flex-1 flex flex-col">
+        <div className="flex justify-between items-start mb-2">
           <Link href={`/turf/${turf.id}`} className="flex-1">
-            <h3 className="text-[16px] font-semibold text-[#F5F5F5] hover:text-[#AAFF00] transition-colors line-clamp-1">
+            <h3 className="text-[18px] font-bold text-[#F5F5F5] uppercase italic tracking-tighter hover:text-[#AAFF00] transition-colors line-clamp-1 leading-none">
               {turf.name}
             </h3>
           </Link>
@@ -81,95 +80,92 @@ export function TurfCard({ turf }: TurfCardProps) {
             onClick={() => setIsSaved(!isSaved)}
             className="text-[#888888] hover:text-[#FF4444] transition-colors p-1"
           >
-            <Heart className={cn("h-4 w-4", isSaved && "fill-[#FF4444] text-[#FF4444]")} />
+            <Heart className={cn("h-5 w-5", isSaved && "fill-[#FF4444] text-[#FF4444]")} />
           </button>
         </div>
 
-        <div className="flex items-center text-[#888888] text-[13px] gap-1 mb-4">
-          <MapPin className="h-3 w-3 text-[#AAFF00]" />
+        <div className="flex items-center text-[#888888] text-[13px] gap-1 mb-5 italic">
+          <MapPin className="h-3.5 w-3.5 text-[#AAFF00]" />
           <span>{turf.area}, Mysuru</span>
         </div>
 
         {/* Sport Tags */}
-        <div className="flex flex-wrap gap-1.5 mb-4">
+        <div className="flex flex-wrap gap-1.5 mb-5">
           {turf.sports?.map((s) => (
-            <span key={s} className="text-[10px] font-bold uppercase tracking-tight text-[#AAFF00] bg-[#AAFF00]/5 px-2 py-0.5 rounded-[4px] border border-[#AAFF00]/20">
+            <span key={s} className="text-[10px] font-black uppercase tracking-widest text-[#AAFF00] bg-[#AAFF00]/5 px-2 py-0.5 rounded-[4px] border border-[#AAFF00]/20">
               {s}
             </span>
           ))}
         </div>
 
-        {/* Metadata Stack */}
-        <div className="grid grid-cols-2 gap-y-2 mb-4 text-[12px] text-[#888888]">
-          <div className="flex items-center gap-2">
-            <Clock className="h-3 w-3" />
-            <span>{turf.openTime}–{turf.closeTime}</span>
+        {/* Metadata Stack - Min Font 13px */}
+        <div className="space-y-3 mb-6 text-[13px] font-medium text-[#888888]">
+          <div className="flex items-center gap-3">
+            <Clock className="h-4 w-4 text-primary" />
+            <span>{turf.openTime} — {turf.closeTime}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <Users className="h-3 w-3" />
-            <span>Max {turf.maxPlayers}</span>
-          </div>
-          <div className="col-span-2 text-[#F5F5F5]">
-            <span className="opacity-60">Pitch:</span> {turf.pitchSizes?.join(', ') || 'Standard'}
+          <div className="flex items-center gap-3">
+            <Users className="h-4 w-4 text-primary" />
+            <span>Squad Limit: {turf.maxPlayers} Athletes</span>
           </div>
         </div>
 
         {/* Pricing & Status */}
-        <div className="mt-auto pt-4 border-t border-[#222222] flex items-end justify-between">
+        <div className="mt-auto pt-5 border-t border-[#222222] flex items-end justify-between">
           <div className="flex flex-col">
             <div className="flex items-baseline gap-1">
-              <span className="text-[18px] font-black text-[#AAFF00]">₹{turf.pricePerHour}</span>
-              <span className="text-[#888888] text-[10px] font-bold uppercase">/hr</span>
+              <span className="text-[22px] font-black text-[#AAFF00] italic leading-none">₹{turf.pricePerHour}</span>
+              <span className="text-[#888888] text-[11px] font-black uppercase">/ hr</span>
             </div>
             {turf.peakHourPrice > 0 && (
-              <span className="text-[10px] text-[#888888]">₹{turf.peakHourPrice} peak</span>
+              <span className="text-[10px] font-bold text-[#444] uppercase tracking-widest">₹{turf.peakHourPrice} peak cycle</span>
             )}
           </div>
-          <div className="flex items-center gap-1.5 text-[10px] font-black uppercase text-[#AAFF00]">
+          <div className="flex items-center gap-2 text-[10px] font-black uppercase text-[#AAFF00] tracking-widest">
             <div className="h-1.5 w-1.5 bg-[#AAFF00] rounded-full animate-pulse" />
-            Available Today
+            Live Discovery
           </div>
         </div>
 
-        {/* 3. Action Buttons Quad */}
-        <div className="grid grid-cols-2 gap-2 mt-4">
+        {/* Action Buttons Quad - Mobile Height 44px */}
+        <div className="grid grid-cols-2 gap-2 mt-6">
           <Button 
             asChild 
-            className="bg-[#25D366] text-white hover:bg-[#20ba5a] text-[11px] font-black uppercase h-[40px] rounded-[10px]"
+            className="bg-[#25D366] text-white hover:bg-[#20ba5a] text-[10px] font-black uppercase h-[44px] rounded-[10px]"
             title="Book via WhatsApp"
           >
             <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
-              <MessageCircle className="h-3.5 w-3.5 mr-1" /> WhatsApp
+              <MessageCircle className="h-4 w-4 mr-2" /> WhatsApp
             </a>
           </Button>
           <Button 
             asChild
             variant="secondary"
-            className="bg-[#1A1A1A] text-[#F5F5F5] hover:bg-[#222] text-[11px] font-black uppercase h-[40px] rounded-[10px]"
+            className="bg-[#1A1A1A] text-[#F5F5F5] hover:bg-[#222] text-[10px] font-black uppercase h-[44px] rounded-[10px]"
             title="Check availability slots"
           >
-            <Link href={`/turf/${turf.id}#slots`}>
-              <Calendar className="h-3.5 w-3.5 mr-1" /> Slots
+            <Link href={`/turf/${turf.id}`}>
+              <Calendar className="h-4 w-4 mr-2" /> Check Slots
             </Link>
           </Button>
           <Button 
             asChild
             variant="outline"
-            className="border-[#222222] text-[#888888] hover:border-[#888888] text-[11px] font-black uppercase h-[40px] rounded-[10px]"
-            title="Get directions on Google Maps"
+            className="border-[#222222] text-[#888888] hover:border-[#888888] text-[10px] font-black uppercase h-[44px] rounded-[10px]"
+            title="Get directions"
           >
             <a href={directionsUrl} target="_blank" rel="noopener noreferrer">
-              <Navigation className="h-3.5 w-3.5 mr-1" /> Directions
+              <Navigation className="h-4 w-4 mr-2" /> Directions
             </a>
           </Button>
           <Button 
             asChild
             variant="outline"
-            className="border-[#F5F5F5]/20 text-[#F5F5F5] hover:border-[#F5F5F5] text-[11px] font-black uppercase h-[40px] rounded-[10px]"
+            className="border-[#F5F5F5]/10 text-[#F5F5F5] hover:border-[#F5F5F5] text-[10px] font-black uppercase h-[44px] rounded-[10px]"
             title="Rate this arena"
           >
             <Link href={`/turf/${turf.id}#reviews`}>
-              <Star className="h-3.5 w-3.5 mr-1" /> Rate
+              <Star className="h-4 w-4 mr-2" /> Feedback
             </Link>
           </Button>
         </div>

@@ -46,26 +46,33 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Inter', sans-serif;
+    /* Font: never below 13px */
+    font-size: 14px; 
   }
 
-  h1 { @apply text-[36px] md:text-[56px] font-extrabold tracking-tighter leading-tight uppercase; }
-  h2 { @apply text-[24px] md:text-[32px] font-bold tracking-tight leading-tight; }
+  h1 { @apply text-[36px] md:text-[56px] font-extrabold tracking-tighter leading-tight uppercase italic; }
+  h2 { @apply text-[24px] md:text-[32px] font-bold tracking-tight leading-tight uppercase; }
   
   .label-caps {
     @apply text-[11px] font-bold uppercase tracking-[0.2em];
   }
 }
 
-/* Flat Design Protocol */
+/* Flat Design Protocol - Zero Shadows, Zero Gradients */
 * {
   box-shadow: none !important;
   text-shadow: none !important;
   background-image: none !important;
-  transition: all 0.15s ease;
+  transition: all 0.15s ease !important;
+}
+
+/* Enforce Touch Target Sizing */
+button, a {
+  min-height: 44px;
 }
 
 .glass-navbar {
-  @apply bg-background/95 backdrop-blur-[12px] border-b border-border;
+  @apply bg-[#0A0A0A]/95 backdrop-blur-[12px] border-b border-border;
 }
 
 ::-webkit-scrollbar {
@@ -81,4 +88,12 @@
 .btn-whatsapp {
   background-color: hsl(var(--whatsapp)) !important;
   color: white !important;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

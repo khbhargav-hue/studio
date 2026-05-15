@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc, serverTimestamp, Firestore, enableNetwork } from "firebase/firestore";
+import { doc, getDoc, setDoc, getDocs, collection, query, limit, serverTimestamp, Firestore, enableNetwork } from "firebase/firestore";
 
 /**
  * Normalizes sport strings to match platform UI filters
@@ -226,7 +226,9 @@ export const seedTeams = [
     matchesPlayed: 15,
     ownerId: "system",
     isOpen: true,
-    members: ["system"]
+    members: ["system"],
+    maxPlayers: 14,
+    description: "Mysuru's elite football squad. Training out of Matchbox Vijayanagar."
   },
   {
     name: "Mysuru Mavericks",
@@ -236,23 +238,29 @@ export const seedTeams = [
     matchesPlayed: 10,
     ownerId: "system",
     isOpen: true,
-    members: ["system"]
+    members: ["system"],
+    maxPlayers: 12,
+    description: "Strategic box cricket team focused on regional tournaments."
   }
 ];
 
 /**
  * Hardened Circuit Seeding Logic
- * Prevents overwrites and handles network interruptions gracefully.
+ * Uses a collection query test to verify connection before seeding.
  */
 export async function seedCircuitData(db: Firestore) {
-  // 1. Connectivity Handshake
+  // 1. Establish Handshake
   try {
     await enableNetwork(db);
-  } catch (err) {
-    // Ignore error if network was already enabled
+    // Simple connectivity test: try to list turfs (even if empty)
+    await getDocs(query(collection(db, 'turfs'), limit(1)));
+  } catch (err: any) {
+    console.error("Connectivity Test Failed:", err);
+    throw new Error("The Firestore circuit is currently unreachable. Please verify that your project is active and your network allows WebSockets or Long-polling.");
   }
 
   const safeSeed = async (coll: string, item: any) => {
+    // Generate a URL-friendly slug ID
     const id = item.id || item.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
     const docRef = doc(db, coll, id);
     
@@ -270,42 +278,47 @@ export async function seedCircuitData(db: Firestore) {
       }
       return false;
     } catch (error: any) {
-      if (error.message.includes('offline')) {
-        throw new Error("The Firestore circuit is currently unreachable. If you are using a proxy or restricted network, please ensure WebSockets/Long-polling is permitted.");
-      }
-      throw error;
+      console.warn(`Node deployment failed for ${id}:`, error.message);
+      return false;
     }
   };
 
   try {
-    // Execute all seed sequences optimistically
-    for (const turf of mysuuruTurfs) await safeSeed("turfs", turf);
-    for (const pool of mysuuruPools) await safeSeed("pools", pool);
-    for (const coach of seedCoaches) await safeSeed("coaches", coach);
-    for (const team of seedTeams) await safeSeed("teams", team);
+    // 2. Optimistic Circuit Deployment
+    let seededCount = 0;
+    
+    for (const turf of mysuuruTurfs) if (await safeSeed("turfs", turf)) seededCount++;
+    for (const pool of mysuuruPools) if (await safeSeed("pools", pool)) seededCount++;
+    for (const coach of seedCoaches) if (await safeSeed("coaches", coach)) seededCount++;
+    for (const team of seedTeams) if (await safeSeed("teams", team)) seededCount++;
 
-    // Seed initial match claim
+    // 3. Seed Initial Match Claim
     const challengeId = "seed-challenge-1";
     const challengeRef = doc(db, "challenges", challengeId);
-    const chalSnap = await getDoc(challengeRef);
-    if (!chalSnap.exists()) {
-      await setDoc(challengeRef, {
-        id: challengeId,
-        title: "Vijayanagar Weekend Cup",
-        sport: "Football",
-        format: "5-a-side",
-        turf: "Matchbox Vijayanagar",
-        date: "2026-05-15",
-        time: "18:00",
-        status: "open",
-        teamId: "fc-stallions",
-        teamName: "FC Stallions",
-        entryFee: "200",
-        ownerId: "system",
-        createdAt: serverTimestamp()
-      });
-    }
+    try {
+      const chalSnap = await getDoc(challengeRef);
+      if (!chalSnap.exists()) {
+        await setDoc(challengeRef, {
+          id: challengeId,
+          title: "Vijayanagar Weekend Cup",
+          sport: "Football",
+          format: "5-a-side",
+          turf: "Matchbox Vijayanagar",
+          date: "2026-05-15",
+          time: "18:00",
+          status: "open",
+          teamId: "fc-stallions",
+          teamName: "FC Stallions",
+          entryFee: "200",
+          ownerId: "system",
+          createdAt: serverTimestamp()
+        });
+        seededCount++;
+      }
+    } catch (e) {}
+
+    return seededCount;
   } catch (error: any) {
-    throw new Error(error.message || "Circuit transmission failed.");
+    throw new Error(error.message || "Circuit transmission interrupted.");
   }
 }

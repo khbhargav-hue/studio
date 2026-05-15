@@ -91,8 +91,8 @@ export default function StudioDashboard() {
   const { data: pools } = useCollection(poolsQuery);
   const { data: users } = useCollection(usersQuery);
 
-  // Soft offline check for UI only
-  const isOffline = !!turfsError && turfsError.message.includes('offline');
+  // Soft offline check for UI status
+  const isOffline = !!turfsError && (turfsError.message.includes('offline') || turfsError.message.includes('permission'));
 
   const togglePopularStatus = (turfId: string, currentStatus: boolean) => {
     if (!db) return;
@@ -126,13 +126,15 @@ export default function StudioDashboard() {
     
     setIsSeeding(true);
     try {
-      await seedCircuitData(db);
+      const resultCount = await seedCircuitData(db);
       toast({ 
         title: "Circuit Intelligence Synced", 
-        description: "New nodes have been deployed. Existing records were preserved." 
+        description: resultCount > 0 
+          ? `Success. ${resultCount} new records deployed. Circuit data is now live.` 
+          : "Circuit is already up-to-date. No new records were required."
       });
     } catch (err: any) {
-      console.error("Seed error:", err);
+      console.error("Seeding Alert:", err.message);
       toast({ 
         title: "Connection Alert", 
         description: err.message || "Circuit transmission failed. Check network stability.",

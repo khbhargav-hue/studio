@@ -1,4 +1,4 @@
-import { doc, setDoc, serverTimestamp, Firestore } from "firebase/firestore";
+import { doc, getDoc, setDoc, serverTimestamp, Firestore } from "firebase/firestore";
 
 export const mysuuruTurfs = [
   {
@@ -185,28 +185,134 @@ export const mysuuruPools = [
   },
 ];
 
+export const seedCoaches = [
+  {
+    name: "Coach Rahul Kumar",
+    sport: "Football",
+    area: "Vijayanagar",
+    pricePerSession: 500,
+    rating: 4.9,
+    reviewCount: 45,
+    whatsapp: "917411322492",
+    isAvailable: true,
+    bio: "AIFF certified coach with 10 years experience."
+  },
+  {
+    name: "Coach Sneha Rao",
+    sport: "Swimming",
+    area: "Saraswathipuram",
+    pricePerSession: 400,
+    rating: 4.8,
+    reviewCount: 32,
+    whatsapp: "917411322492",
+    isAvailable: true,
+    bio: "Specializing in competitive stroke correction."
+  }
+];
+
+export const seedTeams = [
+  {
+    name: "FC Stallions",
+    sport: "Football",
+    area: "Vijayanagar",
+    wins: 12,
+    matchesPlayed: 15,
+    ownerId: "system",
+    isOpen: true,
+    members: ["system"]
+  },
+  {
+    name: "Mysuru Mavericks",
+    sport: "Cricket",
+    area: "Bogadi",
+    wins: 8,
+    matchesPlayed: 10,
+    ownerId: "system",
+    isOpen: true,
+    members: ["system"]
+  }
+];
+
 export async function seedCircuitData(db: Firestore) {
+  // Seeding Turfs
   for (const turf of mysuuruTurfs) {
     const id = turf.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-    const turfRef = doc(db, "turfs", id);
-    await setDoc(turfRef, {
-      ...turf,
-      id,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-      views: 0,
-      whatsappClicks: 0
-    }, { merge: true });
+    const docRef = doc(db, "turfs", id);
+    const snap = await getDoc(docRef);
+    if (!snap.exists()) {
+      await setDoc(docRef, {
+        ...turf,
+        id,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        views: 0,
+        whatsappClicks: 0
+      });
+    }
   }
 
+  // Seeding Pools
   for (const pool of mysuuruPools) {
     const id = pool.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-    const poolRef = doc(db, "pools", id);
-    await setDoc(poolRef, {
-      ...pool,
-      id,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
-    }, { merge: true });
+    const docRef = doc(db, "pools", id);
+    const snap = await getDoc(docRef);
+    if (!snap.exists()) {
+      await setDoc(docRef, {
+        ...pool,
+        id,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+    }
+  }
+
+  // Seeding Coaches
+  for (const coach of seedCoaches) {
+    const id = coach.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const docRef = doc(db, "coaches", id);
+    const snap = await getDoc(docRef);
+    if (!snap.exists()) {
+      await setDoc(docRef, {
+        ...coach,
+        id,
+        createdAt: serverTimestamp()
+      });
+    }
+  }
+
+  // Seeding Teams
+  for (const team of seedTeams) {
+    const id = team.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const docRef = doc(db, "teams", id);
+    const snap = await getDoc(docRef);
+    if (!snap.exists()) {
+      await setDoc(docRef, {
+        ...team,
+        id,
+        createdAt: serverTimestamp()
+      });
+    }
+  }
+
+  // Seeding a dummy challenge
+  const challengeId = "seed-challenge-1";
+  const challengeRef = doc(db, "challenges", challengeId);
+  const challengeSnap = await getDoc(challengeRef);
+  if (!challengeSnap.exists()) {
+    await setDoc(challengeRef, {
+      id: challengeId,
+      title: "Vijayanagar Weekend Cup",
+      sport: "Football",
+      format: "5-a-side",
+      turf: "Matchbox Vijayanagar",
+      date: "2026-05-15",
+      time: "18:00",
+      status: "open",
+      teamId: "fc-stallions",
+      teamName: "FC Stallions",
+      entryFee: "200",
+      ownerId: "system",
+      createdAt: serverTimestamp()
+    });
   }
 }

@@ -122,9 +122,17 @@ export default function StudioDashboard() {
     setIsSeeding(true);
     try {
       await seedCircuitData(db);
-      toast({ title: "Circuit Intelligence Synced", description: "All Mysuru turfs and pools have been deployed." });
-    } catch (err) {
-      toast({ title: "Seed Failed", variant: "destructive" });
+      toast({ 
+        title: "Circuit Intelligence Synced", 
+        description: "New nodes have been deployed. Existing records were preserved." 
+      });
+    } catch (err: any) {
+      console.error("Seed error:", err);
+      toast({ 
+        title: "Transmission Interrupted", 
+        description: err.message || "Could not complete circuit sync.",
+        variant: "destructive" 
+      });
     } finally {
       setIsSeeding(false);
     }

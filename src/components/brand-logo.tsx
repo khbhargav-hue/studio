@@ -1,15 +1,9 @@
-
 'use client';
 
 import { cn } from "@/lib/utils";
 import { useFirestore, useDoc, useMemoFirebase } from "@/firebase";
 import { doc } from "firebase/firestore";
 
-/**
- * TurfistaLogo
- * Central logo component that fetches branding from Firestore.
- * Ensures the brand identity is permanent and consistent globally.
- */
 export function TurfistaLogo({ className, iconOnly = false, size = "md" }: { className?: string; iconOnly?: boolean; size?: "sm" | "md" | "lg" | "xl" }) {
   const db = useFirestore();
   
@@ -34,7 +28,6 @@ export function TurfistaLogo({ className, iconOnly = false, size = "md" }: { cla
     xl: "text-[48px]"
   };
 
-  // Cloudinary Optimization for Logo
   const logoSrc = branding?.logoUrl 
     ? (branding.logoUrl.includes('cloudinary.com') 
         ? branding.logoUrl.replace('/upload/', '/upload/f_auto,q_auto,w_200/') 
@@ -44,14 +37,14 @@ export function TurfistaLogo({ className, iconOnly = false, size = "md" }: { cla
   return (
     <div className={cn("flex items-center gap-3 select-none", className)}>
       <div className={cn(
-        "bg-primary rounded-[10px] flex items-center justify-center overflow-hidden transition-all",
+        "bg-primary rounded-[8px] flex items-center justify-center overflow-hidden transition-all",
         sizeClasses[size]
       )}>
         {logoSrc ? (
           <img 
             src={logoSrc} 
             alt="Turfista Logo" 
-            className="h-full w-full object-contain p-1.5"
+            className="h-full w-full object-contain p-1"
           />
         ) : (
           <svg 

@@ -5,7 +5,21 @@ import { useRouter } from 'next/navigation';
 import { useUser, useAuth } from '@/firebase';
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { LayoutDashboard, PlusCircle, LogOut, Loader2, Palette, ShieldCheck, Globe, Database } from 'lucide-react';
+import { 
+  LayoutDashboard, 
+  PlusCircle, 
+  LogOut, 
+  Loader2, 
+  Palette, 
+  Trophy, 
+  Users, 
+  Zap, 
+  Waves, 
+  Database,
+  Globe,
+  TrendingUp,
+  UserCheck
+} from 'lucide-react';
 import Link from 'next/link';
 import { signOut } from 'firebase/auth';
 import { TurfistaLogo } from '@/components/brand-logo';
@@ -23,6 +37,7 @@ export default function StudioLayout({ children }: { children: ReactNode }) {
       if (!user) {
         router.replace('/login');
       } else if (user.email !== ADMIN_EMAIL) {
+        // Fallback for demo, in production we use users/{uid}.role === "admin"
         router.replace('/');
       } else {
         setIsAuthorized(true);
@@ -47,26 +62,33 @@ export default function StudioLayout({ children }: { children: ReactNode }) {
 
   if (!isAuthorized) return null;
 
+  const MENU_ITEMS = [
+    { label: "Dashboard", icon: LayoutDashboard, href: "/studio" },
+    { label: "Turfs", icon: Zap, href: "/studio/inventory?tab=turfs" },
+    { label: "Teams", icon: Users, href: "/studio/inventory?tab=teams" },
+    { label: "Challenges", icon: Trophy, href: "/studio/inventory?tab=challenges" },
+    { label: "Coaching", icon: UserCheck, href: "/studio/inventory?tab=coaching" },
+    { label: "Pools", icon: Waves, href: "/studio/inventory?tab=pools" },
+    { label: "Users", icon: Users, href: "/studio/inventory?tab=users" },
+    { label: "SEO", icon: Globe, href: "/studio/branding" },
+    { label: "Ads", icon: TrendingUp, href: "/studio/media" },
+  ];
+
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-background">
+      <div className="flex min-h-screen w-full bg-background selection:bg-primary selection:text-black">
         <Sidebar className="w-[240px] bg-card border-r border-border">
           <SidebarHeader className="h-[64px] px-6 flex items-center border-b border-border">
             <Link href="/"><TurfistaLogo size="sm" /></Link>
           </SidebarHeader>
-          <SidebarContent className="p-4 space-y-2">
+          <SidebarContent className="p-4 space-y-1">
             <SidebarMenu>
-              {[
-                { label: "Overview", icon: LayoutDashboard, href: "/studio" },
-                { label: "New Turf", icon: PlusCircle, href: "/studio/new" },
-                { label: "Branding", icon: Palette, href: "/studio/branding" },
-                { label: "Media", icon: Database, href: "/studio/media" },
-              ].map((item) => (
+              {MENU_ITEMS.map((item) => (
                 <SidebarMenuItem key={item.label}>
-                  <SidebarMenuButton asChild className="h-11 rounded-[10px] label-caps text-muted hover:bg-surface hover:text-foreground">
+                  <SidebarMenuButton asChild className="h-11 rounded-[10px] text-muted hover:bg-surface hover:text-primary transition-all">
                     <Link href={item.href}>
                       <item.icon className="h-4 w-4 mr-3" />
-                      <span>{item.label}</span>
+                      <span className="text-[11px] font-black uppercase tracking-widest">{item.label}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -74,8 +96,9 @@ export default function StudioLayout({ children }: { children: ReactNode }) {
             </SidebarMenu>
           </SidebarContent>
           <SidebarFooter className="p-4 border-t border-border">
-            <Button onClick={handleLogout} variant="ghost" className="w-full justify-start h-11 text-danger hover:bg-danger/10 rounded-[10px]">
-              <LogOut className="h-4 w-4 mr-3" /> Terminate
+            <Button onClick={handleLogout} variant="ghost" className="w-full justify-start h-11 text-destructive hover:bg-destructive/10 rounded-[10px]">
+              <LogOut className="h-4 w-4 mr-3" /> 
+              <span className="text-[11px] font-black uppercase tracking-widest">Terminate</span>
             </Button>
           </SidebarFooter>
         </Sidebar>

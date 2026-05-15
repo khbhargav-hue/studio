@@ -13,34 +13,71 @@ export * from './firestore/use-collection';
 export * from './firestore/use-doc';
 export * from './use-memo-firebase';
 
+/**
+ * initializeFirebase
+ * 
+ * DIAGNOSTICS CHECKLIST:
+ * 1. Environment variables loaded (firebaseConfig validation)
+ * 2. Firebase initializeApp() execution
+ * 3. getFirestore() initialization with Long Polling (Step 9 prevention)
+ * 4. Auth initialized
+ */
 export function initializeFirebase(): {
   app: FirebaseApp;
   auth: Auth;
   db: Firestore;
   storage: FirebaseStorage;
 } {
-  const apps = getApps();
-  
-  // Validate config presence
-  if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
-    console.warn("Firebase configuration environment variables are missing. Please verify your .env file.");
+  // Step 1: Environment Variable Check
+  const missingKeys = Object.entries(firebaseConfig)
+    .filter(([_, value]) => !value)
+    .map(([key]) => key);
+
+  if (missingKeys.length > 0) {
+    const errorMsg = `[FIREBASE DIAGNOSTICS] Step 1 Failed: Environment variables missing: ${missingKeys.join(', ')}. Ensure your .env file contains the required NEXT_PUBLIC_FIREBASE_ keys.`;
+    console.error(errorMsg);
+    throw new Error(errorMsg);
   }
 
-  const app = apps.length === 0 ? initializeApp(firebaseConfig) : apps[0];
-  const auth = getAuth(app);
+  const apps = getApps();
   
-  /**
-   * Resilient Firestore Initialization
-   * Using experimentalForceLongPolling solves 'Failed to get document because the client is offline'
-   * in environments where WebSockets are restricted by proxies or workstations.
-   */
+  // Step 2: initializeApp Check
+  let app: FirebaseApp;
+  try {
+    app = apps.length === 0 ? initializeApp(firebaseConfig) : apps[0];
+    console.log("[FIREBASE DIAGNOSTICS] Step 2 Success: App Instance Verified");
+  } catch (err: any) {
+    const errorMsg = `[FIREBASE DIAGNOSTICS] Step 2 Failed: initializeApp error: ${err.message}`;
+    console.error(errorMsg);
+    throw new Error(errorMsg);
+  }
+
+  // Step 3: Firestore Check (Hardened for Proxy/Preview environments)
   let db: Firestore;
-  if (apps.length === 0) {
-    db = initializeFirestore(app, {
-      experimentalForceLongPolling: true,
-    });
-  } else {
-    db = getFirestore(app);
+  try {
+    if (apps.length === 0) {
+      db = initializeFirestore(app, {
+        experimentalForceLongPolling: true, // Fix for "Failed to get document because client is offline"
+      });
+    } else {
+      db = getFirestore(app);
+    }
+    console.log("[FIREBASE DIAGNOSTICS] Step 3 Success: Firestore Node Connected (Long Polling Active)");
+  } catch (err: any) {
+    const errorMsg = `[FIREBASE DIAGNOSTICS] Step 3 Failed: getFirestore error: ${err.message}`;
+    console.error(errorMsg);
+    throw new Error(errorMsg);
+  }
+
+  // Step 4: Auth Check
+  let auth: Auth;
+  try {
+    auth = getAuth(app);
+    console.log("[FIREBASE DIAGNOSTICS] Step 4 Success: Auth Node Initialized");
+  } catch (err: any) {
+    const errorMsg = `[FIREBASE DIAGNOSTICS] Step 4 Failed: getAuth error: ${err.message}`;
+    console.error(errorMsg);
+    throw new Error(errorMsg);
   }
   
   const storage = getStorage(app);

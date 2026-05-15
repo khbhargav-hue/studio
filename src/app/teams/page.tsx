@@ -7,6 +7,7 @@ import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { 
   Dialog, 
   DialogContent, 
@@ -28,8 +29,8 @@ import {
   Plus, 
   Loader2, 
   ShieldCheck,
-  Zap,
-  Star
+  Swords,
+  ChevronRight
 } from "lucide-react"
 import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase"
 import { collection, query, orderBy, addDoc, serverTimestamp } from "firebase/firestore"
@@ -37,7 +38,7 @@ import { useToast } from "@/hooks/use-toast"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 
-const SPORT_OPTIONS = ["Football", "Cricket", "Badminton", "Pickleball"]
+const SPORT_OPTIONS = ["Football", "Cricket", "Badminton", "Pickleball", "Swimming"]
 
 export default function TeamsPage() {
   const db = useFirestore()
@@ -47,13 +48,11 @@ export default function TeamsPage() {
   const [isCreating, setIsCreating] = useState(false)
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [newTeam, setNewTeam] = useState({
-    teamName: "",
+    name: "",
     sport: "Football",
     area: "",
-    captain: "",
-    whatsapp: "",
-    turfPreference: "",
-    players: [] as string[]
+    description: "",
+    maxPlayers: 14,
   })
 
   const teamsQuery = useMemoFirebase(() => {
@@ -67,21 +66,24 @@ export default function TeamsPage() {
     e.preventDefault()
     if (!db || !user) return
 
-    setIsCreating(true)
+    setIsGenerating(true)
     try {
       await addDoc(collection(db, "teams"), {
         ...newTeam,
-        ownerId: user.uid,
+        createdBy: user.uid,
         captain: user.displayName || "Athlete",
-        createdAt: serverTimestamp(),
+        members: [user.uid],
         wins: 0,
-        matches: 0
+        losses: 0,
+        matchesPlayed: 0,
+        isOpen: true,
+        createdAt: serverTimestamp()
       })
-      toast({ title: "Squad Signal Active", description: "Your team has entered the network." })
+      toast({ title: "Squad Genesis Complete", description: "Your team is now active on the Mysuru circuit." })
       setShowCreateDialog(false)
-      setNewTeam({ teamName: "", sport: "Football", area: "", captain: "", whatsapp: "", turfPreference: "", players: [] })
+      setNewTeam({ name: "", sport: "Football", area: "", description: "", maxPlayers: 14 })
     } catch (err) {
-      toast({ title: "Signal Lost", description: "Could not establish squad connection.", variant: "destructive" })
+      toast({ title: "Transmission Failed", variant: "destructive" })
     } finally {
       setIsCreating(false)
     }
@@ -91,11 +93,14 @@ export default function TeamsPage() {
     <div className="flex min-h-screen flex-col bg-background selection:bg-primary selection:text-black">
       <Navbar />
       
-      <main className="flex-1 pt-32 pb-32 max-w-7xl mx-auto w-full px-4">
+      <main className="flex-1 pt-32 pb-32 max-w-7xl mx-auto w-full px-4 md:px-8">
+        {/* Section Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-8">
           <div className="space-y-4">
-            <div className="label-caps text-primary border border-primary/20 bg-primary/10 w-fit px-4 py-1.5 rounded-full">Athlete Intelligence</div>
-            <h1 className="text-5xl md:text-7xl font-bold tracking-tighter uppercase italic">The <span className="text-primary text-neon">Squad Roster</span></h1>
+            <div className="text-[11px] font-black uppercase tracking-[0.4em] text-primary">TEAMS</div>
+            <h1 className="text-4xl md:text-6xl font-extrabold tracking-tighter uppercase italic leading-none">
+              Build Your <span className="text-primary">Squad</span> <br />in Mysuru
+            </h1>
             <p className="text-muted max-w-xl text-lg font-medium italic">
               Connect with Mysuru's elite sports communities. Build your legacy or identify your next rivals.
             </p>
@@ -103,75 +108,70 @@ export default function TeamsPage() {
 
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
             <DialogTrigger asChild>
-              <Button className="btn-primary h-[64px] px-10 text-xs font-black uppercase tracking-[0.2em] shadow-2xl hover:scale-[1.02] transition-transform">
-                <Plus className="h-5 w-5 mr-3" /> FORM NEW SQUAD
+              <Button className="bg-primary text-black h-[56px] px-8 text-[12px] font-black uppercase tracking-widest rounded-[10px] hover:opacity-90 transition-all">
+                <Plus className="h-5 w-5 mr-2" /> Create Team
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-card border-white/10 p-10 rounded-[2.5rem] max-w-lg shadow-2xl">
-              <DialogHeader className="sr-only">
-                <DialogTitle>Form New Squad</DialogTitle>
+            <DialogContent className="bg-card border-border p-10 rounded-[24px] max-w-lg">
+              <DialogHeader>
+                <DialogTitle className="text-2xl font-black uppercase italic tracking-tighter mb-6">
+                  Squad <span className="text-primary">Genesis</span>
+                </DialogTitle>
               </DialogHeader>
               {!user ? (
                 <div className="text-center py-10 space-y-6">
-                  <DialogHeader>
-                    <DialogTitle className="text-2xl font-bold uppercase italic text-center">Identity Required</DialogTitle>
-                  </DialogHeader>
                   <ShieldCheck className="h-16 w-16 text-primary mx-auto opacity-20" />
-                  <p className="text-muted-foreground font-medium text-center">Identify yourself as an athlete to form a squad.</p>
-                  <Button asChild className="btn-primary w-full h-14"><Link href="/profile">VERIFY IDENTITY</Link></Button>
+                  <p className="text-muted font-medium">Identify yourself as an athlete to form a squad.</p>
+                  <Button asChild className="bg-primary text-black w-full h-14 font-black uppercase tracking-widest">
+                    <Link href="/profile">Verify Identity</Link>
+                  </Button>
                 </div>
               ) : (
-                <form onSubmit={handleCreateTeam} className="space-y-8">
-                  <DialogHeader>
-                    <DialogTitle className="text-3xl font-black uppercase italic tracking-tighter">Squad <span className="text-primary">Genesis</span></DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-6">
+                <form onSubmit={handleCreateTeam} className="space-y-6">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted ml-1">Team Identity</Label>
+                    <Input 
+                      placeholder="e.g. Mysuru Mavericks"
+                      className="bg-surface border-border h-12 rounded-[10px] focus:border-primary/50" 
+                      value={newTeam.name}
+                      onChange={e => setNewTeam({...newTeam, name: e.target.value})}
+                      required
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label className="label-caps opacity-40 ml-1">Team Identity</Label>
-                      <Input 
-                        placeholder="e.g. Mysuru Mavericks"
-                        className="bg-surface border-white/5 h-14 rounded-2xl focus:border-primary/50" 
-                        value={newTeam.teamName}
-                        onChange={e => setNewTeam({...newTeam, teamName: e.target.value})}
-                        required
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label className="label-caps opacity-40 ml-1">Sport Discipline</Label>
-                        <Select value={newTeam.sport} onValueChange={v => setNewTeam({...newTeam, sport: v})}>
-                          <SelectTrigger className="bg-surface border-white/5 h-14 rounded-2xl">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="bg-card border-white/10 rounded-xl">
-                            {SPORT_OPTIONS.map(opt => <SelectItem key={opt} value={opt} className="font-bold">{opt}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="label-caps opacity-40 ml-1">Home Zone</Label>
-                        <Input 
-                          placeholder="e.g. Vijaynagar"
-                          className="bg-surface border-white/5 h-14 rounded-2xl"
-                          value={newTeam.area}
-                          onChange={e => setNewTeam({...newTeam, area: e.target.value})}
-                          required
-                        />
-                      </div>
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-muted ml-1">Sport</Label>
+                      <Select value={newTeam.sport} onValueChange={v => setNewTeam({...newTeam, sport: v})}>
+                        <SelectTrigger className="bg-surface border-border h-12 rounded-[10px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-card border-border">
+                          {SPORT_OPTIONS.map(opt => <SelectItem key={opt} value={opt} className="font-bold">{opt}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label className="label-caps opacity-40 ml-1">Captain Signal (WhatsApp)</Label>
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-muted ml-1">Area</Label>
                       <Input 
-                        className="bg-surface border-white/5 h-14 rounded-2xl"
-                        placeholder="917411..."
-                        value={newTeam.whatsapp}
-                        onChange={e => setNewTeam({...newTeam, whatsapp: e.target.value})}
+                        placeholder="e.g. Vijayanagar"
+                        className="bg-surface border-border h-12 rounded-[10px]"
+                        value={newTeam.area}
+                        onChange={e => setNewTeam({...newTeam, area: e.target.value})}
                         required
                       />
                     </div>
                   </div>
-                  <Button type="submit" disabled={isCreating} className="btn-primary w-full h-[64px] text-xs font-black uppercase tracking-[0.2em] rounded-2xl">
-                    {isCreating ? <Loader2 className="h-5 w-5 animate-spin" /> : "TRANSMIT SQUAD DATA"}
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted ml-1">Squad Tactical Intel</Label>
+                    <Textarea 
+                      placeholder="Brief description of your team..."
+                      className="bg-surface border-border rounded-[10px] min-h-[100px] italic"
+                      value={newTeam.description}
+                      onChange={e => setNewTeam({...newTeam, description: e.target.value})}
+                    />
+                  </div>
+                  <Button type="submit" disabled={isCreating} className="bg-primary text-black w-full h-14 text-xs font-black uppercase tracking-widest rounded-[10px]">
+                    {isCreating ? <Loader2 className="h-5 w-5 animate-spin" /> : "Transmit Squad Data"}
                   </Button>
                 </form>
               )}
@@ -180,23 +180,22 @@ export default function TeamsPage() {
         </div>
 
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-40 gap-4">
-            <Loader2 className="h-12 w-12 animate-spin text-primary opacity-20" />
-            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/30">Scanning Network...</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="h-[280px] bg-card border border-border animate-pulse rounded-[16px]" />
+            ))}
           </div>
         ) : teams && teams.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {teams.map((team) => (
               <TeamCard key={team.id} team={team as any} />
             ))}
           </div>
         ) : (
-          <div className="py-40 text-center glass-card rounded-[4rem] border-dashed border-white/10 max-w-2xl mx-auto flex flex-col items-center gap-6">
-            <Users className="h-16 w-16 text-white/5" />
-            <div>
-              <h3 className="text-3xl font-black uppercase italic tracking-widest text-white/10 mb-2">Network Empty</h3>
-              <p className="text-white/20 font-medium italic">No squads have identified themselves in this circuit yet.</p>
-            </div>
+          <div className="py-40 text-center border border-dashed border-border rounded-[24px] max-w-2xl mx-auto">
+            <Users className="h-16 w-16 text-white/5 mx-auto mb-6" />
+            <h3 className="text-2xl font-black uppercase italic text-white/10 tracking-widest">No Squads Active</h3>
+            <p className="text-white/20 font-medium italic mt-2">The roster is currently silent. Be the first to form a squad.</p>
           </div>
         )}
       </main>
@@ -207,47 +206,58 @@ export default function TeamsPage() {
 }
 
 function TeamCard({ team }: { team: any }) {
+  const initials = team.name ? team.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() : 'FT'
+  const freeSlots = Math.max(0, (team.maxPlayers || 14) - (team.members?.length || 0))
+
   return (
-    <Link href={`/teams/${team.id}`} className="group relative">
-      <div className="flat-card flex flex-col h-full bg-[#0d0d0d] border-white/5 hover:border-primary/30 hover:bg-[#111] transition-all overflow-hidden p-8 rounded-[2.5rem]">
-        <div className="flex items-center gap-6 mb-8">
-          <div className="h-20 w-20 rounded-[1.5rem] border-2 border-primary/20 p-1 flex items-center justify-center bg-black overflow-hidden group-hover:border-primary group-hover:scale-105 transition-all duration-500 shadow-2xl">
-            {team.logoUrl ? (
-              <img src={team.logoUrl} className="h-full w-full object-cover rounded-[1.2rem]" alt={team.teamName} />
-            ) : (
-              <Zap className="h-8 w-8 text-primary opacity-40 group-hover:opacity-100 transition-opacity" />
-            )}
-          </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white group-hover:text-primary transition-colors line-clamp-1">{team.teamName}</h3>
-            <div className="flex items-center gap-2 mt-2">
-               <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-               <p className="label-caps text-primary text-[10px] tracking-[0.2em]">{team.sport}</p>
+    <div className="bg-card border border-border rounded-[16px] p-8 flex flex-col transition-all hover:border-primary/40 group">
+      <div className="flex items-center gap-4 mb-8">
+        <div className="h-16 w-16 rounded-full bg-surface border-2 border-primary flex items-center justify-center text-primary font-black text-xl italic tracking-tighter">
+          {initials}
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-xl font-bold uppercase italic tracking-tighter text-white truncate group-hover:text-primary transition-colors">
+            {team.name || "Untitled Squad"}
+          </h3>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-[10px] font-black uppercase text-primary tracking-widest">{team.sport}</span>
+            <span className="text-white/10">•</span>
+            <div className="flex items-center text-[10px] font-bold text-muted uppercase tracking-widest">
+              <MapPin className="h-3 w-3 mr-1" /> {team.area}
             </div>
           </div>
         </div>
+      </div>
 
-        <div className="grid grid-cols-2 gap-4 mb-8">
-          <div className="p-4 bg-white/[0.02] border border-white/5 rounded-2xl text-center">
-            <p className="text-2xl font-black italic text-white leading-none">{team.wins || 0}</p>
-            <p className="label-caps text-white/20 text-[8px] mt-2 tracking-widest">Wins</p>
-          </div>
-          <div className="p-4 bg-white/[0.02] border border-white/5 rounded-2xl text-center">
-            <p className="text-2xl font-black italic text-white leading-none">{team.matches || 0}</p>
-            <p className="label-caps text-white/20 text-[8px] mt-2 tracking-widest">Matches</p>
+      <div className="grid grid-cols-3 gap-2 py-6 border-y border-border mb-6">
+        <div className="text-center">
+          <p className="text-[10px] font-black text-muted uppercase mb-1">Squad</p>
+          <div className="flex items-center justify-center gap-1 text-white font-bold">
+            <Users className="h-3 w-3 text-primary" /> {team.members?.length || 0}
           </div>
         </div>
-
-        <div className="mt-auto pt-6 border-t border-white/5 flex items-center justify-between">
-          <div className="flex items-center text-white/40 text-[11px] font-bold uppercase tracking-widest gap-2">
-            <MapPin className="h-3.5 w-3.5 text-primary/40" />
-            <span className="truncate max-w-[120px]">{team.area || "Mysuru"}</span>
+        <div className="text-center border-x border-border">
+          <p className="text-[10px] font-black text-muted uppercase mb-1">Wins</p>
+          <div className="flex items-center justify-center gap-1 text-white font-bold">
+            <Trophy className="h-3 w-3 text-primary" /> {team.wins || 0}
           </div>
-          <div className="h-10 w-10 rounded-full border border-white/5 bg-white/5 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-black transition-all">
-             <Star className="h-4 w-4" />
+        </div>
+        <div className="text-center">
+          <p className="text-[10px] font-black text-muted uppercase mb-1">Matches</p>
+          <div className="flex items-center justify-center gap-1 text-white font-bold">
+            <Swords className="h-3 w-3 text-primary" /> {team.matchesPlayed || 0}
           </div>
         </div>
       </div>
-    </Link>
+
+      <div className="mt-auto space-y-4">
+        <Button variant="outline" className="w-full h-12 border-primary text-primary hover:bg-primary hover:text-black font-black uppercase tracking-widest text-[11px] rounded-[10px] group-hover:bg-primary group-hover:text-black transition-all">
+          Join Team
+        </Button>
+        <p className="text-[10px] font-bold text-muted uppercase tracking-widest text-center">
+          {freeSlots > 0 ? `${freeSlots} slots open` : "Roster Full"}
+        </p>
+      </div>
+    </div>
   )
 }

@@ -15,12 +15,11 @@ import {
   ShieldCheck, 
   Star,
   Loader2,
-  User,
+  Swords,
   Activity
 } from "lucide-react"
 import { useDoc, useFirestore, useMemoFirebase } from "@/firebase"
 import { doc } from "firebase/firestore"
-import { motion } from "framer-motion"
 
 export default function TeamDetailPage() {
   const params = useParams()
@@ -37,23 +36,23 @@ export default function TeamDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex h-screen flex-col items-center justify-center bg-black gap-4">
-        <Loader2 className="h-10 w-10 animate-spin text-primary opacity-40" />
-        <p className="text-[10px] font-black text-primary/40 uppercase tracking-[0.5em]">Establishing Squad Link...</p>
+      <div className="flex h-screen flex-col items-center justify-center bg-background gap-4">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        <p className="text-[10px] font-black text-muted uppercase tracking-[0.5em]">Establishing Link...</p>
       </div>
     )
   }
 
   if (!team) {
     return (
-      <div className="flex flex-col min-h-screen bg-black">
+      <div className="flex flex-col min-h-screen bg-background">
         <Navbar />
         <div className="flex-1 flex flex-col items-center justify-center p-8">
-          <div className="glass-card p-16 rounded-[4rem] text-center border-white/5 max-w-lg shadow-2xl">
-            <Trophy className="h-16 w-16 text-primary opacity-20 mx-auto mb-8" />
-            <h1 className="text-4xl mb-6 font-black italic tracking-tighter uppercase leading-none">TEAM <span className="text-primary">REDACTED</span></h1>
-            <p className="text-white/40 mb-10 font-medium italic">This squad identity has been removed from the network circuits.</p>
-            <Button onClick={() => router.push("/teams")} className="btn-primary h-14 px-10 rounded-2xl w-full font-black uppercase text-[10px] tracking-widest">RETURN TO ROSTER</Button>
+          <div className="bg-card p-12 rounded-[24px] border border-border text-center max-w-lg">
+            <Trophy className="h-16 w-16 text-white/5 mx-auto mb-6" />
+            <h1 className="text-3xl font-black italic tracking-tighter uppercase mb-4">Squad Redacted</h1>
+            <p className="text-muted mb-8 font-medium italic">This identity is no longer active on the circuit.</p>
+            <Button onClick={() => router.push("/teams")} className="bg-primary text-black h-12 px-8 font-black uppercase tracking-widest text-[11px] rounded-[10px]">Return to Roster</Button>
           </div>
         </div>
         <Footer />
@@ -61,135 +60,102 @@ export default function TeamDetailPage() {
     )
   }
 
-  const whatsappUrl = `https://wa.me/${team.whatsapp}?text=${encodeURIComponent(`Hi ${team.captain}, I saw ${team.teamName} on Turfista! Would love to negotiate a match or join your roster.`)}`
+  const initials = team.name ? team.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() : 'FT'
 
   return (
-    <div className="flex flex-col min-h-screen bg-black selection:bg-primary selection:text-black">
+    <div className="flex flex-col min-h-screen bg-background selection:bg-primary selection:text-black">
       <Navbar />
       
-      <main className="flex-1 pb-32 pt-44">
-        <div className="max-w-7xl mx-auto px-4">
-          <Button 
-            variant="ghost" 
-            onClick={() => router.back()} 
-            className="mb-12 hover:bg-white/5 rounded-2xl font-black text-[10px] uppercase tracking-[0.4em] text-white/30 group h-12 px-6"
-          >
-            <ArrowLeft className="mr-3 h-4 w-4 group-hover:-translate-x-1 transition-transform" /> SQUAD ROSTER
-          </Button>
+      <main className="flex-1 pb-32 pt-24 px-4 md:px-8 max-w-7xl mx-auto w-full">
+        <Button 
+          variant="ghost" 
+          onClick={() => router.back()} 
+          className="mb-12 text-muted hover:text-white font-black text-[11px] uppercase tracking-widest h-10 px-0"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Roster
+        </Button>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
-            <div className="lg:col-span-8 space-y-16">
-              <section className="glass-card rounded-[4rem] p-12 md:p-20 border-white/5 bg-[#080808] relative overflow-hidden shadow-[0_40px_100px_-20px_rgba(0,0,0,0.8)]">
-                <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
-                  <Trophy className="h-80 w-80 text-primary" />
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+          <div className="lg:col-span-8 space-y-12">
+            <section className="bg-card rounded-[16px] p-8 md:p-16 border border-border relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
+                <Trophy className="h-64 w-64 text-primary" />
+              </div>
+
+              <div className="flex items-center gap-6 mb-12 relative z-10">
+                <div className="h-24 w-24 rounded-full bg-surface border-4 border-primary flex items-center justify-center text-primary font-black text-3xl italic tracking-tighter">
+                  {initials}
                 </div>
-
-                <div className="flex flex-wrap items-center gap-4 mb-12 relative z-10">
-                  <div className="px-6 py-2 bg-primary/10 border border-primary/20 rounded-full flex items-center gap-3">
-                    <ShieldCheck className="h-3.5 w-3.5 text-primary" />
-                    <span className="text-[10px] font-black text-primary uppercase tracking-[0.4em]">VERIFIED SQUAD</span>
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-[6px]">Elite Squad</span>
+                    <span className="bg-white/5 text-white/40 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-[6px]">{team.sport}</span>
                   </div>
-                  <div className="px-6 py-2 bg-white/5 border border-white/10 rounded-full flex items-center gap-3">
-                    <Zap className="h-3.5 w-3.5 text-primary" />
-                    <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.4em]">{team.sport}</span>
-                  </div>
+                  <h1 className="text-4xl md:text-6xl font-black italic tracking-tighter uppercase leading-none text-white">
+                    {team.name}
+                  </h1>
                 </div>
+              </div>
 
-                <h1 className="text-6xl md:text-9xl mb-10 tracking-tighter italic leading-none uppercase font-black text-white relative z-10 break-words">
-                  {team.teamName}
-                </h1>
+              <div className="flex items-center gap-2 text-muted font-bold text-lg mb-16 relative z-10 uppercase italic">
+                <MapPin className="h-5 w-5 text-primary" />
+                <span>{team.area}, Mysuru</span>
+              </div>
 
-                <div className="flex items-center gap-4 text-white/40 mb-20 relative z-10">
-                  <MapPin className="h-7 w-7 text-primary" />
-                  <span className="font-black uppercase tracking-[0.3em] text-2xl italic">{team.area}, MYSURU</span>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-16 relative z-10">
-                  <div className="space-y-10">
-                    <h3 className="text-[11px] text-primary/60 font-black uppercase tracking-[0.6em]">The Operational Stats</h3>
-                    <div className="grid grid-cols-2 gap-6">
-                       <div className="p-6 bg-white/[0.02] border border-white/5 rounded-[2rem] text-center">
-                          <p className="text-4xl font-black italic leading-none text-white">{team.wins || 0}</p>
-                          <p className="label-caps text-white/20 text-[9px] mt-3">Wins</p>
-                       </div>
-                       <div className="p-6 bg-white/[0.02] border border-white/5 rounded-[2rem] text-center">
-                          <p className="text-4xl font-black italic leading-none text-white">{team.matches || 0}</p>
-                          <p className="label-caps text-white/20 text-[9px] mt-3">Matches</p>
-                       </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative z-10">
+                {[
+                  { label: "Total Wins", val: team.wins || 0, icon: Trophy },
+                  { label: "Matches Played", val: team.matchesPlayed || 0, icon: Swords },
+                  { label: "Squad Roster", val: team.members?.length || 0, icon: Users }
+                ].map((stat, i) => (
+                  <div key={i} className="p-8 bg-surface border border-border rounded-[16px] text-center">
+                    <p className="text-[10px] font-black text-muted uppercase mb-3 tracking-widest">{stat.label}</p>
+                    <div className="flex items-center justify-center gap-3">
+                      <stat.icon className="h-6 w-6 text-primary" />
+                      <span className="text-4xl font-black italic text-white leading-none">{stat.val}</span>
                     </div>
                   </div>
+                ))}
+              </div>
 
-                  <div className="space-y-12">
-                    <div>
-                      <h3 className="text-[11px] text-primary/60 font-black uppercase tracking-[0.6em] mb-8">Squad Captain</h3>
-                      <div className="glass-card p-8 rounded-[3rem] bg-white/5 border-white/10 flex items-center gap-6">
-                        <div className="h-16 w-16 rounded-full bg-primary flex items-center justify-center shadow-[0_0_20px_rgba(170,255,0,0.3)]">
-                          <User className="h-8 w-8 text-black" />
-                        </div>
-                        <div>
-                          <p className="text-2xl font-black italic uppercase text-white">{team.captain}</p>
-                          <p className="text-[10px] font-black uppercase tracking-widest text-primary/60 mt-1">Lead Strategist</p>
-                        </div>
-                      </div>
-                    </div>
+              <div className="mt-16 pt-16 border-t border-border space-y-6 relative z-10">
+                <h3 className="text-[11px] font-black text-primary uppercase tracking-[0.4em]">Tactical Brief</h3>
+                <p className="text-xl leading-relaxed italic text-white/80 font-medium border-l-2 border-primary/20 pl-8">
+                  {team.description || "High-intensity sports community based in Mysuru. Active across major local circuits and elite tournaments."}
+                </p>
+              </div>
+            </section>
+          </div>
 
-                    <div>
-                      <h3 className="text-[11px] text-primary/60 font-black uppercase tracking-[0.6em] mb-8">Preferred Territory</h3>
-                      <div className="glass-card p-10 rounded-[3rem] bg-primary/5 border-primary/10 group hover:border-primary/40 transition-all">
-                        <Star className="h-8 w-8 text-primary mb-6 group-hover:scale-110 transition-transform" />
-                        <p className="text-3xl font-black italic uppercase text-primary leading-none">{team.turfPreference || "Flexible Arena"}</p>
-                        <p className="text-[9px] font-black uppercase tracking-widest text-white/20 mt-4 italic">High-frequency booking zone</p>
-                      </div>
-                    </div>
-                  </div>
+          <div className="lg:col-span-4">
+            <aside className="sticky top-28 space-y-6">
+              <div className="bg-card border border-border p-10 rounded-[16px] text-center space-y-8">
+                <div className="h-20 w-20 bg-primary/5 rounded-[24px] flex items-center justify-center mx-auto border border-primary/20">
+                  <Activity className="h-10 w-10 text-primary" />
                 </div>
-              </section>
-            </div>
-
-            <div className="lg:col-span-4">
-              <aside className="sticky top-44 space-y-8">
-                <div className="glass-card rounded-[3.5rem] p-12 border-primary/20 bg-[#0a0a0a] text-center shadow-2xl relative overflow-hidden">
-                  <div className="absolute top-0 right-0 p-8 opacity-5">
-                    <Activity className="h-40 w-40 text-primary" />
-                  </div>
-                  
-                  <div className="h-24 w-24 bg-primary/10 rounded-[2.5rem] flex items-center justify-center mx-auto mb-10 shadow-[0_0_50px_rgba(170,255,0,0.2)] border border-primary/20">
-                    <Zap className="h-12 w-12 text-primary" />
-                  </div>
-                  
-                  <h3 className="text-3xl font-black italic uppercase text-white mb-4">Challenge Squad</h3>
-                  <p className="text-lg font-medium text-white/40 mb-12 leading-relaxed italic px-4">
-                    Identify your squad as a rival and negotiate match terms directly with the captain.
+                <div>
+                  <h3 className="text-2xl font-black italic uppercase text-white mb-2">Join Roster</h3>
+                  <p className="text-muted text-sm font-medium leading-relaxed italic">
+                    Negotiate terms and join the squad's active roster for the upcoming season.
                   </p>
-
-                  <div className="space-y-4">
-                    <Button asChild className="w-full h-20 text-lg font-black bg-[#25D366] hover:bg-[#20ba5a] text-white rounded-[1.5rem] shadow-[0_20px_50px_rgba(37,211,102,0.2)] hover:scale-[1.02] transition-transform">
-                      <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
-                        <MessageCircle className="mr-3 h-7 w-7" />
-                        START CHAT
-                      </a>
-                    </Button>
-                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20">
-                      SECURE ATHLETE CONNECTION ACTIVE
-                    </p>
-                  </div>
                 </div>
-
-                <div className="p-8 border border-white/5 rounded-[2.5rem] bg-white/[0.01]">
-                   <h4 className="text-[10px] font-black uppercase tracking-[0.5em] text-white/30 mb-6">NETWORK STATUS</h4>
-                   <div className="space-y-4">
-                      <div className="flex justify-between items-center">
-                         <span className="text-[11px] font-bold uppercase text-white/20">Roster Status</span>
-                         <span className="text-xs font-black text-primary uppercase">Active Recruitment</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                         <span className="text-[11px] font-bold uppercase text-white/20">Last Match</span>
-                         <span className="text-xs font-black text-white/40 uppercase">3 Days Ago</span>
-                      </div>
-                   </div>
+                <Button className="w-full h-16 border border-primary text-primary hover:bg-primary hover:text-black font-black uppercase tracking-widest text-[11px] rounded-[10px] transition-all">
+                  Request to Join
+                </Button>
+                <div className="pt-6 border-t border-border flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
+                  <span className="text-muted">Status</span>
+                  <span className="text-primary">● Recruiting</span>
                 </div>
-              </aside>
-            </div>
+              </div>
+
+              <div className="bg-surface border border-border p-6 rounded-[16px] flex items-center gap-4">
+                <ShieldCheck className="h-6 w-6 text-primary" />
+                <div>
+                  <p className="text-[10px] font-black text-white uppercase tracking-widest">Verified Identity</p>
+                  <p className="text-[9px] text-muted uppercase mt-0.5">Captain ID: {team.captain}</p>
+                </div>
+              </div>
+            </aside>
           </div>
         </div>
       </main>

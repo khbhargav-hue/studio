@@ -1,4 +1,3 @@
-
 'use client';
 
 import Image from "next/image";
@@ -21,7 +20,13 @@ interface PoolCardProps {
 }
 
 export function PoolCard({ pool }: PoolCardProps) {
-  const displayImage = pool.imageUrl || `https://picsum.photos/seed/${pool.id}/800/600`;
+  // Performance: Apply Cloudinary transforms and fallback to placeholder
+  const displayImage = pool.imageUrl 
+    ? (pool.imageUrl.includes('cloudinary.com') 
+        ? pool.imageUrl.replace('/upload/', '/upload/f_webp,w_800,q_75,c_fill/') 
+        : pool.imageUrl)
+    : `https://picsum.photos/seed/${pool.id}/800/600`;
+
   const whatsappUrl = `https://wa.me/${pool.whatsapp}?text=${encodeURIComponent(`Hi! I want to book a session at ${pool.name}.`)}`;
   const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(pool.address || `${pool.name} ${pool.area}`)}`;
 
@@ -33,8 +38,9 @@ export function PoolCard({ pool }: PoolCardProps) {
           src={displayImage}
           alt={pool.name}
           fill
+          loading="lazy"
           className="object-cover group-hover:scale-105 transition-transform duration-700"
-          sizes="(max-width: 768px) 100vw, 33vw"
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         />
         
         {/* Top-Left: Type Badge */}

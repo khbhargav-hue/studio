@@ -1,10 +1,10 @@
-
 "use client"
 
 import { useState } from "react"
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
+import Image from "next/image"
 import { 
   Star, 
   MapPin, 
@@ -102,14 +102,28 @@ export default function CoachingPage() {
 function CoachCard({ coach }: { coach: any }) {
   const whatsappUrl = `https://wa.me/${coach.whatsapp}?text=${encodeURIComponent(`Hi! I want to book a session with ${coach.name} for ${coach.sport}.`)}`;
 
+  // Performance: Cloudinary optimization for profile circles
+  const photoUrl = coach.photoUrl 
+    ? (coach.photoUrl.includes('cloudinary.com') 
+        ? coach.photoUrl.replace('/upload/', '/upload/f_webp,w_300,q_75,c_fill,g_face/') 
+        : coach.photoUrl)
+    : null;
+
   return (
     <div className="bg-card border border-border rounded-[16px] p-8 flex flex-col items-center text-center transition-all hover:border-primary/40 group">
       {/* Coach Photo Circle */}
       <div className="relative mb-6">
         <div className="h-28 w-28 rounded-full border-2 border-primary p-1">
-          <div className="h-full w-full rounded-full overflow-hidden bg-surface flex items-center justify-center border border-border">
-            {coach.photoUrl ? (
-              <img src={coach.photoUrl.includes('cloudinary.com') ? coach.photoUrl.replace('/upload/', '/upload/f_webp,w_300,q_75,c_fill,g_face/') : coach.photoUrl} alt={coach.name} className="h-full w-full object-cover" />
+          <div className="h-full w-full rounded-full overflow-hidden bg-surface flex items-center justify-center border border-border relative">
+            {photoUrl ? (
+              <Image 
+                src={photoUrl} 
+                alt={coach.name} 
+                fill 
+                className="object-cover" 
+                sizes="112px"
+                loading="lazy"
+              />
             ) : (
               <UserCircle className="h-16 w-16 text-muted-foreground opacity-20" />
             )}

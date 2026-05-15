@@ -108,6 +108,9 @@ export default function TeamsPage() {
               </Button>
             </DialogTrigger>
             <DialogContent className="bg-card border-white/10 p-10 rounded-[2.5rem] max-w-lg shadow-2xl">
+              <DialogHeader className="sr-only">
+                <DialogTitle>Form New Squad</DialogTitle>
+              </DialogHeader>
               {!user ? (
                 <div className="text-center py-10 space-y-6">
                   <DialogHeader>

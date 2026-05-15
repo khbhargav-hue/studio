@@ -143,6 +143,9 @@ export default function ChallengesPage() {
             </button>
           </DialogTrigger>
           <DialogContent className="bg-card border-white/10 p-10 rounded-[3rem] max-w-lg shadow-2xl">
+            <DialogHeader className="sr-only">
+              <DialogTitle>Issue Match Challenge</DialogTitle>
+            </DialogHeader>
             {!user ? (
               <div className="text-center py-10 space-y-6">
                 <DialogHeader>

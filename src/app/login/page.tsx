@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, Suspense } from "react";
@@ -10,9 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Trophy, Loader2, LogIn, AlertCircle, ShieldCheck, ExternalLink } from "lucide-react";
 import { useAuth, useUser, useFirestore } from "@/firebase";
 import { signInWithEmailAndPassword, signOut } from "firebase/auth";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'khbhargav@gmail.com';
 
@@ -21,7 +20,6 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const auth = useAuth();
-  const db = useFirestore();
   const { user, loading } = useUser();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -79,14 +77,20 @@ function LoginForm() {
             <p className="text-xs leading-relaxed opacity-80">
               This domain (<code className="bg-danger/20 px-1.5 py-0.5 rounded text-white">{domain}</code>) is not authorized in your Firebase Project.
             </p>
-            <div className="pt-2 border-t border-white/10">
+            <div className="p-4 bg-white/5 border border-white/10 rounded-[10px] space-y-3">
+              <p className="text-[10px] font-black uppercase tracking-widest text-primary">Resolution Steps:</p>
+              <ol className="text-[10px] list-decimal pl-4 space-y-2 uppercase tracking-tight">
+                <li>Access Firebase Console</li>
+                <li>Authentication {'>'} Settings {'>'} Authorized Domains</li>
+                <li>Add {domain}</li>
+              </ol>
               <a 
                 href="https://console.firebase.google.com/" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 text-[10px] uppercase font-black tracking-[0.2em] text-primary hover:underline"
               >
-                Go to Firebase Console <ExternalLink className="h-3 w-3" />
+                Open Console <ExternalLink className="h-3 w-3" />
               </a>
             </div>
           </div>

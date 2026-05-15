@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from "react";
@@ -49,7 +50,7 @@ export default function ProfilePage() {
             </p>
             <div className="p-4 bg-white/5 border border-white/10 rounded-[10px] space-y-3">
               <p className="text-[10px] font-black uppercase tracking-widest text-primary">Resolution Steps:</p>
-              <ol className="text-[10px] list-decimal pl-4 space-y-2 opacity-70 uppercase tracking-tight">
+              <ol className="text-[10px] list-decimal pl-4 space-y-2 uppercase tracking-tight">
                 <li>Access Firebase Console</li>
                 <li>Authentication {'>'} Settings {'>'} Authorized Domains</li>
                 <li>Add {domain}</li>
@@ -102,7 +103,7 @@ export default function ProfilePage() {
             </p>
             <div className="p-4 bg-white/5 border border-white/10 rounded-[10px] space-y-3">
               <p className="text-[10px] font-black uppercase tracking-widest text-primary">Resolution Steps:</p>
-              <ol className="text-[10px] list-decimal pl-4 space-y-2 opacity-70 uppercase tracking-tight">
+              <ol className="text-[10px] list-decimal pl-4 space-y-2 uppercase tracking-tight">
                 <li>Access Firebase Console</li>
                 <li>Authentication {'>'} Settings {'>'} Authorized Domains</li>
                 <li>Add {domain}</li>

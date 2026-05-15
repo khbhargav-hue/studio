@@ -1,5 +1,12 @@
-
-import { doc, getDoc, setDoc, getDocs, collection, query, limit, serverTimestamp, Firestore, enableNetwork } from "firebase/firestore";
+import { 
+  doc, 
+  setDoc, 
+  getDocFromServer, 
+  collection, 
+  serverTimestamp, 
+  Firestore, 
+  enableNetwork 
+} from "firebase/firestore";
 
 /**
  * Normalizes sport strings to match platform UI filters
@@ -122,10 +129,14 @@ export const seedTeams = [
   }
 ];
 
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 /**
  * Hardened Circuit Seeding Logic
+ * Uses getDocFromServer to bypass local cache and fix false offline states.
+ * Includes a retry mechanism (3 attempts, 2 sec delay).
  */
-export async function seedCircuitData(db: Firestore) {
+export async function seedCircuitData(db: Firestore, attempts = 3) {
   try {
     await enableNetwork(db);
   } catch (err: any) {
@@ -136,8 +147,9 @@ export async function seedCircuitData(db: Firestore) {
     const id = item.id || item.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
     const docRef = doc(db, coll, id);
     
+    // Attempt to read directly from the server to bypass "false offline" cache issues
     try {
-      const snap = await getDoc(docRef);
+      const snap = await getDocFromServer(docRef);
       if (!snap.exists()) {
         await setDoc(docRef, {
           ...item,
@@ -150,19 +162,34 @@ export async function seedCircuitData(db: Firestore) {
       }
       return false;
     } catch (error: any) {
-      console.warn(`Node deployment failed for [${coll}/${id}]:`, error.message);
-      return false;
+      console.error(`[CIRCUIT ERROR] Node deployment failed for [${coll}/${id}]:`, error.message);
+      throw error; // Re-throw to trigger retry at parent level
     }
   };
 
   try {
     let seededCount = 0;
-    for (const turf of mysuuruTurfs) if (await safeSeed("turfs", turf)) seededCount++;
-    for (const pool of mysuuruPools) if (await safeSeed("pools", pool)) seededCount++;
-    for (const coach of seedCoaches) if (await safeSeed("coaches", coach)) seededCount++;
-    for (const team of seedTeams) if (await safeSeed("teams", team)) seededCount++;
+    const dataGroups = [
+      { coll: "turfs", items: mysuuruTurfs },
+      { coll: "pools", items: mysuuruPools },
+      { coll: "coaches", items: seedCoaches },
+      { coll: "teams", items: seedTeams }
+    ];
+
+    for (const group of dataGroups) {
+      for (const item of group.items) {
+        if (await safeSeed(group.coll, item)) {
+          seededCount++;
+        }
+      }
+    }
     return seededCount;
   } catch (error: any) {
-    throw new Error(`Circuit Transmission Interrupted: ${error.message}`);
+    if (attempts > 1) {
+      console.log(`[CIRCUIT RETRY] Connection weak. Retrying in 2s... (${attempts - 1} left)`);
+      await delay(2000);
+      return seedCircuitData(db, attempts - 1);
+    }
+    throw new Error(`Circuit Transmission Interrupted: ${error.message}. Check your proxy settings.`);
   }
 }

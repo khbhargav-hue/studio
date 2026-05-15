@@ -1,10 +1,9 @@
 'use client';
 
 import { useState, useEffect } from "react";
-import { X, ExternalLink, Zap } from "lucide-react";
-import { useCollection, useFirestore } from "@/firebase";
+import { X, Zap } from "lucide-react";
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection, query, where, limit, doc, updateDoc, increment } from "firebase/firestore";
-import { cn } from "@/lib/utils";
 
 export function HeroBannerAd() {
   const db = useFirestore();
@@ -16,8 +15,16 @@ export function HeroBannerAd() {
     if (dismissed) setIsDismissed(true);
   }, []);
 
-  const adsQuery = collection(db, "ads");
-  const bannerQuery = query(adsQuery, where("placement", "==", "hero_banner"), where("isActive", "==", true), limit(1));
+  const bannerQuery = useMemoFirebase(() => {
+    if (!db) return null;
+    return query(
+      collection(db, "ads"), 
+      where("placement", "==", "hero_banner"), 
+      where("isActive", "==", true), 
+      limit(1)
+    );
+  }, [db]);
+
   const { data: ads } = useCollection(bannerQuery);
 
   const ad = ads?.[0] as any;

@@ -51,7 +51,7 @@ export default function ProfilePage() {
               <p className="text-[10px] font-black uppercase tracking-widest text-primary">Resolution Steps:</p>
               <ol className="text-[10px] list-decimal pl-4 space-y-2 opacity-70 uppercase tracking-tight">
                 <li>Access Firebase Console</li>
-                <li>Authentication > Settings > Authorized Domains</li>
+                <li>Authentication {'>'} Settings {'>'} Authorized Domains</li>
                 <li>Add {domain}</li>
               </ol>
               <Button asChild variant="link" className="text-primary text-[10px] h-auto p-0 flex justify-start uppercase font-black">
@@ -93,9 +93,26 @@ export default function ProfilePage() {
       if (error.code === 'auth/unauthorized-domain') {
         const domain = typeof window !== 'undefined' ? window.location.hostname : 'your domain';
         setAuthError(
-          <div className="space-y-3">
-            <p className="font-bold text-danger">Whitelist Required</p>
-            <p className="text-xs opacity-70">Add <b>{domain}</b> to Firebase Auth settings.</p>
+          <div className="space-y-4">
+            <p className="font-bold text-danger uppercase tracking-tighter flex items-center gap-2">
+              <AlertCircle className="h-4 w-4" /> Domain Not Whitelisted
+            </p>
+            <p className="text-xs opacity-80 leading-relaxed">
+              Firebase Security Rules prevent authentication from this domain: <code className="bg-danger/20 px-1 rounded">{domain}</code>
+            </p>
+            <div className="p-4 bg-white/5 border border-white/10 rounded-[10px] space-y-3">
+              <p className="text-[10px] font-black uppercase tracking-widest text-primary">Resolution Steps:</p>
+              <ol className="text-[10px] list-decimal pl-4 space-y-2 opacity-70 uppercase tracking-tight">
+                <li>Access Firebase Console</li>
+                <li>Authentication {'>'} Settings {'>'} Authorized Domains</li>
+                <li>Add {domain}</li>
+              </ol>
+              <Button asChild variant="link" className="text-primary text-[10px] h-auto p-0 flex justify-start uppercase font-black">
+                <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer">
+                  Open Console <ExternalLink className="h-3 w-3 ml-1" />
+                </a>
+              </Button>
+            </div>
           </div>
         );
       }

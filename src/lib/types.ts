@@ -66,30 +66,36 @@ export interface Review {
 
 export interface Team {
   id: string;
-  teamName: string;
+  name: string;
   sport: string;
   area: string;
   captain: string;
   whatsapp: string;
   logoUrl?: string;
-  players: string[];
+  members: string[];
+  maxPlayers: number;
+  description?: string;
   ownerId: string;
   wins?: number;
-  matches?: number;
-  turfPreference?: string;
+  losses?: number;
+  matchesPlayed?: number;
+  isOpen: boolean;
   createdAt: any;
 }
 
 export interface Challenge {
   id: string;
-  teamId: string;
-  teamName: string;
+  title: string;
   sport: string;
+  format: string;
   turf: string;
   date: string;
   time: string;
   notes?: string;
-  status: 'open' | 'accepted' | 'completed';
+  status: 'open' | 'active' | 'completed' | 'cancelled';
+  teamId: string;
+  teamName: string;
+  entryFee: string;
   ownerId: string;
   createdAt: any;
 }
@@ -102,6 +108,32 @@ export interface Lead {
   sportType: string;
   timestamp: any;
   deviceInfo: string;
+}
+
+export interface Pool {
+  id: string;
+  name: string;
+  area: string;
+  address: string;
+  city: string;
+  poolTypes: string[];
+  coachingAvailable: boolean;
+  womenCoaching?: boolean;
+  genderPolicy: string;
+  entryFee: number;
+  feeType: string;
+  openTime: string;
+  closeTime: string;
+  rating: number;
+  reviewCount: number;
+  whatsapp: string;
+  isActive: boolean;
+  imageUrl?: string;
+  amenities: {
+    parking: boolean;
+    changingRooms: boolean;
+    lockers: boolean;
+  };
 }
 
 export interface BrandingSettings {

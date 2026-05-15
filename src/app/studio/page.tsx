@@ -1,6 +1,7 @@
 'use client';
 
-import { useCollection, useFirestore, useMemoFirebase, useDoc } from '@/firebase';
+import { useState } from 'react';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, doc, deleteDoc, updateDoc, limit } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -38,17 +39,19 @@ import {
   UserCheck,
   RefreshCcw,
   ShieldCheck,
-  LayoutDashboard
+  Database
 } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from "@/lib/utils";
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { seedCircuitData } from '@/lib/seed-circuit';
 
 export default function StudioDashboard() {
   const db = useFirestore();
   const { toast } = useToast();
+  const [isSeeding, setIsSeeding] = useState(false);
 
   const turfsQuery = useMemoFirebase(() => {
     if (!db) return null;
@@ -114,6 +117,19 @@ export default function StudioDashboard() {
       });
   };
 
+  const handleSeedData = async () => {
+    if (!db) return;
+    setIsSeeding(true);
+    try {
+      await seedCircuitData(db);
+      toast({ title: "Circuit Intelligence Synced", description: "All Mysuru turfs and pools have been deployed." });
+    } catch (err) {
+      toast({ title: "Seed Failed", variant: "destructive" });
+    } finally {
+      setIsSeeding(false);
+    }
+  };
+
   if (turfsLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
@@ -142,6 +158,15 @@ export default function StudioDashboard() {
           <p className="text-muted text-sm font-medium uppercase tracking-widest opacity-60">Mysuru Grassroots Intelligence Hub</p>
         </div>
         <div className="flex items-center gap-4">
+          <Button 
+            variant="outline" 
+            onClick={handleSeedData} 
+            disabled={isSeeding}
+            className="h-12 rounded-xl border-border bg-surface font-black uppercase tracking-widest text-[10px] text-primary"
+          >
+            {isSeeding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Database className="h-4 w-4 mr-2" />}
+            Seed Intelligence
+          </Button>
           <Button variant="outline" onClick={() => window.location.reload()} className="h-12 rounded-xl border-border bg-surface font-black uppercase tracking-widest text-[10px]">
             <RefreshCcw className="h-4 w-4 mr-2" /> Sync Circuit
           </Button>

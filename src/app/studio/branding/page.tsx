@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from "react";
@@ -37,8 +38,6 @@ import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
-import { Progress } from "@/components/ui/progress";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 
 const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
@@ -79,9 +78,7 @@ export default function BrandingStudioPage() {
     if (brandingData) {
       setFormData(prev => ({ 
         ...prev, 
-        ...brandingData,
-        logoUrl: brandingData.logoUrl || prev.logoUrl,
-        faviconUrl: brandingData.faviconUrl || prev.faviconUrl
+        ...brandingData
       }));
     }
   }, [brandingData]);
@@ -146,7 +143,6 @@ export default function BrandingStudioPage() {
     };
 
     try {
-      // Blocking await ensures data is committed before UI confirmation
       await setDoc(docRef, dataToSave, { merge: true });
       toast({ 
         title: "Platform Identity Published", 
@@ -217,32 +213,48 @@ export default function BrandingStudioPage() {
 
               <Card className="glass-card border-white/5 rounded-[3rem] overflow-hidden">
                 <CardHeader className="p-10 pb-0"><CardTitle className="font-headline text-3xl font-bold flex items-center gap-4"><Smartphone className="h-8 w-8 text-primary" /> Permanent Assets</CardTitle></CardHeader>
-                <CardContent className="p-10 grid grid-cols-2 gap-8">
-                  <div className="space-y-4">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Identity Logo</Label>
-                    <div 
-                      className={cn(
-                        "relative aspect-square rounded-3xl border-2 border-dashed flex items-center justify-center p-8 transition-all overflow-hidden bg-black/40 cursor-pointer",
-                        uploadingStates['logo'] ? "opacity-50" : "border-primary/20 hover:border-primary/50"
-                      )}
-                      onClick={() => !uploadingStates['logo'] && logoInputRef.current?.click()}
-                    >
-                      {uploadingStates['logo'] ? <Loader2 className="h-6 w-6 animate-spin text-primary" /> : formData.logoUrl ? <img src={formData.logoUrl} className="max-h-full max-w-full object-contain" alt="Logo" /> : <Upload className="h-6 w-6 text-white/20" />}
-                      <input type="file" ref={logoInputRef} onChange={e => handleFileUpload(e, 'logo')} accept="image/*" className="hidden" />
+                <CardContent className="p-10 space-y-8">
+                  <div className="grid grid-cols-2 gap-8">
+                    <div className="space-y-4">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Identity Logo</Label>
+                      <div 
+                        className={cn(
+                          "relative aspect-square rounded-3xl border-2 border-dashed flex items-center justify-center p-8 transition-all overflow-hidden bg-black/40 cursor-pointer",
+                          uploadingStates['logo'] ? "opacity-50" : "border-primary/20 hover:border-primary/50"
+                        )}
+                        onClick={() => !uploadingStates['logo'] && logoInputRef.current?.click()}
+                      >
+                        {uploadingStates['logo'] ? <Loader2 className="h-6 w-6 animate-spin text-primary" /> : formData.logoUrl ? <img src={formData.logoUrl} className="max-h-full max-w-full object-contain" alt="Logo" /> : <Upload className="h-6 w-6 text-white/20" />}
+                        <input type="file" ref={logoInputRef} onChange={e => handleFileUpload(e, 'logo')} accept="image/*" className="hidden" />
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Browser Favicon</Label>
+                      <div 
+                        className={cn(
+                          "relative aspect-square rounded-3xl border-2 border-dashed flex items-center justify-center p-8 transition-all overflow-hidden bg-black/40 cursor-pointer",
+                          uploadingStates['favicon'] ? "opacity-50" : "border-primary/20 hover:border-primary/50"
+                        )}
+                        onClick={() => !uploadingStates['favicon'] && faviconInputRef.current?.click()}
+                      >
+                        {uploadingStates['favicon'] ? <Loader2 className="h-6 w-6 animate-spin text-primary" /> : formData.faviconUrl ? <img src={formData.faviconUrl} className="h-10 w-10 object-contain" alt="Favicon" /> : <Upload className="h-6 w-6 text-white/20" />}
+                        <input type="file" ref={faviconInputRef} onChange={e => handleFileUpload(e, 'favicon')} accept="image/*" className="hidden" />
+                      </div>
                     </div>
                   </div>
 
                   <div className="space-y-4">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Browser Favicon</Label>
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Hero Background Asset</Label>
                     <div 
                       className={cn(
-                        "relative aspect-square rounded-3xl border-2 border-dashed flex items-center justify-center p-8 transition-all overflow-hidden bg-black/40 cursor-pointer",
-                        uploadingStates['favicon'] ? "opacity-50" : "border-primary/20 hover:border-primary/50"
+                        "relative aspect-video rounded-3xl border-2 border-dashed flex items-center justify-center p-8 transition-all overflow-hidden bg-black/40 cursor-pointer",
+                        uploadingStates['hero'] ? "opacity-50" : "border-primary/20 hover:border-primary/50"
                       )}
-                      onClick={() => !uploadingStates['favicon'] && faviconInputRef.current?.click()}
+                      onClick={() => !uploadingStates['hero'] && heroInputRef.current?.click()}
                     >
-                      {uploadingStates['favicon'] ? <Loader2 className="h-6 w-6 animate-spin text-primary" /> : formData.faviconUrl ? <img src={formData.faviconUrl} className="h-10 w-10 object-contain" alt="Favicon" /> : <Upload className="h-6 w-6 text-white/20" />}
-                      <input type="file" ref={faviconInputRef} onChange={e => handleFileUpload(e, 'favicon')} accept="image/*" className="hidden" />
+                      {uploadingStates['hero'] ? <Loader2 className="h-6 w-6 animate-spin text-primary" /> : formData.heroImageUrl ? <img src={formData.heroImageUrl} className="h-full w-full object-cover" alt="Hero" /> : <div className="flex flex-col items-center gap-2"><Upload className="h-8 w-8 text-white/20" /><span className="text-[10px] font-bold text-white/20 uppercase tracking-widest">Upload Hero Media</span></div>}
+                      <input type="file" ref={heroInputRef} onChange={e => handleFileUpload(e, 'hero')} accept="image/*" className="hidden" />
                     </div>
                   </div>
                 </CardContent>

@@ -7,7 +7,7 @@ export default function manifest(): MetadataRoute.Manifest {
     description: 'Find and book the best sports turfs, join teams, and challenge opponents in Mysuru.',
     start_url: '/',
     display: 'standalone',
-    background_color: '#000000',
+    background_color: '#0A0A0A',
     theme_color: '#AAFF00',
     orientation: 'portrait',
     icons: [

@@ -13,7 +13,7 @@ export default function robots(): MetadataRoute.Robots {
         '/api/'
       ],
     },
-    sitemap: 'https://www.turfista.in/sitemap.xml',
-    host: 'https://www.turfista.in'
+    sitemap: 'https://turfista.in/sitemap.xml',
+    host: 'https://turfista.in'
   };
 }

@@ -1,15 +1,15 @@
-
 "use client"
 
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
-import { Users, Trophy, MapPin, Zap, ChevronDown } from "lucide-react"
+import { ChevronDown, Trophy, Users, MapPin, Zap } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { useFirestore, useDoc, useMemoFirebase } from "@/firebase"
 import { doc } from "firebase/firestore"
 import { motion } from "framer-motion"
+import { FilterSystem } from "@/components/filter-system"
 
 export default function Home() {
   const db = useFirestore()
@@ -22,7 +22,7 @@ export default function Home() {
   const { data: branding } = useDoc(brandingRef)
 
   // Cloudinary optimized background
-  const heroBg = "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&q=75&w=1920";
+  const heroBg = branding?.heroImageUrl || "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&q=75&w=1920";
   const optimizedHeroBg = heroBg.includes('cloudinary.com') 
     ? heroBg.replace('/upload/', '/upload/f_webp,w_1920,q_12/') 
     : heroBg;
@@ -41,7 +41,7 @@ export default function Home() {
         <div className="absolute inset-0 z-0">
           <Image 
             src={optimizedHeroBg}
-            alt="Mysuru Turf Aerial View"
+            alt="Mysuru Turf Network"
             fill
             className="object-cover opacity-[0.12] grayscale transition-opacity duration-1000"
             priority
@@ -57,7 +57,7 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-[#1A1A1A] border border-[#222222] text-[11px] font-black uppercase tracking-[0.3em] text-white"
           >
-            <span className="text-[#AAFF00]">●</span> Mysuru's Turf Network — Est. 2024
+            <span className="text-primary">●</span> Mysuru's Turf Network — Est. 2024
           </motion.div>
           
           {/* H1 Typographic Stack */}
@@ -91,14 +91,14 @@ export default function Home() {
           >
             <Button 
               onClick={scrollToTurfs}
-              className="w-full sm:w-auto h-[56px] px-10 text-[14px] uppercase font-black tracking-widest bg-primary text-black rounded-[10px] hover:scale-[1.02] transition-transform"
+              className="w-full sm:w-auto h-[64px] px-12 text-[14px] uppercase font-black tracking-widest bg-primary text-black rounded-[10px] hover:scale-[1.02] transition-transform"
             >
               ⚽ Book a Turf
             </Button>
             <Button 
               asChild 
               variant="outline" 
-              className="w-full sm:w-auto h-[56px] px-10 text-[14px] uppercase font-black tracking-widest border-[#222] text-white rounded-[10px] bg-[#111] hover:bg-[#1A1A1A] hover:border-primary transition-all"
+              className="w-full sm:w-auto h-[64px] px-12 text-[14px] uppercase font-black tracking-widest border-[#222] text-white rounded-[10px] bg-[#111] hover:bg-[#1A1A1A] hover:border-primary transition-all"
             >
               <Link href="/teams">👥 Create Team</Link>
             </Button>
@@ -154,8 +154,10 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Listings Target Area */}
-      <div id="listings" className="scroll-mt-[64px]" />
+      {/* 3. SPORT FILTER SYSTEM (Sticky) */}
+      <div id="listings" className="scroll-mt-[64px]">
+        <FilterSystem />
+      </div>
 
       <Footer />
     </div>

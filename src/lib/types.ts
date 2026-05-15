@@ -110,6 +110,7 @@ export interface BrandingSettings {
   heroDescription: string;
   heroImageUrl: string;
   logoUrl: string;
+  faviconUrl: string;
   seoTitle: string;
   seoDescription: string;
   footerEmail: string;

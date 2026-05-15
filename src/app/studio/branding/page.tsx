@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from "react";
@@ -29,7 +30,8 @@ import {
   Zap,
   Info,
   ShieldAlert,
-  AlertCircle
+  AlertCircle,
+  Smartphone
 } from "lucide-react";
 import { useFirestore, useDoc, useMemoFirebase } from "@/firebase";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
@@ -47,6 +49,7 @@ export default function BrandingStudioPage() {
   const db = useFirestore();
   const { toast } = useToast();
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const faviconInputRef = useRef<HTMLInputElement>(null);
   const heroInputRef = useRef<HTMLInputElement>(null);
   
   const brandingRef = useMemoFirebase(() => {
@@ -57,7 +60,6 @@ export default function BrandingStudioPage() {
   const { data: brandingData, loading } = useDoc(brandingRef);
 
   const [isSaving, setIsSaving] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
   const [uploadingStates, setUploadingStates] = useState<Record<string, boolean>>({});
   
   const [formData, setFormData] = useState({
@@ -65,6 +67,7 @@ export default function BrandingStudioPage() {
     heroHeadingNeon: "MORE.",
     heroDescription: "Discover and book Mysuru’s best sports turfs in one place.",
     logoUrl: "",
+    faviconUrl: "",
     heroImageUrl: "",
     seoTitle: "Turfista | Premium Sports Community in Mysuru",
     seoDescription: "Find elite sports arenas, join local teams, and challenge rivals in Mysuru.",
@@ -82,7 +85,7 @@ export default function BrandingStudioPage() {
   const uploadToCloudinary = (file: File, key: string): Promise<string | null> => {
     return new Promise((resolve) => {
       if (!CLOUDINARY_CLOUD_NAME) {
-        toast({ title: "Configuration Missing", description: "Add NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME to your env.", variant: "destructive" });
+        toast({ title: "Configuration Missing", variant: "destructive" });
         resolve(null);
         return;
       }
@@ -92,17 +95,9 @@ export default function BrandingStudioPage() {
       uploadData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
 
       setUploadingStates(prev => ({ ...prev, [key]: true }));
-      setUploadProgress(prev => ({ ...prev, [key]: 0 }));
 
       const xhr = new XMLHttpRequest();
       xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, true);
-
-      xhr.upload.onprogress = (event) => {
-        if (event.lengthComputable) {
-          const progress = Math.round((event.loaded / event.total) * 100);
-          setUploadProgress(prev => ({ ...prev, [key]: progress }));
-        }
-      };
 
       xhr.onload = () => {
         setUploadingStates(prev => ({ ...prev, [key]: false }));
@@ -117,7 +112,7 @@ export default function BrandingStudioPage() {
 
       xhr.onerror = () => {
         setUploadingStates(prev => ({ ...prev, [key]: false }));
-        toast({ title: "Network error during media sync.", variant: "destructive" });
+        toast({ title: "Network error", variant: "destructive" });
         resolve(null);
       };
 
@@ -125,27 +120,17 @@ export default function BrandingStudioPage() {
     });
   };
 
-  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, key: string) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const url = await uploadToCloudinary(file, 'logo');
+    const url = await uploadToCloudinary(file, key);
     if (url) {
-      setFormData(prev => ({ ...prev, logoUrl: url }));
-      toast({ title: "Logo Staged" });
+      setFormData(prev => ({ ...prev, [`${key}Url`]: url }));
+      toast({ title: "Asset Staged", description: `${key} identity updated.` });
     }
   };
 
-  const handleHeroUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const url = await uploadToCloudinary(file, 'hero');
-    if (url) {
-      setFormData(prev => ({ ...prev, heroImageUrl: url }));
-      toast({ title: "Hero Media Staged" });
-    }
-  };
-
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!db) return;
     
@@ -156,25 +141,23 @@ export default function BrandingStudioPage() {
       updatedAt: serverTimestamp()
     };
 
-    // Use non-blocking pattern for Firestore mutation
-    setDoc(docRef, dataToSave, { merge: true })
-      .then(() => {
-        toast({ 
-          title: "Platform Identity Synchronized", 
-          description: "Changes are permanent across the network." 
-        });
-        setIsSaving(false);
-      })
-      .catch(async (err) => {
-        const permissionError = new FirestorePermissionError({
-          path: docRef.path,
-          operation: 'write',
-          requestResourceData: dataToSave,
-          message: err.message
-        });
-        errorEmitter.emit('permission-error', permissionError);
-        setIsSaving(false);
+    try {
+      await setDoc(docRef, dataToSave, { merge: true });
+      toast({ 
+        title: "Platform Identity Synchronized", 
+        description: "Changes are permanent across the network." 
       });
+    } catch (err: any) {
+      const permissionError = new FirestorePermissionError({
+        path: docRef.path,
+        operation: 'write',
+        requestResourceData: dataToSave,
+        message: err.message
+      });
+      errorEmitter.emit('permission-error', permissionError);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (loading) return (
@@ -192,28 +175,8 @@ export default function BrandingStudioPage() {
             <Palette className="h-10 w-10 text-primary" />
             <h1 className="font-headline text-5xl font-bold tracking-tight uppercase italic">Visual <span className="text-primary">Identity</span></h1>
           </div>
-          <p className="text-muted-foreground text-xl font-medium">Configure global platform narratives. Changes persist through redeployments.</p>
+          <p className="text-muted-foreground text-xl font-medium">Configure global platform narratives and persistent branding assets.</p>
         </div>
-      </div>
-
-      <div className="mb-10">
-        {!CLOUDINARY_CLOUD_NAME ? (
-          <Alert variant="destructive" className="bg-destructive/10 border-destructive/20 text-destructive rounded-[2rem] p-8">
-            <AlertCircle className="h-6 w-6" />
-            <AlertTitle className="font-black uppercase tracking-widest text-xs mb-2">Cloudinary Disconnected</AlertTitle>
-            <AlertDescription className="text-xs opacity-80 leading-relaxed font-medium">
-              Add <strong>NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME</strong> to enable uploads.
-            </AlertDescription>
-          </Alert>
-        ) : (
-          <Alert className="bg-primary/5 border-primary/20 text-primary rounded-[2rem] p-8">
-            <ShieldAlert className="h-6 w-6" />
-            <AlertTitle className="font-black uppercase tracking-widest text-xs mb-2">Media Protocol Active</AlertTitle>
-            <AlertDescription className="text-xs opacity-80 leading-relaxed font-medium">
-              Cloud: <span className="font-bold">{CLOUDINARY_CLOUD_NAME}</span> • Active Preset: <span className="font-bold underline">{CLOUDINARY_UPLOAD_PRESET}</span>
-            </AlertDescription>
-          </Alert>
-        )}
       </div>
 
       <form onSubmit={handleSave} className="space-y-10">
@@ -244,61 +207,39 @@ export default function BrandingStudioPage() {
                     <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Platform Narrative</Label>
                     <Textarea className="min-h-[140px] bg-white/5 border-white/5 rounded-[2rem] p-6 text-lg leading-relaxed italic" value={formData.heroDescription} onChange={e => setFormData({...formData, heroDescription: e.target.value})} />
                   </div>
-                  
-                  <div className="pt-8 border-t border-white/5">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-4 block">Identity Logo</Label>
-                    <div className="relative group cursor-pointer" onClick={() => !uploadingStates['logo'] && logoInputRef.current?.click()}>
-                      <div className={cn(
-                        "relative aspect-square w-40 rounded-3xl border-2 border-dashed flex items-center justify-center p-8 transition-all overflow-hidden",
-                        uploadingStates['logo'] ? "opacity-50" : "border-primary/20 bg-black/40 hover:border-primary/50"
-                      )}>
-                        {uploadingStates['logo'] ? (
-                          <div className="text-center w-full">
-                            <Loader2 className="h-6 w-6 animate-spin text-primary mx-auto mb-2" />
-                            <Progress value={uploadProgress['logo']} className="h-1 bg-white/10" />
-                          </div>
-                        ) : (
-                          formData.logoUrl ? <img src={formData.logoUrl} className="max-h-full max-w-full object-contain" alt="Logo" /> : <Upload className="h-6 w-6 text-white/20" />
-                        )}
-                      </div>
-                      <input type="file" ref={logoInputRef} onChange={handleLogoUpload} accept="image/*" className="hidden" />
-                    </div>
-                  </div>
                 </CardContent>
               </Card>
 
               <Card className="glass-card border-white/5 rounded-[3rem] overflow-hidden">
-                <CardHeader className="p-10 pb-4">
-                  <CardTitle className="font-headline text-3xl font-bold flex items-center gap-4"><ImageIcon className="h-8 w-8 text-primary" /> Visual Target</CardTitle>
-                </CardHeader>
-                <CardContent className="p-10 pt-4 space-y-10">
-                   <div 
+                <CardHeader className="p-10 pb-0"><CardTitle className="font-headline text-3xl font-bold flex items-center gap-4"><Smartphone className="h-8 w-8 text-primary" /> Permanent Assets</CardTitle></CardHeader>
+                <CardContent className="p-10 grid grid-cols-2 gap-8">
+                  <div className="space-y-4">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Identity Logo</Label>
+                    <div 
                       className={cn(
-                        "relative aspect-square w-full max-w-[420px] mx-auto rounded-full border-2 border-dashed transition-all overflow-hidden flex items-center justify-center group bg-black/40",
-                        uploadingStates['hero'] ? "opacity-50 border-primary/20" : "border-primary/40 hover:border-primary hover:shadow-[0_0_50px_rgba(57,255,20,0.1)] cursor-pointer"
+                        "relative aspect-square rounded-3xl border-2 border-dashed flex items-center justify-center p-8 transition-all overflow-hidden bg-black/40 cursor-pointer",
+                        uploadingStates['logo'] ? "opacity-50" : "border-primary/20 hover:border-primary/50"
                       )}
-                      onClick={() => !uploadingStates['hero'] && heroInputRef.current?.click()}
+                      onClick={() => !uploadingStates['logo'] && logoInputRef.current?.click()}
                     >
-                      {uploadingStates['hero'] ? (
-                        <div className="text-center w-64 p-12">
-                          <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-4" />
-                          <Progress value={uploadProgress['hero']} className="h-2 bg-white/10" />
-                        </div>
-                      ) : formData.heroImageUrl ? (
-                        <div className="relative w-full h-full p-12 flex items-center justify-center">
-                           <img src={formData.heroImageUrl} className="w-full h-full object-contain drop-shadow-[0_0_30px_rgba(170,255,0,0.2)]" alt="Hero" />
-                           <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                              <div className="bg-black/80 px-8 py-4 rounded-full border border-primary/40 text-primary font-black uppercase tracking-widest text-[11px]">REPLACE</div>
-                           </div>
-                        </div>
-                      ) : (
-                        <div className="text-center p-12 opacity-30">
-                          <Upload className="h-12 w-12 mx-auto mb-4 text-primary" />
-                          <p className="text-[11px] font-black uppercase tracking-widest">TAP TO UPLOAD HERO</p>
-                        </div>
-                      )}
-                      <input type="file" ref={heroInputRef} onChange={handleHeroUpload} className="hidden" accept="image/*" />
+                      {uploadingStates['logo'] ? <Loader2 className="h-6 w-6 animate-spin text-primary" /> : formData.logoUrl ? <img src={formData.logoUrl} className="max-h-full max-w-full object-contain" alt="Logo" /> : <Upload className="h-6 w-6 text-white/20" />}
+                      <input type="file" ref={logoInputRef} onChange={e => handleFileUpload(e, 'logo')} accept="image/*" className="hidden" />
                     </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Browser Favicon</Label>
+                    <div 
+                      className={cn(
+                        "relative aspect-square rounded-3xl border-2 border-dashed flex items-center justify-center p-8 transition-all overflow-hidden bg-black/40 cursor-pointer",
+                        uploadingStates['favicon'] ? "opacity-50" : "border-primary/20 hover:border-primary/50"
+                      )}
+                      onClick={() => !uploadingStates['favicon'] && faviconInputRef.current?.click()}
+                    >
+                      {uploadingStates['favicon'] ? <Loader2 className="h-6 w-6 animate-spin text-primary" /> : formData.faviconUrl ? <img src={formData.faviconUrl} className="h-10 w-10 object-contain" alt="Favicon" /> : <Upload className="h-6 w-6 text-white/20" />}
+                      <input type="file" ref={faviconInputRef} onChange={e => handleFileUpload(e, 'favicon')} accept="image/*" className="hidden" />
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -347,7 +288,7 @@ export default function BrandingStudioPage() {
           className="w-full h-24 bg-primary text-black font-black text-3xl rounded-[2.5rem] shadow-2xl hover:scale-[1.01] transition-all"
         >
           {isSaving ? <Loader2 className="h-10 w-10 animate-spin" /> : <Save className="mr-6 h-10 w-10" />}
-          PUBLISH CHANGES TO NETWORK
+          PUBLISH PERMANENT IDENTITY
         </Button>
       </form>
     </div>

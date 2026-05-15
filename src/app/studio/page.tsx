@@ -39,7 +39,8 @@ import {
   UserCheck,
   RefreshCcw,
   ShieldCheck,
-  Database
+  Database,
+  WifiOff
 } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
@@ -83,12 +84,14 @@ export default function StudioDashboard() {
     return query(collection(db, 'users'), limit(10));
   }, [db]);
 
-  const { data: turfs, loading: turfsLoading } = useCollection(turfsQuery);
+  const { data: turfs, loading: turfsLoading, error: turfsError } = useCollection(turfsQuery);
   const { data: teams } = useCollection(teamsQuery);
   const { data: challenges } = useCollection(challengesQuery);
   const { data: coaches } = useCollection(coachesQuery);
   const { data: pools } = useCollection(poolsQuery);
   const { data: users } = useCollection(usersQuery);
+
+  const isOffline = !!turfsError && turfsError.message.includes('offline');
 
   const togglePopularStatus = (turfId: string, currentStatus: boolean) => {
     if (!db) return;
@@ -119,6 +122,15 @@ export default function StudioDashboard() {
 
   const handleSeedData = async () => {
     if (!db) return;
+    if (isOffline) {
+      toast({ 
+        title: "Circuit Offline", 
+        description: "Cannot seed data while the platform is disconnected from Firestore.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsSeeding(true);
     try {
       await seedCircuitData(db);
@@ -166,10 +178,15 @@ export default function StudioDashboard() {
           <p className="text-muted text-sm font-medium uppercase tracking-widest opacity-60">Mysuru Grassroots Intelligence Hub</p>
         </div>
         <div className="flex items-center gap-4">
+          {isOffline && (
+            <div className="flex items-center gap-2 px-4 py-2 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive text-[10px] font-black uppercase tracking-widest">
+              <WifiOff className="h-4 w-4" /> Offline Mode
+            </div>
+          )}
           <Button 
             variant="outline" 
             onClick={handleSeedData} 
-            disabled={isSeeding}
+            disabled={isSeeding || isOffline}
             className="h-12 rounded-xl border-border bg-surface font-black uppercase tracking-widest text-[10px] text-primary"
           >
             {isSeeding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Database className="h-4 w-4 mr-2" />}
@@ -212,79 +229,86 @@ export default function StudioDashboard() {
             <Badge className="bg-primary/10 text-primary px-4 py-1.5 rounded-full font-black text-[9px] uppercase tracking-widest border border-primary/20">LIVE FIRESTORE LINK</Badge>
           </div>
           <div className="overflow-x-auto">
-            <Table>
-              <TableHeader className="bg-surface/50">
-                <TableRow className="border-border hover:bg-transparent">
-                  <TableHead className="p-6 font-black uppercase tracking-widest text-[10px] text-muted">Identity</TableHead>
-                  <TableHead className="font-black uppercase tracking-widest text-[10px] text-muted">Status</TableHead>
-                  <TableHead className="font-black uppercase tracking-widest text-[10px] text-muted text-center">Price/HR</TableHead>
-                  <TableHead className="text-right p-6 font-black uppercase tracking-widest text-[10px] text-muted">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {turfs?.map((turf) => (
-                  <TableRow key={turf.id} className="border-border hover:bg-surface/30 transition-colors">
-                    <TableCell className="p-6">
-                      <div className="flex items-center gap-4">
-                        <div className="h-12 w-16 rounded-lg bg-surface border border-border overflow-hidden">
-                          {turf.imageUrl ? <img src={turf.imageUrl} className="h-full w-full object-cover" /> : <Zap className="h-full w-full p-3 opacity-10" />}
-                        </div>
-                        <div>
-                          <p className="font-bold text-sm text-white uppercase italic">{turf.name}</p>
-                          <p className="text-[10px] font-bold uppercase tracking-tight text-muted">{turf.area} • {turf.sports?.join(', ')}</p>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => togglePopularStatus(turf.id, !!turf.isPremium)}
-                          className={cn(
-                            "rounded-lg h-8 px-3 transition-all border",
-                            turf.isPremium ? "text-primary bg-primary/10 border-primary/20" : "text-muted border-border hover:text-white"
-                          )}
-                        >
-                          <Star className={cn("h-3.5 w-3.5 mr-1.5", turf.isPremium && "fill-current")} />
-                          <span className="text-[9px] font-black uppercase tracking-widest">{turf.isPremium ? 'Featured' : 'Standard'}</span>
-                        </Button>
-                        <Badge className={cn("px-3 py-0.5 rounded-lg font-black text-[9px] uppercase border-none", turf.isActive ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500")}>
-                          {turf.isActive ? 'Active' : 'Offline'}
-                        </Badge>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center font-black italic text-base text-primary">
-                      ₹{turf.pricePerHour}
-                    </TableCell>
-                    <TableCell className="text-right p-6">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="outline" size="icon" className="h-9 w-9 rounded-lg hover:border-primary hover:text-primary transition-all bg-surface" asChild>
-                          <Link href={`/studio/new?id=${turf.id}`}><Edit2 className="h-3.5 w-3.5" /></Link>
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="outline" size="icon" className="h-9 w-9 rounded-lg hover:bg-destructive/10 hover:text-destructive hover:border-destructive transition-all bg-surface">
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent className="bg-card border-border rounded-[24px]">
-                            <AlertDialogHeader>
-                              <AlertDialogTitle className="text-xl font-black italic uppercase text-destructive tracking-tighter">Terminate Listing?</AlertDialogTitle>
-                              <AlertDialogDescription className="text-muted font-medium italic">This action will permanently redact "{turf.name}" from the Mysuru circuit database.</AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter className="mt-6 gap-3">
-                              <AlertDialogCancel className="rounded-xl font-black uppercase tracking-widest text-[10px] h-11 border-border">Abort</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDeleteTurf(turf.id)} className="bg-destructive text-white rounded-xl font-black uppercase tracking-widest text-[10px] h-11 hover:bg-destructive/90">Redact Permanent</AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </TableCell>
+            {isOffline ? (
+              <div className="p-20 text-center space-y-4">
+                <WifiOff className="h-12 w-12 text-muted-foreground mx-auto opacity-20" />
+                <p className="text-muted font-medium italic">Database connection interrupted. Tables are locked until connectivity returns.</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader className="bg-surface/50">
+                  <TableRow className="border-border hover:bg-transparent">
+                    <TableHead className="p-6 font-black uppercase tracking-widest text-[10px] text-muted">Identity</TableHead>
+                    <TableHead className="font-black uppercase tracking-widest text-[10px] text-muted">Status</TableHead>
+                    <TableHead className="font-black uppercase tracking-widest text-[10px] text-muted text-center">Price/HR</TableHead>
+                    <TableHead className="text-right p-6 font-black uppercase tracking-widest text-[10px] text-muted">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {turfs?.map((turf) => (
+                    <TableRow key={turf.id} className="border-border hover:bg-surface/30 transition-colors">
+                      <TableCell className="p-6">
+                        <div className="flex items-center gap-4">
+                          <div className="h-12 w-16 rounded-lg bg-surface border border-border overflow-hidden">
+                            {turf.imageUrl ? <img src={turf.imageUrl} className="h-full w-full object-cover" /> : <Zap className="h-full w-full p-3 opacity-10" />}
+                          </div>
+                          <div>
+                            <p className="font-bold text-sm text-white uppercase italic">{turf.name}</p>
+                            <p className="text-[10px] font-bold uppercase tracking-tight text-muted">{turf.area} • {turf.sports?.join(', ')}</p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => togglePopularStatus(turf.id, !!turf.isPremium)}
+                            className={cn(
+                              "rounded-lg h-8 px-3 transition-all border",
+                              turf.isPremium ? "text-primary bg-primary/10 border-primary/20" : "text-muted border-border hover:text-white"
+                            )}
+                          >
+                            <Star className={cn("h-3.5 w-3.5 mr-1.5", turf.isPremium && "fill-current")} />
+                            <span className="text-[9px] font-black uppercase tracking-widest">{turf.isPremium ? 'Featured' : 'Standard'}</span>
+                          </Button>
+                          <Badge className={cn("px-3 py-0.5 rounded-lg font-black text-[9px] uppercase border-none", turf.isActive ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500")}>
+                            {turf.isActive ? 'Active' : 'Offline'}
+                          </Badge>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center font-black italic text-base text-primary">
+                        ₹{turf.pricePerHour}
+                      </TableCell>
+                      <TableCell className="text-right p-6">
+                        <div className="flex justify-end gap-2">
+                          <Button variant="outline" size="icon" className="h-9 w-9 rounded-lg hover:border-primary hover:text-primary transition-all bg-surface" asChild>
+                            <Link href={`/studio/new?id=${turf.id}`}><Edit2 className="h-3.5 w-3.5" /></Link>
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="outline" size="icon" className="h-9 w-9 rounded-lg hover:bg-destructive/10 hover:text-destructive hover:border-destructive transition-all bg-surface">
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent className="bg-card border-border rounded-[24px]">
+                              <AlertDialogHeader>
+                                <AlertDialogTitle className="text-xl font-black italic uppercase text-destructive tracking-tighter">Terminate Listing?</AlertDialogTitle>
+                                <AlertDialogDescription className="text-muted font-medium italic">This action will permanently redact "{turf.name}" from the Mysuru circuit database.</AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter className="mt-6 gap-3">
+                                <AlertDialogCancel className="rounded-xl font-black uppercase tracking-widest text-[10px] h-11 border-border">Abort</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDeleteTurf(turf.id)} className="bg-destructive text-white rounded-xl font-black uppercase tracking-widest text-[10px] h-11 hover:bg-destructive/90">Redact Permanent</AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </div>
         </TabsContent>
       </Tabs>

@@ -2,7 +2,7 @@
 
 import { getApp, getApps, initializeApp, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth } from 'firebase/auth';
-import { getFirestore, Firestore } from 'firebase/firestore';
+import { getFirestore, Firestore, initializeFirestore } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 import { firebaseConfig } from './config';
 
@@ -19,9 +19,30 @@ export function initializeFirebase(): {
   db: Firestore;
   storage: FirebaseStorage;
 } {
-  const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+  const apps = getApps();
+  
+  // Validate config presence
+  if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+    console.warn("Firebase configuration environment variables are missing. Please verify your .env file.");
+  }
+
+  const app = apps.length === 0 ? initializeApp(firebaseConfig) : apps[0];
   const auth = getAuth(app);
-  const db = getFirestore(app);
+  
+  /**
+   * Resilient Firestore Initialization
+   * Using experimentalForceLongPolling solves 'Failed to get document because the client is offline'
+   * in environments where WebSockets are restricted by proxies or workstations.
+   */
+  let db: Firestore;
+  if (apps.length === 0) {
+    db = initializeFirestore(app, {
+      experimentalForceLongPolling: true,
+    });
+  } else {
+    db = getFirestore(app);
+  }
+  
   const storage = getStorage(app);
   return { app, auth, db, storage };
 }

@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, doc, deleteDoc, updateDoc, limit, setDoc, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy, doc, deleteDoc, updateDoc, limit, setDoc, addDoc, serverTimestamp, waitForPendingWrites } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -117,6 +117,9 @@ export default function StudioDashboard() {
       await setDoc(testDocRef, { diagnostic: "active", timestamp: serverTimestamp() });
       console.log("[DIAG] setDoc: SUCCESS");
 
+      // Ensure write is acknowledged by server
+      await waitForPendingWrites(db);
+
       // Test 2: updateDoc
       console.log("[DIAG] Testing updateDoc...");
       await updateDoc(testDocRef, { status: "verified" });
@@ -127,20 +130,18 @@ export default function StudioDashboard() {
       const tempDoc = await addDoc(collection(db, "turfs"), { name: "DIAGNOSTIC_TEMP", isTest: true });
       console.log("[DIAG] addDoc: SUCCESS");
       
-      // Cleanup addDoc
+      // Cleanup
       await deleteDoc(tempDoc);
-
-      // Cleanup setDoc
       await deleteDoc(testDocRef);
       console.log("[DIAG] deleteDoc: SUCCESS");
 
       toast({ title: "Diagnostics Passed", description: "Firestore write circuit is healthy." });
     } catch (err: any) {
-      console.error("[DIAG FAILURE] First failing operation found:", err.code, err.message);
+      console.error("[DIAG FAILURE]", err.code, err.message);
       toast({ 
         variant: "destructive",
         title: "Diagnostic Failure", 
-        description: `Operation failed: ${err.code || 'unknown'}. Check console for failing line.` 
+        description: `Operation failed: ${err.code || 'unknown'}.` 
       });
     } finally {
       setIsDiagnosing(false);

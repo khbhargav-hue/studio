@@ -3,7 +3,7 @@
 
 import { getApps, initializeApp, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth } from 'firebase/auth';
-import { getFirestore, Firestore, initializeFirestore } from 'firebase/firestore';
+import { getFirestore, Firestore, initializeFirestore, terminate } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 import { firebaseConfig } from './config';
 
@@ -19,7 +19,7 @@ export * from './use-memo-firebase';
  * 
  * Hardened for environments with restrictive proxies:
  * 1. Validates all NEXT_PUBLIC_FIREBASE_* variables
- * 2. Enforces Long Polling
+ * 2. Enforces Long Polling (Permanent Fix for 'unavailable')
  * 3. Disables Fetch Streams
  * 4. Logs Project Identity for verification
  */
@@ -37,7 +37,6 @@ export function initializeFirebase(): {
   if (missingKeys.length > 0) {
     const errorMsg = `[FIREBASE CRITICAL] Missing Environment Variables: ${missingKeys.join(', ')}. Ensure your .env file is loaded.`;
     console.error(errorMsg);
-    // In dev, we throw to prevent silent failures. In prod, this will be caught by error boundaries.
     if (process.env.NODE_ENV === 'development') {
       throw new Error(errorMsg);
     }
@@ -49,6 +48,7 @@ export function initializeFirebase(): {
   let db: Firestore;
   if (apps.length === 0) {
     // 2. Resilience: Force connectivity via Long Polling to bypass standard WebSocket/Stream proxy issues
+    // We disable local cache persistence to prevent false 'unavailable' states from stale IndexedDB
     db = initializeFirestore(app, {
       experimentalForceLongPolling: true,
       // @ts-ignore - disabling fetch streams ensures simpler HTTP-based communication in restricted environments

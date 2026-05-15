@@ -1,8 +1,9 @@
+
 'use client';
 
 import { useState } from 'react';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, doc, deleteDoc, updateDoc, limit } from 'firebase/firestore';
+import { collection, query, orderBy, doc, deleteDoc, updateDoc, limit, setDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -40,7 +41,8 @@ import {
   RefreshCcw,
   ShieldCheck,
   Database,
-  WifiOff
+  WifiOff,
+  Activity
 } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
@@ -53,6 +55,7 @@ export default function StudioDashboard() {
   const db = useFirestore();
   const { toast } = useToast();
   const [isSeeding, setIsSeeding] = useState(false);
+  const [isDiagnosing, setIsDiagnosing] = useState(false);
 
   const turfsQuery = useMemoFirebase(() => {
     if (!db) return null;
@@ -69,29 +72,10 @@ export default function StudioDashboard() {
     return query(collection(db, 'challenges'), orderBy('createdAt', 'desc'));
   }, [db]);
 
-  const coachesQuery = useMemoFirebase(() => {
-    if (!db) return null;
-    return query(collection(db, 'coaches'), orderBy('createdAt', 'desc'));
-  }, [db]);
-
-  const poolsQuery = useMemoFirebase(() => {
-    if (!db) return null;
-    return query(collection(db, 'pools'), orderBy('rating', 'desc'));
-  }, [db]);
-
-  const usersQuery = useMemoFirebase(() => {
-    if (!db) return null;
-    return query(collection(db, 'users'), limit(10));
-  }, [db]);
-
   const { data: turfs, loading: turfsLoading, error: turfsError } = useCollection(turfsQuery);
   const { data: teams } = useCollection(teamsQuery);
   const { data: challenges } = useCollection(challengesQuery);
-  const { data: coaches } = useCollection(coachesQuery);
-  const { data: pools } = useCollection(poolsQuery);
-  const { data: users } = useCollection(usersQuery);
 
-  // Soft offline check for UI status
   const isOffline = !!turfsError && (turfsError.message.includes('offline') || turfsError.message.includes('permission'));
 
   const togglePopularStatus = (turfId: string, currentStatus: boolean) => {
@@ -121,23 +105,63 @@ export default function StudioDashboard() {
       });
   };
 
+  const runWriteDiagnostics = async () => {
+    if (!db) return;
+    setIsDiagnosing(true);
+    const testId = "FIREBASE_TEST";
+    const testDocRef = doc(db, "turfs", testId);
+    
+    try {
+      // Test 1: setDoc
+      console.log("[DIAG] Testing setDoc...");
+      await setDoc(testDocRef, { diagnostic: "active", timestamp: serverTimestamp() });
+      console.log("[DIAG] setDoc: SUCCESS");
+
+      // Test 2: updateDoc
+      console.log("[DIAG] Testing updateDoc...");
+      await updateDoc(testDocRef, { status: "verified" });
+      console.log("[DIAG] updateDoc: SUCCESS");
+
+      // Test 3: addDoc
+      console.log("[DIAG] Testing addDoc...");
+      const tempDoc = await addDoc(collection(db, "turfs"), { name: "DIAGNOSTIC_TEMP", isTest: true });
+      console.log("[DIAG] addDoc: SUCCESS");
+      
+      // Cleanup addDoc
+      await deleteDoc(tempDoc);
+
+      // Cleanup setDoc
+      await deleteDoc(testDocRef);
+      console.log("[DIAG] deleteDoc: SUCCESS");
+
+      toast({ title: "Diagnostics Passed", description: "Firestore write circuit is healthy." });
+    } catch (err: any) {
+      console.error("[DIAG FAILURE] First failing operation found:", err.code, err.message);
+      toast({ 
+        variant: "destructive",
+        title: "Diagnostic Failure", 
+        description: `Operation failed: ${err.code || 'unknown'}. Check console for failing line.` 
+      });
+    } finally {
+      setIsDiagnosing(false);
+    }
+  };
+
   const handleSeedData = async () => {
     if (!db) return;
-    
     setIsSeeding(true);
     try {
       const resultCount = await seedCircuitData(db);
       toast({ 
         title: "Circuit Intelligence Synced", 
         description: resultCount > 0 
-          ? `Success. ${resultCount} new records deployed. Circuit data is now live.` 
-          : "Circuit is already up-to-date. No new records were required."
+          ? `Success. ${resultCount} new records deployed.` 
+          : "Circuit is already up-to-date."
       });
     } catch (err: any) {
-      console.error("Seeding Alert:", err.message);
       toast({ 
         title: "Connection Alert", 
-        description: err.message || "Circuit transmission failed. Check network stability.",
+        description: err.message,
         variant: "destructive" 
       });
     } finally {
@@ -146,21 +170,8 @@ export default function StudioDashboard() {
   };
 
   if (turfsLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-background">
-        <Loader2 className="h-12 w-12 animate-spin text-primary opacity-20" />
-      </div>
-    );
+    return <div className="flex h-screen items-center justify-center bg-background"><Loader2 className="h-12 w-12 animate-spin text-primary opacity-20" /></div>;
   }
-
-  const STAT_CARDS = [
-    { label: "Turfs", val: turfs?.length, icon: Zap },
-    { label: "Teams", val: teams?.length, icon: Users },
-    { label: "Challenges", val: challenges?.length, icon: Trophy },
-    { label: "Coaches", val: coaches?.length, icon: UserCheck },
-    { label: "Pools", val: pools?.length, icon: Waves },
-    { label: "Users", val: users?.length, icon: ShieldCheck }
-  ];
 
   return (
     <div className="space-y-12 animate-in fade-in duration-700 pb-20">
@@ -172,12 +183,21 @@ export default function StudioDashboard() {
           </div>
           <p className="text-muted text-sm font-medium uppercase tracking-widest opacity-60">Mysuru Grassroots Intelligence Hub</p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 flex-wrap">
           {isOffline && (
             <div className="flex items-center gap-2 px-4 py-2 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive text-[10px] font-black uppercase tracking-widest">
               <WifiOff className="h-4 w-4" /> Circuit Node Offline
             </div>
           )}
+          <Button 
+            variant="outline" 
+            onClick={runWriteDiagnostics} 
+            disabled={isDiagnosing}
+            className="h-12 rounded-xl border-border bg-surface font-black uppercase tracking-widest text-[10px] text-white"
+          >
+            {isDiagnosing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Activity className="h-4 w-4 mr-2" />}
+            Run Diagnostics
+          </Button>
           <Button 
             variant="outline" 
             onClick={handleSeedData} 
@@ -197,7 +217,11 @@ export default function StudioDashboard() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        {STAT_CARDS.map((item, i) => (
+        {[
+          { label: "Turfs", val: turfs?.length, icon: Zap },
+          { label: "Teams", val: teams?.length, icon: Users },
+          { label: "Challenges", val: challenges?.length, icon: Trophy }
+        ].map((item, i) => (
           <Card key={i} className="bg-card border-border rounded-[16px] overflow-hidden group hover:border-primary/40">
             <CardHeader className="flex flex-row items-center justify-between pb-2 p-5">
               <CardTitle className="text-[10px] font-black text-muted uppercase tracking-[0.2em]">{item.label}</CardTitle>
@@ -215,7 +239,6 @@ export default function StudioDashboard() {
       <Tabs defaultValue="inventory" className="space-y-8">
         <TabsList className="bg-surface p-1 h-12 rounded-xl border border-border">
           <TabsTrigger value="inventory" className="px-8 h-full rounded-lg font-bold uppercase tracking-widest text-[10px] data-[state=active]:bg-primary data-[state=active]:text-black">Inventory</TabsTrigger>
-          <TabsTrigger value="metrics" className="px-8 h-full rounded-lg font-bold uppercase tracking-widest text-[10px] data-[state=active]:bg-primary data-[state=active]:text-black">Metrics</TabsTrigger>
         </TabsList>
 
         <TabsContent value="inventory" className="bg-card border border-border rounded-[24px] overflow-hidden">

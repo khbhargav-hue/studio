@@ -6,7 +6,7 @@ import { Footer } from "@/components/footer";
 import { Button } from "@/components/ui/button";
 import { useUser, useAuth, useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut } from "firebase/auth";
-import { query, collection, where, orderBy } from "firebase/firestore";
+import { query, collection, where } from "firebase/firestore";
 import { 
   UserCircle, 
   LogOut, 
@@ -23,9 +23,7 @@ import {
   ExternalLink
 } from "lucide-react";
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function ProfilePage() {
   const { user, loading: userLoading } = useUser();
@@ -43,18 +41,20 @@ export default function ProfilePage() {
         const domain = typeof window !== 'undefined' ? window.location.hostname : 'your domain';
         setAuthError(
           <div className="space-y-4">
-            <p className="font-bold text-lg">Domain Unauthorized</p>
-            <p className="text-sm opacity-80 leading-relaxed">
-              This domain (<code className="bg-destructive/20 px-1 rounded">{domain}</code>) is not authorized in your Firebase project.
+            <p className="font-bold text-danger uppercase tracking-tighter flex items-center gap-2">
+              <AlertCircle className="h-4 w-4" /> Domain Not Whitelisted
             </p>
-            <div className="p-4 bg-white/5 rounded-2xl border border-white/10 space-y-3">
-              <p className="text-[10px] font-black uppercase tracking-widest text-primary/60">How to fix:</p>
-              <ol className="text-xs list-decimal pl-4 space-y-2 opacity-70">
-                <li>Go to <b>Firebase Console</b></li>
-                <li>Navigate to <b>Authentication</b> &gt; <b>Settings</b></li>
-                <li>Add <b>{domain}</b> to the <b>Authorized Domains</b> list</li>
+            <p className="text-xs opacity-80 leading-relaxed">
+              Firebase Security Rules prevent authentication from this domain: <code className="bg-danger/20 px-1 rounded">{domain}</code>
+            </p>
+            <div className="p-4 bg-white/5 border border-white/10 rounded-[10px] space-y-3">
+              <p className="text-[10px] font-black uppercase tracking-widest text-primary">Resolution Steps:</p>
+              <ol className="text-[10px] list-decimal pl-4 space-y-2 opacity-70 uppercase tracking-tight">
+                <li>Access Firebase Console</li>
+                <li>Authentication > Settings > Authorized Domains</li>
+                <li>Add {domain}</li>
               </ol>
-              <Button asChild variant="link" className="text-primary text-xs h-auto p-0 flex justify-start">
+              <Button asChild variant="link" className="text-primary text-[10px] h-auto p-0 flex justify-start uppercase font-black">
                 <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer">
                   Open Console <ExternalLink className="h-3 w-3 ml-1" />
                 </a>
@@ -93,9 +93,9 @@ export default function ProfilePage() {
       if (error.code === 'auth/unauthorized-domain') {
         const domain = typeof window !== 'undefined' ? window.location.hostname : 'your domain';
         setAuthError(
-          <div className="space-y-4">
-            <p className="font-bold text-lg">Whitelist Required</p>
-            <p className="text-sm opacity-80">Add <b>{domain}</b> to your Firebase Auth settings.</p>
+          <div className="space-y-3">
+            <p className="font-bold text-danger">Whitelist Required</p>
+            <p className="text-xs opacity-70">Add <b>{domain}</b> to Firebase Auth settings.</p>
           </div>
         );
       }
@@ -107,123 +107,105 @@ export default function ProfilePage() {
   const handleLogout = async () => {
     if (auth) {
       await signOut(auth);
-      toast({ title: "Signal Terminated", description: "Secure session ended." });
+      toast({ title: "Session Terminated", description: "Securely logged out." });
     }
   };
 
   if (userLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-black">
-        <Loader2 className="h-14 w-14 animate-spin text-primary opacity-40" />
+      <div className="flex h-screen items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-black selection:bg-primary selection:text-black">
+    <div className="flex min-h-screen flex-col bg-background">
       <Navbar />
       
-      <main className="flex-1 pt-32 md:pt-44 pb-32">
+      <main className="flex-1 pt-32 pb-32">
         <div className="mx-auto max-w-xl px-4">
           {authError && (
-            <Alert variant="destructive" className="bg-destructive/10 border-destructive/20 text-destructive rounded-[2.5rem] p-10 mb-10">
-              <AlertCircle className="h-7 w-7" />
-              <AlertTitle className="font-black uppercase italic tracking-widest text-sm mb-3">Security Access Restriction</AlertTitle>
-              <AlertDescription className="text-xs font-medium leading-relaxed">{authError}</AlertDescription>
-            </Alert>
+            <div className="mb-10 p-8 border border-danger/30 bg-danger/5 rounded-[16px]">
+              {authError}
+            </div>
           )}
 
           {!user ? (
-            <div className="glass-card rounded-[4rem] p-16 text-center border-white/5 relative overflow-hidden shadow-2xl">
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
-              <div className="h-28 w-28 bg-primary/10 rounded-[2.5rem] flex items-center justify-center mx-auto mb-10 border border-primary/20">
-                <UserCircle className="h-14 w-14 text-primary opacity-40" />
+            <div className="bg-card border border-border rounded-[16px] p-12 text-center">
+              <div className="h-20 w-20 bg-primary/10 rounded-[10px] flex items-center justify-center mx-auto mb-8">
+                <UserCircle className="h-10 w-10 text-primary opacity-50" />
               </div>
-              <h1 className="text-5xl font-black italic uppercase tracking-tighter mb-6 leading-none">CONNECT <br /><span className="text-primary text-neon">IDENTITY</span></h1>
-              <p className="text-white/40 mb-12 font-medium italic text-lg leading-relaxed">Join the Mysuru athlete circuit to form squads, issue claims, and dominate the ranking.</p>
-              <Button onClick={handleGoogleSignIn} disabled={isSigningIn} className="w-full h-20 bg-primary text-black font-black uppercase tracking-[0.2em] text-xs rounded-[1.5rem] shadow-[0_20px_50px_rgba(170,255,0,0.3)] hover:scale-[1.01] transition-all">
-                {isSigningIn ? <Loader2 className="h-6 w-6 animate-spin" /> : "IDENTIFY WITH GOOGLE"}
+              <h1 className="text-3xl font-bold tracking-tight uppercase mb-4">Athlete Identity</h1>
+              <p className="text-muted-foreground text-sm mb-10 leading-relaxed font-medium">Join the Mysuru athlete circuit to form squads and issue match challenges.</p>
+              <Button onClick={handleGoogleSignIn} disabled={isSigningIn} className="w-full h-12 bg-primary text-primary-foreground font-bold uppercase tracking-widest">
+                {isSigningIn ? <Loader2 className="h-5 w-5 animate-spin" /> : "Identify with Google"}
               </Button>
             </div>
           ) : (
-            <div className="space-y-10 animate-in fade-in slide-in-from-bottom-8 duration-700">
-              <section className="glass-card rounded-[3.5rem] p-12 border-white/5 relative overflow-hidden bg-white/[0.02] shadow-2xl">
-                <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
-                  <ShieldCheck className="h-40 w-40 text-primary" />
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <section className="bg-card border border-border rounded-[16px] p-8 flex items-center gap-6">
+                <div className="h-20 w-20 rounded-[10px] border border-border overflow-hidden bg-subtle">
+                  {user.photoURL ? (
+                    <img src={user.photoURL} alt={user.displayName || "Athlete"} className="h-full w-full object-cover" />
+                  ) : (
+                    <UserCircle className="h-full w-full p-4 text-muted" />
+                  )}
                 </div>
-                
-                <div className="flex items-center gap-10 relative z-10">
-                  <div className="h-28 w-28 rounded-[2.5rem] bg-primary/10 border border-primary/20 flex items-center justify-center overflow-hidden shadow-2xl">
-                    {user.photoURL ? (
-                      <img src={user.photoURL} alt={user.displayName || "Athlete"} className="h-full w-full object-cover" />
-                    ) : (
-                      <UserCircle className="h-14 w-14 text-primary opacity-40" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="inline-block bg-primary/20 text-primary text-[9px] font-black uppercase tracking-[0.4em] px-4 py-1.5 rounded-full mb-4">Verified Athlete</div>
-                    <h2 className="text-5xl font-black italic uppercase tracking-tighter text-white truncate leading-none mb-3">
-                      {user.displayName?.split(' ')[0] || "ATHLETE"}
-                    </h2>
-                    <p className="text-white/30 text-[11px] font-bold uppercase tracking-widest flex items-center gap-3 truncate">
-                      <Mail className="h-4 w-4 shrink-0 text-primary/40" /> {user.email}
-                    </p>
-                  </div>
+                <div className="flex-1 min-w-0">
+                  <div className="label-caps text-primary mb-1">Verified Athlete</div>
+                  <h2 className="text-2xl font-bold truncate text-foreground">{user.displayName || "ATHLETE"}</h2>
+                  <p className="text-muted-foreground text-[11px] font-medium uppercase tracking-wider flex items-center gap-2 mt-1">
+                    <Mail className="h-3 w-3" /> {user.email}
+                  </p>
                 </div>
               </section>
 
-              <div className="grid grid-cols-2 gap-6">
-                 <div className="glass-card p-10 rounded-[2.5rem] border-white/5 bg-white/[0.01] transition-all hover:bg-white/[0.03] shadow-xl">
-                    <Users className="h-7 w-7 text-primary mb-6" />
-                    <p className="text-6xl font-black italic leading-none">{myTeams?.length || 0}</p>
-                    <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.4em] mt-5">Squad Assets</p>
+              <div className="grid grid-cols-2 gap-4">
+                 <div className="bg-card border border-border p-6 rounded-[16px]">
+                    <Users className="h-5 w-5 text-primary mb-3" />
+                    <p className="text-3xl font-bold">{myTeams?.length || 0}</p>
+                    <p className="label-caps text-muted-foreground mt-1">Squads</p>
                  </div>
-                 <div className="glass-card p-10 rounded-[2.5rem] border-white/5 bg-white/[0.01] transition-all hover:bg-white/[0.03] shadow-xl">
-                    <Activity className="h-7 w-7 text-primary mb-6 animate-pulse" />
-                    <p className="text-6xl font-black italic leading-none">{myChallenges?.length || 0}</p>
-                    <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.4em] mt-5">Match Claims</p>
+                 <div className="bg-card border border-border p-6 rounded-[16px]">
+                    <Activity className="h-5 w-5 text-primary mb-3" />
+                    <p className="text-3xl font-bold">{myChallenges?.length || 0}</p>
+                    <p className="label-caps text-muted-foreground mt-1">Claims</p>
                  </div>
               </div>
 
-              <div className="grid gap-4">
+              <div className="grid gap-3">
                 {[
-                  { label: "Squad Roster", icon: Users, href: "/teams", sub: "Roster tactics & recruitment", count: myTeams?.length },
-                  { label: "Circuit Claims", icon: Trophy, href: "/challenges", sub: "Active match negotiations", count: myChallenges?.length },
-                  { label: "Discovery Intelligence", icon: Star, href: "/", sub: "Regional venue guide" },
+                  { label: "Squad Roster", icon: Users, href: "/teams", sub: "Recruitment & Tactics" },
+                  { label: "Match Claims", icon: Trophy, href: "/challenges", sub: "Active Circuit Feed" },
+                  { label: "Arena Guide", icon: Star, href: "/", sub: "Venue Intelligence" },
                 ].map((item) => (
                   <Link 
                     key={item.label}
                     href={item.href}
-                    className="flex items-center justify-between p-10 bg-white/[0.03] rounded-[2.5rem] border border-white/5 hover:border-primary/30 hover:bg-primary/[0.02] transition-all group shadow-lg"
+                    className="flex items-center justify-between p-6 bg-card border border-border rounded-[16px] hover:border-primary transition-colors group"
                   >
-                    <div className="flex items-center gap-8">
-                      <div className="h-16 w-16 rounded-2xl bg-white/5 flex items-center justify-center group-hover:bg-primary group-hover:text-black transition-all">
-                        <item.icon className="h-7 w-7" />
+                    <div className="flex items-center gap-6">
+                      <div className="h-12 w-12 rounded-[10px] bg-subtle border border-border flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                        <item.icon className="h-5 w-5" />
                       </div>
                       <div>
-                        <p className="text-2xl font-black italic uppercase tracking-tighter text-white group-hover:text-primary transition-colors">{item.label}</p>
-                        <p className="text-[10px] font-bold text-white/20 uppercase tracking-[0.3em] mt-2 italic">{item.sub}</p>
+                        <p className="text-base font-bold uppercase tracking-tight">{item.label}</p>
+                        <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-widest mt-0.5">{item.sub}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-6">
-                       {item.count !== undefined && (
-                          <div className="h-11 w-11 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-sm font-black text-primary">
-                             {item.count}
-                          </div>
-                       )}
-                       <ChevronRight className="h-6 w-6 text-white/10 group-hover:text-primary transition-all group-hover:translate-x-1" />
-                    </div>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary" />
                   </Link>
                 ))}
               </div>
 
-              <div className="pt-10 border-t border-white/5">
+              <div className="pt-10 border-t border-border">
                 <Button 
                   onClick={handleLogout}
-                  variant="ghost"
-                  className="w-full h-20 rounded-[2rem] text-destructive/50 hover:bg-destructive/10 hover:text-destructive font-black uppercase tracking-[0.4em] text-[10px] transition-all"
+                  variant="outline"
+                  className="w-full h-12 text-danger border-danger/20 hover:bg-danger/5 hover:border-danger uppercase tracking-widest font-bold"
                 >
-                  <LogOut className="mr-4 h-5 w-5" /> TERMINATE ATHLETE SESSION
+                  <LogOut className="mr-3 h-4 w-4" /> TERMINATE SESSION
                 </Button>
               </div>
             </div>

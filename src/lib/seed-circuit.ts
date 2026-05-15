@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc, serverTimestamp, Firestore } from "firebase/firestore";
+import { doc, getDoc, setDoc, serverTimestamp, Firestore, enableNetwork } from "firebase/firestore";
 
 export const mysuuruTurfs = [
   {
@@ -239,7 +239,21 @@ export const seedTeams = [
  */
 export async function seedCircuitData(db: Firestore) {
   try {
-    // Seeding Turfs
+    // 1. Connectivity Check
+    // Attempt a light read to verify server connectivity.
+    // We ignore the error if it's just 'not-found', which means we ARE online.
+    try {
+      await getDoc(doc(db, "_connectivity_test", "ping"));
+    } catch (err: any) {
+      if (err.code === 'unavailable') {
+        // Explicitly try to wake up the network if it's stuck
+        await enableNetwork(db);
+        // Wait a small buffer for handshake
+        await new Promise(r => setTimeout(r, 1000));
+      }
+    }
+
+    // 2. Seeding Turfs
     for (const turf of mysuuruTurfs) {
       const id = turf.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
       const docRef = doc(db, "turfs", id);
@@ -256,7 +270,7 @@ export async function seedCircuitData(db: Firestore) {
       }
     }
 
-    // Seeding Pools
+    // 3. Seeding Pools
     for (const pool of mysuuruPools) {
       const id = pool.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
       const docRef = doc(db, "pools", id);
@@ -271,7 +285,7 @@ export async function seedCircuitData(db: Firestore) {
       }
     }
 
-    // Seeding Coaches
+    // 4. Seeding Coaches
     for (const coach of seedCoaches) {
       const id = coach.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
       const docRef = doc(db, "coaches", id);
@@ -285,7 +299,7 @@ export async function seedCircuitData(db: Firestore) {
       }
     }
 
-    // Seeding Teams
+    // 5. Seeding Teams
     for (const team of seedTeams) {
       const id = team.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
       const docRef = doc(db, "teams", id);
@@ -299,7 +313,7 @@ export async function seedCircuitData(db: Firestore) {
       }
     }
 
-    // Seeding a dummy challenge
+    // 6. Seeding a dummy challenge
     const challengeId = "seed-challenge-1";
     const challengeRef = doc(db, "challenges", challengeId);
     const challengeSnap = await getDoc(challengeRef);
@@ -321,9 +335,7 @@ export async function seedCircuitData(db: Firestore) {
       });
     }
   } catch (error: any) {
-    if (error.message.includes('offline')) {
-      throw new Error("Seeding failed: The Firestore client is offline. Please check your network connection.");
-    }
-    throw error;
+    // Return the actual error message for better dashboard visibility
+    throw new Error(error.message || "Circuit transmission failed.");
   }
 }

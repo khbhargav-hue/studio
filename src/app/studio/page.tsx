@@ -91,6 +91,7 @@ export default function StudioDashboard() {
   const { data: pools } = useCollection(poolsQuery);
   const { data: users } = useCollection(usersQuery);
 
+  // Soft offline check for UI only
   const isOffline = !!turfsError && turfsError.message.includes('offline');
 
   const togglePopularStatus = (turfId: string, currentStatus: boolean) => {
@@ -122,15 +123,7 @@ export default function StudioDashboard() {
 
   const handleSeedData = async () => {
     if (!db) return;
-    if (isOffline) {
-      toast({ 
-        title: "Circuit Offline", 
-        description: "Cannot seed data while the platform is disconnected from Firestore.",
-        variant: "destructive"
-      });
-      return;
-    }
-
+    
     setIsSeeding(true);
     try {
       await seedCircuitData(db);
@@ -142,7 +135,7 @@ export default function StudioDashboard() {
       console.error("Seed error:", err);
       toast({ 
         title: "Transmission Interrupted", 
-        description: err.message || "Could not complete circuit sync.",
+        description: err.message || "The platform could not reach the Firestore circuit.",
         variant: "destructive" 
       });
     } finally {
@@ -180,13 +173,13 @@ export default function StudioDashboard() {
         <div className="flex items-center gap-4">
           {isOffline && (
             <div className="flex items-center gap-2 px-4 py-2 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive text-[10px] font-black uppercase tracking-widest">
-              <WifiOff className="h-4 w-4" /> Offline Mode
+              <WifiOff className="h-4 w-4" /> Client Reporting Offline
             </div>
           )}
           <Button 
             variant="outline" 
             onClick={handleSeedData} 
-            disabled={isSeeding || isOffline}
+            disabled={isSeeding}
             className="h-12 rounded-xl border-border bg-surface font-black uppercase tracking-widest text-[10px] text-primary"
           >
             {isSeeding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Database className="h-4 w-4 mr-2" />}
@@ -229,10 +222,10 @@ export default function StudioDashboard() {
             <Badge className="bg-primary/10 text-primary px-4 py-1.5 rounded-full font-black text-[9px] uppercase tracking-widest border border-primary/20">LIVE FIRESTORE LINK</Badge>
           </div>
           <div className="overflow-x-auto">
-            {isOffline ? (
+            {isOffline && !turfs?.length ? (
               <div className="p-20 text-center space-y-4">
                 <WifiOff className="h-12 w-12 text-muted-foreground mx-auto opacity-20" />
-                <p className="text-muted font-medium italic">Database connection interrupted. Tables are locked until connectivity returns.</p>
+                <p className="text-muted font-medium italic">Establishing database connection. Tables are locked until connectivity returns.</p>
               </div>
             ) : (
               <Table>

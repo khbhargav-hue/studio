@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { Search, MapPin, IndianRupee, Star, ArrowUpDown, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
@@ -11,36 +10,49 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
 
 const SPORTS = [
   { id: 'all', label: 'All', icon: '✨' },
-  { id: 'football', label: 'Football', icon: '⚽' },
-  { id: 'cricket', label: 'Cricket', icon: '🏏' },
-  { id: 'pickleball', label: 'Pickleball', icon: '🎾' },
-  { id: 'swimming', label: 'Swimming', icon: '🏊' },
-  { id: 'coaching', label: 'Coaching', icon: '🎯' },
-  { id: 'badminton', label: 'Badminton', icon: '🏸' },
+  { id: 'Football', label: 'Football', icon: '⚽' },
+  { id: 'Cricket', label: 'Cricket', icon: '🏏' },
+  { id: 'Pickleball', label: 'Pickleball', icon: '🎾' },
+  { id: 'Swimming', label: 'Swimming', icon: '🏊' },
+  { id: 'Coaching', label: 'Coaching', icon: '🎯' },
+  { id: 'Badminton', label: 'Badminton', icon: '🏸' },
 ];
 
-export function FilterSystem() {
-  const [activeSport, setActiveSport] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  
-  // Simulated filter states
-  const [filters, setFilters] = useState<{
-    area?: string;
-    price?: string;
-    rating?: string;
-  }>({});
+interface FilterSystemProps {
+  activeSport: string;
+  onSportChange: (sport: string) => void;
+  searchQuery: string;
+  onSearchChange: (query: string) => void;
+  areaFilter: string;
+  onAreaChange: (area: string) => void;
+  priceFilter: string;
+  onPriceChange: (price: string) => void;
+  ratingFilter: string;
+  onRatingChange: (rating: string) => void;
+  onClearAll: () => void;
+}
 
-  const clearFilters = () => {
-    setFilters({});
-    setSearchQuery('');
-    setActiveSport('all');
-  };
-
-  const activeFilterCount = Object.keys(filters).length + (searchQuery ? 1 : 0) + (activeSport !== 'all' ? 1 : 0);
+export function FilterSystem({
+  activeSport,
+  onSportChange,
+  searchQuery,
+  onSearchChange,
+  areaFilter,
+  onAreaChange,
+  priceFilter,
+  onPriceChange,
+  ratingFilter,
+  onRatingChange,
+  onClearAll
+}: FilterSystemProps) {
+  const activeFilterCount = (activeSport !== 'all' ? 1 : 0) + 
+                            (searchQuery ? 1 : 0) + 
+                            (areaFilter !== 'all' ? 1 : 0) + 
+                            (priceFilter !== 'all' ? 1 : 0) + 
+                            (ratingFilter !== 'all' ? 1 : 0);
 
   return (
     <div className="sticky top-[64px] z-40 w-full bg-background/95 backdrop-blur-md border-b border-border">
@@ -50,7 +62,7 @@ export function FilterSystem() {
           {SPORTS.map((sport) => (
             <button
               key={sport.id}
-              onClick={() => setActiveSport(sport.id)}
+              onClick={() => onSportChange(sport.id)}
               className={cn(
                 "flex-none h-10 px-6 rounded-full label-caps text-[10px] flex items-center gap-2 transition-all border",
                 activeSport === sport.id 
@@ -72,48 +84,52 @@ export function FilterSystem() {
               placeholder="Search by name or area..." 
               className="bg-surface border-border h-12 pl-12 rounded-[10px] focus-visible:ring-primary"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => onSearchChange(e.target.value)}
             />
           </div>
 
           <div className="flex items-center gap-3 w-full overflow-x-auto no-scrollbar pb-2 md:pb-0">
-            <Select onValueChange={(v) => setFilters({...filters, area: v})}>
+            <Select value={areaFilter} onValueChange={onAreaChange}>
               <SelectTrigger className="h-12 bg-surface border-border rounded-[10px] min-w-[120px] text-[11px] font-bold uppercase tracking-widest">
                 <MapPin className="h-3 w-3 mr-2 text-primary" />
                 <SelectValue placeholder="Area" />
               </SelectTrigger>
               <SelectContent className="bg-card border-border">
-                <SelectItem value="vijayanagar">Vijayanagar</SelectItem>
-                <SelectItem value="bogadi">Bogadi</SelectItem>
-                <SelectItem value="jp-nagar">JP Nagar</SelectItem>
-                <SelectItem value="kuvempunagar">Kuvempunagar</SelectItem>
+                <SelectItem value="all">All Areas</SelectItem>
+                <SelectItem value="Vijayanagar">Vijayanagar</SelectItem>
+                <SelectItem value="Bogadi">Bogadi</SelectItem>
+                <SelectItem value="JP Nagar">JP Nagar</SelectItem>
+                <SelectItem value="Kuvempunagar">Kuvempunagar</SelectItem>
+                <SelectItem value="Yadavagiri">Yadavagiri</SelectItem>
               </SelectContent>
             </Select>
 
-            <Select onValueChange={(v) => setFilters({...filters, price: v})}>
+            <Select value={priceFilter} onValueChange={onPriceChange}>
               <SelectTrigger className="h-12 bg-surface border-border rounded-[10px] min-w-[120px] text-[11px] font-bold uppercase tracking-widest">
                 <IndianRupee className="h-3 w-3 mr-2 text-primary" />
                 <SelectValue placeholder="Price" />
               </SelectTrigger>
               <SelectContent className="bg-card border-border">
+                <SelectItem value="all">All Prices</SelectItem>
                 <SelectItem value="low">Under ₹800</SelectItem>
                 <SelectItem value="mid">₹800 - ₹1200</SelectItem>
                 <SelectItem value="high">Above ₹1200</SelectItem>
               </SelectContent>
             </Select>
 
-            <Select onValueChange={(v) => setFilters({...filters, rating: v})}>
+            <Select value={ratingFilter} onValueChange={onRatingChange}>
               <SelectTrigger className="h-12 bg-surface border-border rounded-[10px] min-w-[120px] text-[11px] font-bold uppercase tracking-widest">
                 <Star className="h-3 w-3 mr-2 text-primary" />
                 <SelectValue placeholder="Rating" />
               </SelectTrigger>
               <SelectContent className="bg-card border-border">
-                <SelectItem value="4plus">4.0+ Star</SelectItem>
-                <SelectItem value="4.5plus">4.5+ Star</SelectItem>
+                <SelectItem value="all">All Ratings</SelectItem>
+                <SelectItem value="4">4.0+ Star</SelectItem>
+                <SelectItem value="4.5">4.5+ Star</SelectItem>
               </SelectContent>
             </Select>
 
-            <Select>
+            <Select defaultValue="popular">
               <SelectTrigger className="h-12 bg-surface border-border rounded-[10px] min-w-[120px] text-[11px] font-bold uppercase tracking-widest">
                 <ArrowUpDown className="h-3 w-3 mr-2 text-primary" />
                 <SelectValue placeholder="Sort" />
@@ -131,17 +147,19 @@ export function FilterSystem() {
         {activeFilterCount > 0 && (
           <div className="px-4 md:px-8 pb-4 flex items-center flex-wrap gap-2">
             {activeSport !== 'all' && (
-              <FilterChip label={activeSport} onRemove={() => setActiveSport('all')} />
+              <FilterChip label={activeSport} onRemove={() => onSportChange('all')} />
             )}
-            {Object.entries(filters).map(([key, val]) => (
-              val && <FilterChip key={key} label={val} onRemove={() => {
-                const newFilters = {...filters};
-                delete (newFilters as any)[key];
-                setFilters(newFilters);
-              }} />
-            ))}
+            {areaFilter !== 'all' && (
+              <FilterChip label={areaFilter} onRemove={() => onAreaChange('all')} />
+            )}
+            {priceFilter !== 'all' && (
+              <FilterChip label={`Price: ${priceFilter}`} onRemove={() => onPriceChange('all')} />
+            )}
+            {ratingFilter !== 'all' && (
+              <FilterChip label={`Rating: ${ratingFilter}+`} onRemove={() => onRatingChange('all')} />
+            )}
             <button 
-              onClick={clearFilters}
+              onClick={onClearAll}
               className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline ml-2"
             >
               Clear all

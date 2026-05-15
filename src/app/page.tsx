@@ -3,13 +3,13 @@
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
-import { ChevronDown, Trophy, Users, MapPin, Zap } from "lucide-react"
+import { ChevronDown } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { useFirestore, useDoc, useMemoFirebase } from "@/firebase"
 import { doc } from "firebase/firestore"
 import { motion } from "framer-motion"
-import { FilterSystem } from "@/components/filter-system"
+import { TurfListing } from "@/components/turf-listing"
 
 export default function Home() {
   const db = useFirestore()
@@ -21,7 +21,6 @@ export default function Home() {
 
   const { data: branding } = useDoc(brandingRef)
 
-  // Cloudinary optimized background
   const heroBg = branding?.heroImageUrl || "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&q=75&w=1920";
   const optimizedHeroBg = heroBg.includes('cloudinary.com') 
     ? heroBg.replace('/upload/', '/upload/f_webp,w_1920,q_12/') 
@@ -37,13 +36,12 @@ export default function Home() {
       
       {/* 1. HERO SECTION (100VH) */}
       <section className="relative h-screen flex flex-col items-center justify-center px-4 overflow-hidden">
-        {/* Cinematic Background Layer */}
         <div className="absolute inset-0 z-0">
           <Image 
             src={optimizedHeroBg}
             alt="Mysuru Turf Network"
             fill
-            className="object-cover opacity-[0.12] grayscale transition-opacity duration-1000"
+            className="object-cover opacity-[0.12] grayscale"
             priority
             loading="eager"
           />
@@ -51,7 +49,6 @@ export default function Home() {
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto text-center space-y-10">
-          {/* Pill Label */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -60,7 +57,6 @@ export default function Home() {
             <span className="text-primary">●</span> Mysuru's Turf Network — Est. 2024
           </motion.div>
           
-          {/* H1 Typographic Stack */}
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -72,7 +68,6 @@ export default function Home() {
             <span className="text-primary text-neon block">Rule Mysuru.</span>
           </motion.h1>
           
-          {/* Subtitle */}
           <motion.p 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -82,7 +77,6 @@ export default function Home() {
             Football • Cricket • Pickleball • Swimming • Coaching — all in one place.
           </motion.p>
 
-          {/* Buttons Row */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -91,7 +85,7 @@ export default function Home() {
           >
             <Button 
               onClick={scrollToTurfs}
-              className="w-full sm:w-auto h-[64px] px-12 text-[14px] uppercase font-black tracking-widest bg-primary text-black rounded-[10px] hover:scale-[1.02] transition-transform"
+              className="w-full sm:w-auto h-[64px] px-12 text-[14px] uppercase font-black tracking-widest bg-primary text-black rounded-[10px] hover:scale-[1.02] transition-transform shadow-2xl shadow-primary/20"
             >
               ⚽ Book a Turf
             </Button>
@@ -104,7 +98,6 @@ export default function Home() {
             </Button>
           </motion.div>
 
-          {/* Trust Bar */}
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -121,7 +114,6 @@ export default function Home() {
           </motion.div>
         </div>
 
-        {/* Scroll Indicator */}
         <motion.div 
           animate={{ y: [0, 10, 0] }}
           transition={{ repeat: Infinity, duration: 2 }}
@@ -154,9 +146,9 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 3. SPORT FILTER SYSTEM (Sticky) */}
+      {/* 3. LISTINGS SECTION (Filters + Grid) */}
       <div id="listings" className="scroll-mt-[64px]">
-        <FilterSystem />
+        <TurfListing />
       </div>
 
       <Footer />

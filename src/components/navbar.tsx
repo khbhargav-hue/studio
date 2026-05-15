@@ -45,6 +45,14 @@ export function Navbar() {
       }
     } catch (error: any) {
       console.error("Sign-in error:", error);
+      if (error.code === 'auth/unauthorized-domain') {
+        const domain = window.location.hostname;
+        toast({
+          variant: "destructive",
+          title: "Whitelist Required",
+          description: `Add ${domain} to your Firebase authorized domains.`,
+        });
+      }
     } finally {
       setIsSigningIn(false);
     }

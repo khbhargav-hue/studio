@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from "react";
@@ -20,7 +19,8 @@ import {
   Mail,
   AlertCircle,
   Activity,
-  Star
+  Star,
+  ExternalLink
 } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -33,13 +33,35 @@ export default function ProfilePage() {
   const db = useFirestore();
   const { toast } = useToast();
   const [isSigningIn, setIsSigningIn] = useState(false);
-  const [authError, setAuthError] = useState<string | null>(null);
+  const [authError, setAuthError] = useState<React.ReactNode | null>(null);
 
   useEffect(() => {
     if (!auth) return;
     getRedirectResult(auth).catch((error: any) => {
+      console.error("Auth redirect result error:", error);
       if (error.code === 'auth/unauthorized-domain') {
-        setAuthError("Origin Authorization Required in Firebase Console.");
+        const domain = typeof window !== 'undefined' ? window.location.hostname : 'your domain';
+        setAuthError(
+          <div className="space-y-4">
+            <p className="font-bold text-lg">Domain Unauthorized</p>
+            <p className="text-sm opacity-80 leading-relaxed">
+              This domain (<code className="bg-destructive/20 px-1 rounded">{domain}</code>) is not authorized in your Firebase project.
+            </p>
+            <div className="p-4 bg-white/5 rounded-2xl border border-white/10 space-y-3">
+              <p className="text-[10px] font-black uppercase tracking-widest text-primary/60">How to fix:</p>
+              <ol className="text-xs list-decimal pl-4 space-y-2 opacity-70">
+                <li>Go to <b>Firebase Console</b></li>
+                <li>Navigate to <b>Authentication</b> &gt; <b>Settings</b></li>
+                <li>Add <b>{domain}</b> to the <b>Authorized Domains</b> list</li>
+              </ol>
+              <Button asChild variant="link" className="text-primary text-xs h-auto p-0 flex justify-start">
+                <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer">
+                  Open Console <ExternalLink className="h-3 w-3 ml-1" />
+                </a>
+              </Button>
+            </div>
+          </div>
+        );
       }
     });
   }, [auth]);
@@ -60,13 +82,23 @@ export default function ProfilePage() {
   const handleGoogleSignIn = async () => {
     if (!auth) return;
     setIsSigningIn(true);
+    setAuthError(null);
     const provider = new GoogleAuthProvider();
     try {
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       if (isMobile) await signInWithRedirect(auth, provider);
       else await signInWithPopup(auth, provider);
     } catch (error: any) {
-      if (error.code === 'auth/unauthorized-domain') setAuthError("Origin Authorization Required.");
+      console.error("Sign-in error:", error);
+      if (error.code === 'auth/unauthorized-domain') {
+        const domain = typeof window !== 'undefined' ? window.location.hostname : 'your domain';
+        setAuthError(
+          <div className="space-y-4">
+            <p className="font-bold text-lg">Whitelist Required</p>
+            <p className="text-sm opacity-80">Add <b>{domain}</b> to your Firebase Auth settings.</p>
+          </div>
+        );
+      }
     } finally {
       setIsSigningIn(false);
     }
@@ -97,7 +129,7 @@ export default function ProfilePage() {
             <Alert variant="destructive" className="bg-destructive/10 border-destructive/20 text-destructive rounded-[2.5rem] p-10 mb-10">
               <AlertCircle className="h-7 w-7" />
               <AlertTitle className="font-black uppercase italic tracking-widest text-sm mb-3">Security Access Restriction</AlertTitle>
-              <AlertDescription className="text-xs font-medium leading-relaxed opacity-70">{authError}</AlertDescription>
+              <AlertDescription className="text-xs font-medium leading-relaxed">{authError}</AlertDescription>
             </Alert>
           )}
 

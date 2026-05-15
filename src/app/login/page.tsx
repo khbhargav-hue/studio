@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Trophy, Loader2, LogIn, AlertCircle, ShieldCheck } from "lucide-react";
+import { Trophy, Loader2, LogIn, AlertCircle, ShieldCheck, ExternalLink } from "lucide-react";
 import { useAuth, useUser, useFirestore } from "@/firebase";
 import { signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
@@ -26,7 +26,7 @@ function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<React.ReactNode | null>(null);
 
   useEffect(() => {
     const errorParam = searchParams.get('error');
@@ -85,10 +85,24 @@ function LoginForm() {
       router.push("/studio");
     } catch (err: any) {
       console.error("Login error:", err);
-      let message = "Verification failed. Check credentials.";
+      let message: React.ReactNode = "Verification failed. Check credentials.";
       
       if (err.code === 'auth/unauthorized-domain') {
-        message = "Security error: This domain must be whitelisted in your Firebase Console.";
+        const domain = typeof window !== 'undefined' ? window.location.hostname : 'your domain';
+        message = (
+          <div className="space-y-3">
+            <p className="font-bold">Domain Authorization Required</p>
+            <p>You must add <code className="bg-destructive/20 px-1.5 py-0.5 rounded text-white">{domain}</code> to your Firebase Console authorized domains.</p>
+            <a 
+              href="https://console.firebase.google.com/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 text-[10px] uppercase font-black tracking-widest hover:underline text-white/80"
+            >
+              Go to Firebase Console <ExternalLink className="h-3 w-3" />
+            </a>
+          </div>
+        );
       } else if (err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
         message = "Invalid identity or passcode.";
       }
@@ -133,8 +147,8 @@ function LoginForm() {
             <CardContent className="pt-4">
               <form onSubmit={handleLogin} className="space-y-5">
                 {error && (
-                  <Alert variant="destructive" className="bg-destructive/10 border-destructive/20 text-destructive rounded-2xl">
-                    <AlertCircle className="h-4 w-4 shrink-0" />
+                  <Alert variant="destructive" className="bg-destructive/10 border-destructive/20 text-destructive rounded-2xl p-6">
+                    <AlertCircle className="h-5 w-5 shrink-0" />
                     <AlertDescription className="text-xs font-medium leading-relaxed">{error}</AlertDescription>
                   </Alert>
                 )}

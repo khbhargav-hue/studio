@@ -1,4 +1,3 @@
-
 import { 
   doc, 
   setDoc, 
@@ -27,6 +26,7 @@ export const mysuuruTurfs = [
     pitchSizes: ["5A Side", "7A Side"],
     pitchType: "Artificial",
     whatsapp: "919686299909",
+    phone: "09686299909",
     openTime: "00:00",
     closeTime: "23:59",
     pricePerHour: 0,
@@ -35,9 +35,9 @@ export const mysuuruTurfs = [
     isActive: true,
     isPremium: true,
     imageUrl: "https://picsum.photos/seed/perfectx/1200/800",
-    description: "Football turf in Bogadi, Mysuru. Suitable for casual games, team matches and practice.",
+    description: "Football arena in Bogadi, Mysuru suitable for casual games, practice sessions and team matches.",
     rules: ["Open 24 hours", "No metal studs", "Arrive 15 mins early"],
-    amenities: { parking: true, floodlights: true, drinkingWater: true, washrooms: true }
+    amenities: { parking: true, floodlights: true, drinkingWater: true, changingRooms: true }
   },
   {
     id: "pebbly-sports-club",
@@ -48,7 +48,8 @@ export const mysuuruTurfs = [
     sports: ["Football", "Cricket"],
     pitchSizes: ["Standard"],
     pitchType: "Artificial",
-    whatsapp: "917411322492", // Fallback to site support
+    whatsapp: "917411322492",
+    phone: "917411322492",
     openTime: "00:00",
     closeTime: "23:59",
     pricePerHour: 0,
@@ -62,6 +63,7 @@ export const mysuuruTurfs = [
     amenities: { parking: true, floodlights: true, changingRooms: true, cafeteria: true }
   },
   {
+    id: "matchbox-sports-arena",
     name: "Matchbox Sports Arena",
     area: "Vijayanagar",
     city: "Mysuru",
@@ -75,6 +77,7 @@ export const mysuuruTurfs = [
     openTime: "06:00",
     closeTime: "22:00",
     whatsapp: "919876543210",
+    phone: "919876543210",
     pitchSizes: ["5-a-side", "7-a-side"],
     pitchType: "Artificial",
     amenities: { parking: true, floodlights: true, changingRooms: true, drinkingWater: true, firstAid: true },

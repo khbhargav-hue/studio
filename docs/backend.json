@@ -1,4 +1,3 @@
-
 {
   "entities": {
     "Turf": {
@@ -10,6 +9,7 @@
         "name": { "type": "string" },
         "description": { "type": "string" },
         "whatsapp": { "type": "string" },
+        "phone": { "type": "string" },
         "imageUrl": { "type": "string" },
         "images": { "type": "array", "items": { "type": "string" } },
         "isActive": { "type": "boolean" },

@@ -1,8 +1,7 @@
-
 'use client';
 
 import { useState } from 'react';
-import { Star, User, Loader2, Send, MessageSquare, Gift } from 'lucide-react';
+import { Star, User, Loader2, Send, MessageSquare, Gift, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
@@ -89,18 +88,24 @@ export function ReviewSection({ turfId, currentRating, reviewCount }: { turfId: 
       {/* Review Form */}
       {user ? (
         <form onSubmit={handleSubmit} className="bg-[#111111] p-8 rounded-[16px] border border-[#222222] space-y-6">
-          <div className="flex items-center gap-2">
-            {[1, 2, 3, 4, 5].map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => setRating(s)}
-                className="focus:outline-none transition-transform hover:scale-110"
-              >
-                <Star className={cn("h-6 w-6", s <= rating ? "fill-primary text-primary" : "text-white/5")} />
-              </button>
-            ))}
-            <span className="ml-4 text-[10px] font-black uppercase tracking-widest opacity-40">Rate Performance</span>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              {[1, 2, 3, 4, 5].map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setRating(s)}
+                  className="focus:outline-none transition-transform hover:scale-110"
+                >
+                  <Star className={cn("h-6 w-6", s <= rating ? "fill-primary text-primary" : "text-white/5")} />
+                </button>
+              ))}
+              <span className="ml-4 text-[10px] font-black uppercase tracking-widest opacity-40">Rate Performance</span>
+            </div>
+            
+            <Button type="button" variant="outline" className="h-10 border-[#222] bg-[#1A1A1A] text-[9px] font-black uppercase tracking-widest rounded-lg opacity-60 hover:opacity-100">
+               <Camera className="h-3.5 w-3.5 mr-2" /> Upload Match Photo
+            </Button>
           </div>
           
           <Textarea 

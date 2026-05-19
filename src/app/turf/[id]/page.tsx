@@ -24,7 +24,9 @@ import {
   Coffee,
   Bath,
   CircleDot,
-  Gift
+  Gift,
+  Phone,
+  AlertCircle
 } from "lucide-react"
 import { useDoc, useFirestore, useMemoFirebase, useUser } from "@/firebase"
 import { doc, increment, setDoc, addDoc, serverTimestamp, collection, updateDoc } from "firebase/firestore"
@@ -140,7 +142,8 @@ export default function TurfDetail() {
     ? turf.images 
     : [turf.imageUrl || "https://picsum.photos/seed/turf/1200/800"];
 
-  const whatsappUrl = `https://wa.me/${turf.whatsapp}?text=${encodeURIComponent(`Hi! I want to ask availability for ${turf.name} at ${turf.area}.`)}`;
+  const whatsappUrl = `https://wa.me/${turf.whatsapp}?text=${encodeURIComponent(`Hi, I want to check availability at ${turf.name}.`)}`;
+  const phoneUrl = `tel:${turf.phone || turf.whatsapp}`;
 
   return (
     <div className="flex flex-col min-h-screen bg-[#0A0A0A] text-[#F5F5F5] selection:bg-primary selection:text-black">
@@ -300,7 +303,7 @@ export default function TurfDetail() {
           {/* Sticky Sidebar */}
           <div className="lg:col-span-4">
             <aside className="sticky top-28 space-y-6 hidden lg:block">
-              <div className="bg-[#111111] border border-[#222222] p-10 rounded-[16px] text-center space-y-10">
+              <div className="bg-[#111111] border border-[#222222] p-10 rounded-[16px] text-center space-y-8">
                 <div className="space-y-2">
                   <p className="text-[10px] font-black uppercase tracking-[0.4em] text-[#444]">HOURLY BASE RATE</p>
                   <div className="flex items-baseline justify-center gap-2">
@@ -309,8 +312,8 @@ export default function TurfDetail() {
                     </span>
                     {turf.pricePerHour > 0 && <span className="text-[#888888] font-black text-xs uppercase tracking-widest">/ HR</span>}
                   </div>
-                  <div className="text-[9px] font-black text-primary uppercase tracking-[0.2em] bg-primary/5 py-2 px-4 rounded-full mt-4">
-                    Price may vary • Ask before booking
+                  <div className="flex items-center justify-center gap-2 text-[9px] font-black text-primary uppercase tracking-[0.1em] bg-primary/5 py-2 px-4 rounded-full mt-4">
+                    <AlertCircle className="h-3 w-3" /> Price may vary. Confirm before booking.
                   </div>
                 </div>
 
@@ -320,9 +323,14 @@ export default function TurfDetail() {
                       <MessageCircle className="h-6 w-6 mr-3" /> Ask availability
                     </a>
                   </Button>
-                  <Button variant="secondary" className="w-full h-14 bg-[#1A1A1A] text-[#F5F5F5] hover:bg-[#222] text-[10px] font-black uppercase tracking-widest rounded-[12px]">
-                    <Calendar className="h-4 w-4 mr-3" /> Check Slots
-                  </Button>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Button asChild variant="outline" className="h-14 border-[#222] bg-[#1A1A1A] text-[#F5F5F5] hover:bg-[#222] text-[10px] font-black uppercase tracking-widest rounded-[12px]">
+                      <a href={phoneUrl}><Phone className="h-4 w-4 mr-2" /> Call Now</a>
+                    </Button>
+                    <Button variant="secondary" className="h-14 bg-[#1A1A1A] text-[#F5F5F5] hover:bg-[#222] text-[10px] font-black uppercase tracking-widest rounded-[12px]">
+                      <Calendar className="h-4 w-4 mr-2" /> Check Slots
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="pt-8 border-t border-[#222222] text-left space-y-4">
@@ -364,7 +372,7 @@ export default function TurfDetail() {
       <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 p-4 bg-[#0A0A0A]/95 backdrop-blur-2xl border-t border-[#222]">
         <div className="max-w-md mx-auto flex items-center justify-between gap-4">
           <div className="flex flex-col">
-            <p className="text-[9px] font-black text-[#444] uppercase tracking-widest mb-1">Earn 50 Coins</p>
+            <p className="text-[9px] font-black text-[#444] uppercase tracking-widest mb-1">Confirm Price</p>
             <div className="flex items-baseline gap-1">
               <span className="text-2xl font-black text-primary italic leading-none">
                 {turf.pricePerHour > 0 ? `₹${turf.pricePerHour}` : "Ask"}
@@ -372,11 +380,16 @@ export default function TurfDetail() {
               {turf.pricePerHour > 0 && <span className="text-[9px] text-[#888] font-black uppercase tracking-widest">/hr</span>}
             </div>
           </div>
-          <Button asChild className="flex-1 h-14 bg-[#25D366] text-white font-black uppercase text-[11px] tracking-widest px-6 rounded-[12px] shadow-2xl shadow-[#25D366]/10 active:scale-[0.98] transition-all" onClick={handleWhatsAppClick}>
-            <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-3">
-              <MessageCircle className="h-5 w-5" /> Ask availability
-            </a>
-          </Button>
+          <div className="flex-1 flex gap-2">
+             <Button asChild variant="outline" className="w-12 h-14 border-[#222] bg-[#1A1A1A] p-0 rounded-[12px]">
+               <a href={phoneUrl}><Phone className="h-5 w-5" /></a>
+             </Button>
+             <Button asChild className="flex-1 h-14 bg-[#25D366] text-white font-black uppercase text-[11px] tracking-widest px-6 rounded-[12px] shadow-2xl shadow-[#25D366]/10 active:scale-[0.98] transition-all" onClick={handleWhatsAppClick}>
+               <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-3">
+                 <MessageCircle className="h-5 w-5" /> Ask availability
+               </a>
+             </Button>
+          </div>
         </div>
       </div>
 

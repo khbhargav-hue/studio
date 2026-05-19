@@ -35,6 +35,8 @@ import {
 import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase"
 import { collection, query, orderBy, addDoc, serverTimestamp } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
+import { errorEmitter } from '@/firebase/error-emitter'
+import { FirestorePermissionError } from '@/firebase/errors'
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 
@@ -62,31 +64,41 @@ export default function TeamsPage() {
 
   const { data: teams, loading } = useCollection(teamsQuery)
 
-  const handleCreateTeam = async (e: React.FormEvent) => {
+  const handleCreateTeam = (e: React.FormEvent) => {
     e.preventDefault()
     if (!db || !user) return
 
-    setIsGenerating(true)
-    try {
-      await addDoc(collection(db, "teams"), {
-        ...newTeam,
-        createdBy: user.uid,
-        captain: user.displayName || "Athlete",
-        members: [user.uid],
-        wins: 0,
-        losses: 0,
-        matchesPlayed: 0,
-        isOpen: true,
-        createdAt: serverTimestamp()
-      })
-      toast({ title: "Squad Genesis Complete", description: "Your team is now active on the Mysuru circuit." })
-      setShowCreateDialog(false)
-      setNewTeam({ name: "", sport: "Football", area: "", description: "", maxPlayers: 14 })
-    } catch (err) {
-      toast({ title: "Transmission Failed", variant: "destructive" })
-    } finally {
-      setIsCreating(false)
+    setIsCreating(true)
+    const teamData = {
+      ...newTeam,
+      createdBy: user.uid,
+      captain: user.displayName || "Athlete",
+      members: [user.uid],
+      wins: 0,
+      losses: 0,
+      matchesPlayed: 0,
+      isOpen: true,
+      createdAt: serverTimestamp()
     }
+
+    addDoc(collection(db, "teams"), teamData)
+      .then(() => {
+        toast({ title: "Squad Genesis Complete", description: "Your team is now active on the Mysuru circuit." })
+        setShowCreateDialog(false)
+        setNewTeam({ name: "", sport: "Football", area: "", description: "", maxPlayers: 14 })
+      })
+      .catch(async (err) => {
+        const permissionError = new FirestorePermissionError({
+          path: 'teams',
+          operation: 'create',
+          requestResourceData: teamData,
+          message: err.message
+        })
+        errorEmitter.emit('permission-error', permissionError)
+      })
+      .finally(() => {
+        setIsCreating(false)
+      })
   }
 
   return (
@@ -216,9 +228,11 @@ function TeamCard({ team }: { team: any }) {
           {initials}
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-xl font-bold uppercase italic tracking-tighter text-white truncate group-hover:text-primary transition-colors">
-            {team.name || "Untitled Squad"}
-          </h3>
+          <Link href={`/teams/${team.id}`}>
+            <h3 className="text-xl font-bold uppercase italic tracking-tighter text-white truncate group-hover:text-primary transition-colors">
+              {team.name || "Untitled Squad"}
+            </h3>
+          </Link>
           <div className="flex items-center gap-2 mt-1">
             <span className="text-[10px] font-black uppercase text-primary tracking-widest">{team.sport}</span>
             <span className="text-white/10">•</span>

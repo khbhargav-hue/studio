@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useMemo } from "react"
@@ -93,7 +92,6 @@ export default function TeamsPage() {
     if (!db || !user) return
 
     console.log("1_MODAL_SUBMIT")
-    
     setIsCreating(true)
     console.log("2_LOADING_TRUE")
 
@@ -112,8 +110,10 @@ export default function TeamsPage() {
 
     try {
       console.log("3_FIRESTORE_START")
+      
       const docRef = await addDoc(collection(db, "teams"), teamData)
-      console.log("4_FIRESTORE_SUCCESS")
+      
+      console.log("4_FIRESTORE_SUCCESS", docRef.id)
       
       setShowCreateDialog(false)
       console.log("5_MODAL_CLOSED")
@@ -130,9 +130,6 @@ export default function TeamsPage() {
       })
       console.log("6_FORM_RESET")
 
-      setIsCreating(false)
-      console.log("7_LOADING_FALSE")
-
       toast({ 
         title: "Your squad is live 🔥", 
         description: "Tactical data published to the circuit." 
@@ -141,15 +138,18 @@ export default function TeamsPage() {
       router.refresh()
       console.log("8_REFRESH_DONE")
 
-      // Move to detail page after diagnosis
       router.push(`/teams/${docRef.id}`)
       
     } catch (err: any) {
-      console.error("FAIL", err)
-      setIsCreating(false)
+      console.error("FIRESTORE_ERROR", {
+        code: err.code,
+        message: err.message,
+        details: err
+      })
+      
       toast({ 
         title: "Deployment Failed", 
-        description: err.message || "The circuit is currently unavailable.",
+        description: `Code: ${err.code || 'unknown'}. ${err.message || 'The circuit is currently unavailable.'}`,
         variant: "destructive" 
       })
       
@@ -159,6 +159,9 @@ export default function TeamsPage() {
         requestResourceData: teamData,
         message: err.message
       }))
+    } finally {
+      setIsCreating(false)
+      console.log("7_LOADING_FALSE")
     }
   }
 

@@ -124,6 +124,12 @@ export default function ProfilePage() {
       if (isMobile) await signInWithRedirect(auth, provider);
       else await signInWithPopup(auth, provider);
     } catch (error: any) {
+      // Gracefully handle user cancellation
+      if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+        setIsSigningIn(false);
+        return;
+      }
+
       if (error.code === 'auth/unauthorized-domain') {
         const domain = typeof window !== 'undefined' ? window.location.hostname : 'your domain';
         setAuthError(
@@ -167,7 +173,7 @@ export default function ProfilePage() {
           variant: "destructive"
         });
       } else {
-        console.error(error);
+        console.error("Auth process interrupted:", error);
         toast({ title: "Identification Failed", variant: "destructive" });
       }
     } finally {

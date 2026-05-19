@@ -53,6 +53,12 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
       toast({ title: "Identity Verified", description: "Welcome back to the Mysuru circuit." });
       if (onOpenChange) onOpenChange(false);
     } catch (err: any) {
+      // Gracefully handle user cancellation without showing a fatal error
+      if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
+        setIsLoading(false);
+        return;
+      }
+
       if (err.code === 'auth/unauthorized-domain') {
         const domain = typeof window !== 'undefined' ? window.location.hostname : 'your domain';
         setError(
@@ -84,7 +90,7 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
           </div>
         );
       } else {
-        console.error("Auth error:", err);
+        console.error("Authentication signal lost:", err);
         toast({ title: "Authentication Failed", variant: "destructive" });
       }
     } finally {

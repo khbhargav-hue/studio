@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useParams, useRouter } from "next/navigation"
@@ -24,7 +23,8 @@ import {
   ZapIcon,
   Coffee,
   Bath,
-  CircleDot
+  CircleDot,
+  Gift
 } from "lucide-react"
 import { useDoc, useFirestore, useMemoFirebase, useUser } from "@/firebase"
 import { doc, increment, setDoc, addDoc, serverTimestamp, collection, updateDoc } from "firebase/firestore"

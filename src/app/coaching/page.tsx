@@ -58,7 +58,7 @@ export default function CoachingPage() {
               key={sport}
               onClick={() => setActiveSport(sport)}
               className={cn(
-                "flex-none h-10 px-6 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border active:scale-95 duration-150",
+                "flex-none h-10 px-6 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-200 ease-out border active:scale-[0.98]",
                 activeSport === sport 
                   ? "bg-primary text-black border-primary" 
                   : "bg-surface text-muted border-border hover:border-primary/50"

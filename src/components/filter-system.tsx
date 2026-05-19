@@ -65,7 +65,7 @@ export function FilterSystem({
               key={sport.id}
               onClick={() => onSportChange(sport.id)}
               className={cn(
-                "flex-none h-11 px-6 rounded-full text-[11px] font-black uppercase tracking-widest flex items-center gap-2 transition-all active:scale-95",
+                "flex-none h-11 px-6 rounded-full text-[11px] font-black uppercase tracking-widest flex items-center gap-2 transition-all duration-200 ease-out active:scale-[0.98]",
                 activeSport === sport.id 
                   ? "bg-[#AAFF00] text-black border border-[#AAFF00]" 
                   : "bg-[#1A1A1A] text-[#888] border border-[#222] hover:border-[#AAFF00]/50"

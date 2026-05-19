@@ -44,9 +44,6 @@
 .bg-flat-black { background-color: #0A0A0A; }
 .border-flat { border-width: 1px; border-color: #222; }
 
-/* Refined Transitions */
-* { transition: background-color 0.15s ease-out, border-color 0.15s ease-out, color 0.15s ease-out, opacity 0.15s ease-out, transform 0.15s ease-out; }
-
 /* Hide Scrollbars */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

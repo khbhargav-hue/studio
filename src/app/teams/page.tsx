@@ -41,8 +41,8 @@ import {
   MessageCircle,
   Activity
 } from "lucide-react"
-import { useCollection, useFirestore, useUser, useMemoFirebase, useDoc } from "@/firebase"
-import { collection, query, orderBy, addDoc, serverTimestamp, doc } from "firebase/firestore"
+import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase"
+import { collection, query, orderBy, addDoc, serverTimestamp } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { errorEmitter } from '@/firebase/error-emitter'
 import { FirestorePermissionError } from '@/firebase/errors'
@@ -51,7 +51,6 @@ import { cn } from "@/lib/utils"
 
 const SPORT_OPTIONS = ["Football", "Cricket", "Badminton", "Pickleball", "Swimming"]
 const SKILL_LEVELS = ["Beginner", "Intermediate", "Advanced", "Pro"]
-const TEAM_TYPES = ["Solo (Free Agent)", "Duo", "Squad (5+)", "Full Team"]
 
 export default function TeamsPage() {
   const db = useFirestore()
@@ -89,11 +88,13 @@ export default function TeamsPage() {
   const { data: teams, loading: teamsLoading } = useCollection(teamsQuery)
   const { data: freeAgents, loading: agentsLoading } = useCollection(freeAgentsQuery)
 
-  const handleCreateTeam = (e: React.FormEvent) => {
+  const handleCreateTeam = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!db || !user) return
 
+    console.log("TEAM_SAVE_START")
     setIsCreating(true)
+
     const teamData = {
       ...newTeam,
       createdBy: user.uid,
@@ -107,31 +108,57 @@ export default function TeamsPage() {
       createdAt: serverTimestamp()
     }
 
-    addDoc(collection(db, "teams"), teamData)
-      .then((docRef) => {
-        toast({ 
-          title: "Your squad is live 🔥", 
-          description: "Tactical data published to the circuit." 
-        })
-        setShowCreateDialog(false)
-        setIsCreating(false)
-        router.push(`/teams/${docRef.id}`)
+    try {
+      const docRef = await addDoc(collection(db, "teams"), teamData)
+      console.log("TEAM_SAVE_SUCCESS", docRef.id)
+      
+      toast({ 
+        title: "Your squad is live 🔥", 
+        description: "Tactical data published to the circuit." 
       })
-      .catch(async (err) => {
-        setIsCreating(false)
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: 'teams',
-          operation: 'create',
-          requestResourceData: teamData,
-          message: err.message
-        }))
+
+      console.log("TEAM_MODAL_CLOSE")
+      setShowCreateDialog(false)
+      
+      // Reset form
+      setNewTeam({
+        name: "",
+        sport: "Football",
+        area: "",
+        description: "",
+        maxPlayers: 14,
+        type: "Squad (5+)",
+        skillLevel: "Intermediate",
+        whatsapp: ""
       })
+
+      // Redirect to team detail page
+      router.push(`/teams/${docRef.id}`)
+      router.refresh()
+      
+    } catch (err: any) {
+      console.error("TEAM_SAVE_FAIL", err)
+      toast({ 
+        title: "Deployment Failed", 
+        description: err.message || "The circuit is currently unavailable.",
+        variant: "destructive" 
+      })
+      
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: 'teams',
+        operation: 'create',
+        requestResourceData: teamData,
+        message: err.message
+      }))
+    } finally {
+      setIsCreating(false)
+    }
   }
 
   const filteredTeams = useMemo(() => {
     if (!teams) return []
     return teams.filter((t: any) => {
-      const matchesSearch = !searchQuery || t.name.toLowerCase().includes(searchQuery.toLowerCase()) || t.area.toLowerCase().includes(searchQuery.toLowerCase())
+      const matchesSearch = !searchQuery || t.name?.toLowerCase().includes(searchQuery.toLowerCase()) || t.area?.toLowerCase().includes(searchQuery.toLowerCase())
       const matchesSkill = skillFilter === "all" || t.skillLevel === skillFilter
       return matchesSearch && matchesSkill
     })

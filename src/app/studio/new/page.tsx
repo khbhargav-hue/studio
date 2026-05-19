@@ -162,68 +162,68 @@ function NewTurfForm() {
     if (!db) return;
     
     setIsSaving(true);
-    console.log("1_UPLOAD_START");
+    console.log("1_SUBMISSION_INITIATED");
 
     try {
-      // Create a timeout race for the whole submission
-      const timeout = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error("Submission timed out — check your signal")), 10000)
-      );
+      let finalImageUrl = formData.imageUrl;
 
-      const performSubmission = async () => {
-        let finalImageUrl = formData.imageUrl;
-
-        // Part A: Resilient Image Upload
-        if (pendingFile) {
-          try {
-            const url = await uploadToCloudinary(pendingFile);
-            if (url) {
-              finalImageUrl = url;
-              console.log("2_IMAGE_SUCCESS");
-            } else {
-              console.warn("Image upload failed — proceeding with placeholder");
-            }
-          } catch (err) {
-            console.error("Image upload error", err);
+      // Handle resilient media upload if a new file is staged
+      if (pendingFile) {
+        console.log("2_MEDIA_SYNC_START");
+        try {
+          const url = await uploadToCloudinary(pendingFile);
+          if (url) {
+            finalImageUrl = url;
+            console.log("3_MEDIA_SYNC_SUCCESS");
           }
+        } catch (err) {
+          console.warn("Media sync failed — using fallback placeholder");
         }
+      }
 
-        if (!finalImageUrl && !formData.imageUrl) {
-          finalImageUrl = "https://picsum.photos/seed/turf/1200/800";
-        }
+      if (!finalImageUrl && !formData.imageUrl) {
+        finalImageUrl = "https://picsum.photos/seed/turf/1200/800";
+      }
 
-        // Part B: Firestore Handshake
-        console.log("3_FIRESTORE_START");
-        const id = editId || formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-        const turfRef = doc(db, "turfs", id);
-        
-        const dataToSave = {
-          ...formData,
-          imageUrl: finalImageUrl,
-          id,
-          updatedAt: serverTimestamp(),
-          createdAt: existingTurf?.createdAt || serverTimestamp()
-        };
-
-        await setDoc(turfRef, dataToSave, { merge: true });
-        console.log("4_FIRESTORE_SUCCESS");
-
-        toast({ title: editId ? "Intel Synchronized" : "Arena Deployed" });
-        router.push("/studio");
+      // Prepare Firestore payload
+      const id = editId || formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      const turfRef = doc(db, "turfs", id);
+      
+      const dataToSave = {
+        ...formData,
+        imageUrl: finalImageUrl,
+        id,
+        updatedAt: serverTimestamp(),
+        createdAt: existingTurf?.createdAt || serverTimestamp()
       };
 
-      await Promise.race([performSubmission(), timeout]);
+      // Firestore Write Pattern: Non-blocking for instant UI response
+      console.log("4_FIRESTORE_WRITE_QUEUED");
+      setDoc(turfRef, dataToSave, { merge: true })
+        .catch(async (err: any) => {
+          console.error("5_FIRESTORE_WRITE_ERROR", err);
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: turfRef.path,
+            operation: 'write',
+            requestResourceData: dataToSave,
+            message: err.message
+          }));
+        });
 
+      // Provide immediate feedback to the admin
+      toast({ title: editId ? "Intel Synchronized" : "Arena Deployed" });
+      router.push("/studio");
+      
     } catch (err: any) {
-      console.error("DEPLOYMENT_FAIL", err);
+      console.error("CRITICAL_SUBMISSION_FAIL", err);
       toast({ 
-        title: "Deployment Sync Failed", 
-        description: err.message || "Upload timed out. Try again.",
+        title: "Deployment Halted", 
+        description: err.message || "Circuit interrupted. Please retry.",
         variant: "destructive" 
       });
     } finally {
       setIsSaving(false);
-      console.log("5_LOADING_FALSE");
+      console.log("6_LOADING_RESET");
     }
   };
 

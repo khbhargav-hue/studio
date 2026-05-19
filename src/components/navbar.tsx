@@ -46,8 +46,8 @@ export function Navbar() {
 
         <div className="flex items-center gap-4">
           <Link href="/profile" className="h-10 w-10 flex items-center justify-center text-[#888] hover:text-primary">
-            {user ? (
-              <img src={user.photoURL || ""} alt="" className="h-7 w-7 rounded-full border border-border" />
+            {user?.photoURL ? (
+              <img src={user.photoURL} alt={user.displayName || "User"} className="h-7 w-7 rounded-full border border-border" />
             ) : (
               <UserCircle className="h-6 w-6" />
             )}

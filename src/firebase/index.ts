@@ -17,16 +17,23 @@ export * from './use-memo-firebase';
  * Hardened Firebase Initialization
  * Enforces Long Polling to bypass "unavailable" errors in proxied environments.
  * Disables fetch streams and persistence to avoid false offline states.
+ * Handles idempotent initialization for Next.js HMR.
  */
 export function initializeFirebase() {
   const apps = getApps();
   const app = apps.length === 0 ? initializeApp(firebaseConfig) : apps[0];
   
-  // Hardened Firestore Connection
-  const db = initializeFirestore(app, {
-    experimentalForceLongPolling: true,
-    useFetchStreams: false
-  });
+  let db;
+  try {
+    // Attempt to initialize with hardened settings
+    db = initializeFirestore(app, {
+      experimentalForceLongPolling: true,
+      useFetchStreams: false
+    });
+  } catch (e) {
+    // Fallback if already initialized (common in HMR)
+    db = getFirestore(app);
+  }
 
   const auth = getAuth(app);
   const storage = getStorage(app);

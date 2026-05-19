@@ -110,8 +110,9 @@ export default function TeamsPage() {
     }
 
     try {
+      // Extended timeout for restricted network environments
       const timeout = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Save timeout — check your connection")), 10000)
+        setTimeout(() => reject(new Error("Save timeout — check your connection. Try refreshing or use a stronger signal.")), 20000)
       )
 
       const save = setDoc(doc(db, "teams", teamId), teamData)

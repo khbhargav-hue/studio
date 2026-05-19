@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from "react";
@@ -30,6 +29,7 @@ import {
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { REWARD_POINTS, calculateLevel, getProgressToNextLevel } from "@/lib/rewards";
+import { cn } from "@/lib/utils";
 
 export default function ProfilePage() {
   const { user, loading: userLoading } = useUser();

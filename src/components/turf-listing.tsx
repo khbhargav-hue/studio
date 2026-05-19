@@ -3,7 +3,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, limit, where } from 'firebase/firestore';
+import { collection, query, limit, getDocs, where } from 'firebase/firestore';
 import { TurfCard } from './turf-card';
 import { ListingAdCard } from './ads/listing-ad-card';
 import { Button } from '@/components/ui/button';
@@ -22,26 +22,14 @@ export function TurfListing() {
   const [ratingFilter, setRatingFilter] = useState('all');
   const [pageSize, setPageSize] = useState(12);
 
-  // Firestore Queries
-  // Note: This composite query requires an index: turfs | isActive ASC, rating DESC
+  // Firestore Queries - Broadened to ensure visibility
   const turfsQuery = useMemoFirebase(() => {
     if (!db) return null;
-    let q = query(
+    return query(
       collection(db, 'turfs'), 
-      where("isActive", "==", true),
-      orderBy('rating', 'desc'), 
       limit(pageSize)
     );
-    
-    // Additional server-side filters if available
-    if (activeSport !== 'all') {
-      q = query(q, where('sports', 'array-contains', activeSport));
-    }
-    if (areaFilter !== 'all') {
-      q = query(q, where('area', '==', areaFilter));
-    }
-    return q;
-  }, [db, activeSport, areaFilter, pageSize]);
+  }, [db, pageSize]);
 
   const adsQuery = useMemoFirebase(() => {
     if (!db) return null;
@@ -53,34 +41,61 @@ export function TurfListing() {
     );
   }, [db]);
 
-  const { data: rawTurfs, loading: loadingTurfs } = useCollection(turfsQuery);
+  const { data: rawTurfs, loading: loadingTurfs } = useCollection(rawTurfs => {
+    if (rawTurfs) {
+      console.log("FETCH_SUCCESS", rawTurfs.length);
+      console.log(rawTurfs);
+    }
+  }, turfsQuery);
+  
   const { data: ads } = useCollection(adsQuery);
 
+  // Audit Fetch for Console Debugging as requested
   useEffect(() => {
-    if (rawTurfs) {
-      console.log("Turfs fetched from circuit:", rawTurfs.length);
+    async function runAudit() {
+      if (!db) return;
+      console.log("FETCH_START");
+      try {
+        const snapshot = await getDocs(collection(db, "turfs"));
+        console.log("FETCH_SUCCESS", snapshot.docs.length);
+        const mapped = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        console.log(mapped);
+      } catch (err) {
+        console.error("FETCH_ERROR", err);
+      }
     }
-  }, [rawTurfs]);
+    runAudit();
+  }, [db]);
 
-  // Client-side filtering
+  // Client-side filtering to prevent empty states from restrictive queries
   const filteredTurfs = useMemo(() => {
     if (!rawTurfs) return [];
     
     return rawTurfs.filter((turf: any) => {
+      // 1. Sport filter (checking if 'sports' array exists)
+      const matchesSport = activeSport === 'all' || 
+        (turf.sports && Array.isArray(turf.sports) && turf.sports.includes(activeSport));
+
+      // 2. Search query (name or area)
       const matchesSearch = !searchQuery || 
-        turf.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        turf.area.toLowerCase().includes(searchQuery.toLowerCase());
+        (turf.name && turf.name.toLowerCase().includes(searchQuery.toLowerCase())) || 
+        (turf.area && turf.area.toLowerCase().includes(searchQuery.toLowerCase()));
       
-      const matchesRating = ratingFilter === 'all' || turf.rating >= parseFloat(ratingFilter);
+      // 3. Area filter
+      const matchesArea = areaFilter === 'all' || turf.area === areaFilter;
+
+      // 4. Rating filter
+      const matchesRating = ratingFilter === 'all' || (turf.rating && turf.rating >= parseFloat(ratingFilter));
       
+      // 5. Price filter
       let matchesPrice = true;
       if (priceFilter === 'low') matchesPrice = turf.pricePerHour < 800;
       else if (priceFilter === 'mid') matchesPrice = turf.pricePerHour >= 800 && turf.pricePerHour <= 1200;
       else if (priceFilter === 'high') matchesPrice = turf.pricePerHour > 1200;
 
-      return matchesSearch && matchesRating && matchesPrice;
+      return matchesSport && matchesSearch && matchesArea && matchesRating && matchesPrice;
     });
-  }, [rawTurfs, searchQuery, priceFilter, ratingFilter]);
+  }, [rawTurfs, activeSport, searchQuery, areaFilter, priceFilter, ratingFilter]);
 
   // Interleave ads every 6th card
   const itemsWithAds = useMemo(() => {
@@ -148,7 +163,7 @@ export function TurfListing() {
           ) : (
             <div className="py-24 text-center border border-dashed border-border rounded-[24px]">
               <div className="text-muted mb-4 text-4xl">🔎</div>
-              <h3 className="text-xl font-bold mb-2">No venues match your filters</h3>
+              <h3 className="text-xl font-bold mb-2">No turfs yet</h3>
               <p className="text-muted text-sm max-w-xs mx-auto">Try broadening your search or clear all filters to see all Mysuru turfs.</p>
               <Button 
                 variant="outline" 

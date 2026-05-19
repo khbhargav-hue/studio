@@ -1,3 +1,4 @@
+
 "use client"
 
 import { Navbar } from "@/components/navbar"
@@ -7,21 +8,42 @@ import { Button } from "@/components/ui/button"
 import { Zap, Users, Trophy, ChevronRight, MapPin, Swords } from "lucide-react"
 import Link from "next/link"
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase"
-import { collection, query, where, limit, orderBy } from "firebase/firestore"
+import { collection, query, limit, getDocs } from "firebase/firestore"
 import { TurfCard } from "@/components/turf-card"
-import { motion } from "framer-motion"
+import { useEffect } from "react"
 
 export default function Home() {
   const db = useFirestore()
   
-  // Network Data Feeds
-  const turfsQuery = useMemoFirebase(() => query(collection(db, "turfs"), where("isActive", "==", true), limit(4)), [db])
-  const challengesQuery = useMemoFirebase(() => query(collection(db, "challenges"), where("status", "==", "open"), limit(3)), [db])
+  // Network Data Feeds - Simplified for resilience
+  const turfsQuery = useMemoFirebase(() => query(collection(db, "turfs"), limit(4)), [db])
+  const challengesQuery = useMemoFirebase(() => query(collection(db, "challenges"), limit(3)), [db])
   const teamsQuery = useMemoFirebase(() => query(collection(db, "teams"), limit(4)), [db])
 
-  const { data: turfs } = useCollection(turfsQuery)
+  const { data: turfs } = useCollection(turfs => {
+    if (turfs) {
+      console.log("FETCH_SUCCESS: homepage", turfs.length);
+      console.log(turfs);
+    }
+  }, turfsQuery)
+  
   const { data: challenges } = useCollection(challengesQuery)
   const { data: teams } = useCollection(teamsQuery)
+
+  // Audit Fetch for Console Debugging
+  useEffect(() => {
+    async function runAudit() {
+      if (!db) return;
+      console.log("FETCH_START: homepage");
+      try {
+        const snapshot = await getDocs(collection(db, "turfs"));
+        console.log("FETCH_SUCCESS: homepage snapshot", snapshot.docs.length);
+      } catch (err) {
+        console.error("FETCH_ERROR: homepage", err);
+      }
+    }
+    runAudit();
+  }, [db]);
 
   return (
     <div className="flex min-h-screen flex-col bg-background selection:bg-primary selection:text-black">
@@ -86,6 +108,11 @@ export default function Home() {
               <TurfCard key={turf.id} turf={turf as any} />
             ))}
           </div>
+          {!turfs || turfs.length === 0 && (
+             <div className="py-20 text-center border border-dashed border-border rounded-xl">
+                <p className="text-muted text-sm italic font-medium">No turfs yet. Synchronization in progress.</p>
+             </div>
+          )}
         </section>
 
         {/* 3. Featured Teams */}
@@ -98,7 +125,7 @@ export default function Home() {
             {teams?.map((team: any) => (
               <Link key={team.id} href={`/teams/${team.id}`} className="bg-card border border-border p-6 hover:border-primary group">
                 <div className="h-12 w-12 bg-primary/10 flex items-center justify-center mb-4 text-primary font-black italic">
-                  {team.name[0]}
+                  {team.name ? team.name[0] : 'T'}
                 </div>
                 <h3 className="font-black uppercase italic text-sm group-hover:text-primary truncate">{team.name}</h3>
                 <p className="text-[10px] text-[#444] font-bold uppercase tracking-widest mt-1">{team.sport} • {team.area}</p>

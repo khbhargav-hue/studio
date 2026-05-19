@@ -1,27 +1,53 @@
 
 'use client';
 
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { TurfCard } from "@/components/turf-card";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, query, where } from "firebase/firestore";
+import { collection, query, limit, getDocs } from "firebase/firestore";
 import { Loader2, Star, Trophy, Zap } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function FeaturedPage() {
   const db = useFirestore();
   
+  // Broadened query to ensure data visibility
   const featuredQuery = useMemoFirebase(() => {
     if (!db) return null;
-    return query(
-      collection(db, "turfs"), 
-      where("isPopular", "==", true)
-    );
+    return query(collection(db, "turfs"), limit(20));
   }, [db]);
 
-  const { data: turfs, loading } = useCollection(featuredQuery);
+  const { data: rawTurfs, loading } = useCollection(rawTurfs => {
+    if (rawTurfs) {
+      console.log("FETCH_SUCCESS: featured", rawTurfs.length);
+    }
+  }, featuredQuery);
+
+  // Filter for 'isPremium' or 'featured' on the client side
+  const turfs = useMemo(() => {
+    if (!rawTurfs) return [];
+    return rawTurfs.filter((t: any) => t.isPremium === true || t.featured === true || t.isPopular === true);
+  }, [rawTurfs]);
+
+  // If no "featured" fields found, show the last 4 added turfs as a fallback
+  const displayTurfs = turfs.length > 0 ? turfs : (rawTurfs?.slice(0, 4) || []);
+
+  // Audit Fetch for Console Debugging
+  useEffect(() => {
+    async function runAudit() {
+      if (!db) return;
+      console.log("FETCH_START: featured");
+      try {
+        const snapshot = await getDocs(collection(db, "turfs"));
+        console.log("FETCH_SUCCESS: featured snapshot", snapshot.docs.length);
+      } catch (err) {
+        console.error("FETCH_ERROR: featured", err);
+      }
+    }
+    runAudit();
+  }, [db]);
 
   return (
     <div className="flex min-h-screen flex-col bg-[#050505] selection:bg-primary selection:text-black">
@@ -52,9 +78,9 @@ export default function FeaturedPage() {
               <Loader2 className="h-12 w-12 animate-spin text-primary" />
               <p className="text-[10px] font-black uppercase tracking-widest text-primary/40">Fetching Elite Intel...</p>
             </div>
-          ) : turfs && turfs.length > 0 ? (
+          ) : displayTurfs.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-12">
-              {turfs.map((turf, idx) => (
+              {displayTurfs.map((turf, idx) => (
                 <motion.div
                   key={turf.id}
                   initial={{ opacity: 0, y: 30 }}
@@ -71,13 +97,13 @@ export default function FeaturedPage() {
                 <Trophy className="h-10 w-10 text-white/10" />
               </div>
               <div>
-                <h3 className="text-3xl font-black text-white/10 uppercase italic tracking-widest mb-4">Discovery Empty</h3>
-                <p className="text-white/20 font-medium max-w-xs mx-auto">No arenas have been marked as featured in the database yet.</p>
+                <h3 className="text-3xl font-black text-white/10 uppercase italic tracking-widest mb-4">No turfs yet</h3>
+                <p className="text-white/20 font-medium max-w-xs mx-auto">The circuit is currently empty. Deployment of new arena nodes is pending.</p>
               </div>
             </div>
           )}
 
-          {!loading && turfs && turfs.length > 0 && (
+          {!loading && displayTurfs.length > 0 && (
             <div className="mt-40 grid grid-cols-1 md:grid-cols-3 gap-10 border-t border-white/5 pt-20">
               {[
                 { icon: Zap, title: "Elite Surfaces", desc: "Professional-grade turf designed for maximum joint protection and grip." },

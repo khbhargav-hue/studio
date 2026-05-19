@@ -2,6 +2,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
@@ -46,6 +47,7 @@ export default function TeamsPage() {
   const db = useFirestore()
   const { user } = useUser()
   const { toast } = useToast()
+  const router = useRouter()
   
   const [isCreating, setIsCreating] = useState(false)
   const [showCreateDialog, setShowCreateDialog] = useState(false)
@@ -81,12 +83,8 @@ export default function TeamsPage() {
       createdAt: serverTimestamp()
     }
 
+    // Trigger mutation without await to leverage optimistic UI and avoid network-induced infinite loading
     addDoc(collection(db, "teams"), teamData)
-      .then(() => {
-        toast({ title: "Squad Genesis Complete", description: "Your team is now active on the Mysuru circuit." })
-        setShowCreateDialog(false)
-        setNewTeam({ name: "", sport: "Football", area: "", description: "", maxPlayers: 14 })
-      })
       .catch(async (err) => {
         const permissionError = new FirestorePermissionError({
           path: 'teams',
@@ -96,9 +94,20 @@ export default function TeamsPage() {
         })
         errorEmitter.emit('permission-error', permissionError)
       })
-      .finally(() => {
-        setIsCreating(false)
-      })
+
+    // Logic proceeds immediately for responsive UX
+    toast({ 
+      title: "Team created successfully", 
+      description: "Your squad is now live on the Mysuru circuit." 
+    })
+
+    // Reset UI and state
+    setShowCreateDialog(false)
+    setIsCreating(false)
+    setNewTeam({ name: "", sport: "Football", area: "", description: "", maxPlayers: 14 })
+    
+    // Force redirect/refresh path
+    router.push("/teams")
   }
 
   return (

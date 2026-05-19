@@ -1,8 +1,9 @@
 'use client';
 
-import { Search, MapPin, IndianRupee, Star, ArrowUpDown, X } from 'lucide-react';
+import { Search, MapPin, IndianRupee, Star, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
+import { motion } from 'framer-motion';
 import { 
   Select, 
   SelectContent, 
@@ -57,17 +58,17 @@ export function FilterSystem({
   return (
     <div className="sticky top-[64px] z-40 w-full bg-[#0A0A0A]/95 backdrop-blur-md border-b border-[#222]">
       <div className="max-w-7xl mx-auto">
-        {/* 1. Sport Category Tabs - Touch Friendly (min-h 44px) */}
+        {/* 1. Sport Category Tabs - Touch Friendly */}
         <div className="flex items-center gap-3 overflow-x-auto no-scrollbar p-4 md:px-8 border-b border-white/5 scroll-smooth">
           {SPORTS.map((sport) => (
             <button
               key={sport.id}
               onClick={() => onSportChange(sport.id)}
               className={cn(
-                "flex-none h-11 px-6 rounded-full text-[11px] font-black uppercase tracking-widest flex items-center gap-2 transition-all border",
+                "flex-none h-11 px-6 rounded-full text-[11px] font-black uppercase tracking-widest flex items-center gap-2 transition-all active:scale-95",
                 activeSport === sport.id 
-                  ? "bg-[#AAFF00] text-black border-[#AAFF00]" 
-                  : "bg-[#1A1A1A] text-[#888] border-[#222] active:border-[#AAFF00]/50"
+                  ? "bg-[#AAFF00] text-black border border-[#AAFF00]" 
+                  : "bg-[#1A1A1A] text-[#888] border border-[#222] hover:border-[#AAFF00]/50"
               )}
             >
               <span className="text-[14px]">{sport.icon}</span>
@@ -76,7 +77,7 @@ export function FilterSystem({
           ))}
         </div>
 
-        {/* 2. Filter Bar - High Density for Mobile */}
+        {/* 2. Filter Bar - High Density */}
         <div className="p-4 md:px-8 flex flex-col md:flex-row items-center gap-4">
           <div className="relative w-full md:w-96">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#444]" />
@@ -90,7 +91,7 @@ export function FilterSystem({
 
           <div className="flex items-center gap-2 w-full overflow-x-auto no-scrollbar pb-1 md:pb-0">
             <Select value={areaFilter} onValueChange={onAreaChange}>
-              <SelectTrigger className="h-12 bg-[#1A1A1A] border-[#222] rounded-[10px] min-w-[120px] text-[11px] font-black uppercase tracking-widest shrink-0">
+              <SelectTrigger className="h-12 bg-[#1A1A1A] border-[#222] rounded-[10px] min-w-[120px] text-[11px] font-black uppercase tracking-widest shrink-0 transition-all active:scale-95">
                 <MapPin className="h-3.5 w-3.5 mr-2 text-primary" />
                 <SelectValue placeholder="Area" />
               </SelectTrigger>
@@ -104,7 +105,7 @@ export function FilterSystem({
             </Select>
 
             <Select value={priceFilter} onValueChange={onPriceChange}>
-              <SelectTrigger className="h-12 bg-[#1A1A1A] border-[#222] rounded-[10px] min-w-[120px] text-[11px] font-black uppercase tracking-widest shrink-0">
+              <SelectTrigger className="h-12 bg-[#1A1A1A] border-[#222] rounded-[10px] min-w-[120px] text-[11px] font-black uppercase tracking-widest shrink-0 transition-all active:scale-95">
                 <IndianRupee className="h-3.5 w-3.5 mr-2 text-primary" />
                 <SelectValue placeholder="Budget" />
               </SelectTrigger>
@@ -117,7 +118,7 @@ export function FilterSystem({
             </Select>
 
             <Select value={ratingFilter} onValueChange={onRatingChange}>
-              <SelectTrigger className="h-12 bg-[#1A1A1A] border-[#222] rounded-[10px] min-w-[120px] text-[11px] font-black uppercase tracking-widest shrink-0">
+              <SelectTrigger className="h-12 bg-[#1A1A1A] border-[#222] rounded-[10px] min-w-[120px] text-[11px] font-black uppercase tracking-widest shrink-0 transition-all active:scale-95">
                 <Star className="h-3.5 w-3.5 mr-2 text-primary" />
                 <SelectValue placeholder="Rating" />
               </SelectTrigger>
@@ -130,9 +131,9 @@ export function FilterSystem({
           </div>
         </div>
 
-        {/* 3. Active Chips - Mobile Optimized */}
+        {/* 3. Active Chips */}
         {activeFilterCount > 0 && (
-          <div className="px-4 md:px-8 pb-4 flex items-center flex-wrap gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
+          <div className="px-4 md:px-8 pb-4 flex items-center flex-wrap gap-2 animate-in fade-in zoom-in-95 duration-200">
             {activeSport !== 'all' && (
               <FilterChip label={activeSport} onRemove={() => onSportChange('all')} />
             )}
@@ -147,7 +148,7 @@ export function FilterSystem({
             )}
             <button 
               onClick={onClearAll}
-              className="h-10 px-3 text-[10px] font-black uppercase tracking-widest text-[#AAFF00] hover:underline"
+              className="h-10 px-3 text-[10px] font-black uppercase tracking-widest text-[#AAFF00] hover:underline transition-all"
             >
               Reset Circuit
             </button>
@@ -160,7 +161,7 @@ export function FilterSystem({
 
 function FilterChip({ label, onRemove }: { label: string, onRemove: () => void }) {
   return (
-    <div className="h-9 pl-4 pr-1 rounded-lg bg-[#AAFF00]/10 border border-[#AAFF00]/20 flex items-center gap-1">
+    <div className="h-9 pl-4 pr-1 rounded-lg bg-[#AAFF00]/10 border border-[#AAFF00]/20 flex items-center gap-1 transition-all active:scale-95">
       <span className="text-[10px] font-black uppercase tracking-widest text-[#AAFF00] italic">{label}</span>
       <button 
         onClick={onRemove}

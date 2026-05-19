@@ -9,11 +9,7 @@ import {
   Star, 
   MapPin, 
   MessageCircle, 
-  Loader2, 
-  Search,
   UserCircle,
-  Trophy,
-  Activity,
   Zap
 } from "lucide-react"
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase"
@@ -62,7 +58,7 @@ export default function CoachingPage() {
               key={sport}
               onClick={() => setActiveSport(sport)}
               className={cn(
-                "flex-none h-10 px-6 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border",
+                "flex-none h-10 px-6 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border active:scale-95 duration-150",
                 activeSport === sport 
                   ? "bg-primary text-black border-primary" 
                   : "bg-surface text-muted border-border hover:border-primary/50"
@@ -102,7 +98,6 @@ export default function CoachingPage() {
 function CoachCard({ coach }: { coach: any }) {
   const whatsappUrl = `https://wa.me/${coach.whatsapp}?text=${encodeURIComponent(`Hi! I want to book a session with ${coach.name} for ${coach.sport}.`)}`;
 
-  // Performance: Cloudinary optimization for profile circles
   const photoUrl = coach.photoUrl 
     ? (coach.photoUrl.includes('cloudinary.com') 
         ? coach.photoUrl.replace('/upload/', '/upload/f_webp,w_300,q_75,c_fill,g_face/') 
@@ -110,7 +105,7 @@ function CoachCard({ coach }: { coach: any }) {
     : null;
 
   return (
-    <div className="bg-card border border-border rounded-[16px] p-8 flex flex-col items-center text-center transition-all hover:border-primary/40 group">
+    <div className="bg-card border border-border rounded-[16px] p-8 flex flex-col items-center text-center transition-all hover:border-primary/40 group active:scale-[0.99] duration-200">
       {/* Coach Photo Circle */}
       <div className="relative mb-6">
         <div className="h-28 w-28 rounded-full border-2 border-primary p-1">

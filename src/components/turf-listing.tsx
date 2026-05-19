@@ -2,13 +2,16 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, limit, getDocs, where } from 'firebase/firestore';
+import { collection, query, limit, where } from 'firebase/firestore';
 import { TurfCard } from './turf-card';
 import { ListingAdCard } from './ads/listing-ad-card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FilterSystem } from './filter-system';
-import { Zap } from 'lucide-react';
+import { Zap, WifiOff, Database } from 'lucide-react';
+import { firebaseConfig } from '@/firebase/config';
+
+const CACHE_KEY = 'turfista_circuit_cache';
 
 export function TurfListing() {
   const db = useFirestore();
@@ -19,76 +22,64 @@ export function TurfListing() {
   const [areaFilter, setAreaFilter] = useState('all');
   const [priceFilter, setPriceFilter] = useState('all');
   const [ratingFilter, setRatingFilter] = useState('all');
-  const [pageSize, setPageSize] = useState(12);
+  const [pageSize, setPageSize] = useState(24);
+  const [displayTurfs, setDisplayTurfs] = useState<any[]>([]);
+  const [isUsingCache, setIsUsingCache] = useState(false);
 
-  // Firestore Queries - Broadened to ensure visibility
+  // Broad Discovery Query
   const turfsQuery = useMemoFirebase(() => {
     if (!db) return null;
-    return query(
-      collection(db, 'turfs'), 
-      limit(pageSize)
-    );
+    return query(collection(db, 'turfs'), limit(pageSize));
   }, [db, pageSize]);
 
   const adsQuery = useMemoFirebase(() => {
     if (!db) return null;
     return query(
-      collection(db, 'ads'), 
+      collection(db, "ads"), 
       where('placement', '==', 'listing_card'), 
       where('isActive', '==', true),
       limit(5)
     );
   }, [db]);
 
-  const { data: rawTurfs, loading: loadingTurfs } = useCollection(turfsQuery);
+  const { data: rawTurfs, loading: loadingTurfs, error } = useCollection(turfsQuery);
   const { data: ads } = useCollection(adsQuery);
 
-  // Diagnostic Logs
+  // Persistent Cache & Diagnostic Logic
   useEffect(() => {
-    if (rawTurfs) {
-      console.log("FETCH_SUCCESS", rawTurfs.length);
-      console.log(rawTurfs);
-    }
-  }, [rawTurfs]);
-
-  // Audit Fetch for Console Debugging
-  useEffect(() => {
-    async function runAudit() {
-      if (!db) return;
-      console.log("FETCH_START");
-      try {
-        const snapshot = await getDocs(collection(db, "turfs"));
-        console.log("FETCH_SUCCESS audit", snapshot.docs.length);
-        const mapped = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        console.log("Audit data:", mapped);
-      } catch (err) {
-        console.error("FETCH_ERROR", err);
+    console.log(`[CIRCUIT NODE] Project: ${firebaseConfig.projectId}`);
+    
+    if (rawTurfs && rawTurfs.length > 0) {
+      console.log(`[CIRCUIT SYNC] Success: ${rawTurfs.length} nodes active`);
+      setDisplayTurfs(rawTurfs);
+      localStorage.setItem(CACHE_KEY, JSON.stringify(rawTurfs));
+      setIsUsingCache(false);
+    } else if (error || (!loadingTurfs && (!rawTurfs || rawTurfs.length === 0))) {
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        console.warn("[CIRCUIT OFFLINE] Falling back to local cache");
+        setDisplayTurfs(JSON.parse(cached));
+        setIsUsingCache(true);
       }
     }
-    runAudit();
-  }, [db]);
+  }, [rawTurfs, loadingTurfs, error]);
 
-  // Client-side filtering to prevent empty states from restrictive queries
+  // Client-side filtering for discovery resilience
   const filteredTurfs = useMemo(() => {
-    if (!rawTurfs) return [];
+    if (!displayTurfs) return [];
     
-    return rawTurfs.filter((turf: any) => {
-      // 1. Sport filter
+    return displayTurfs.filter((turf: any) => {
       const matchesSport = activeSport === 'all' || 
         (turf.sports && Array.isArray(turf.sports) && turf.sports.includes(activeSport));
 
-      // 2. Search query (name or area)
       const matchesSearch = !searchQuery || 
         (turf.name && turf.name.toLowerCase().includes(searchQuery.toLowerCase())) || 
         (turf.area && turf.area.toLowerCase().includes(searchQuery.toLowerCase()));
       
-      // 3. Area filter
       const matchesArea = areaFilter === 'all' || turf.area === areaFilter;
 
-      // 4. Rating filter
       const matchesRating = ratingFilter === 'all' || (turf.rating && turf.rating >= parseFloat(ratingFilter));
       
-      // 5. Price filter
       let matchesPrice = true;
       if (priceFilter === 'low') matchesPrice = turf.pricePerHour < 800;
       else if (priceFilter === 'mid') matchesPrice = turf.pricePerHour >= 800 && turf.pricePerHour <= 1200;
@@ -96,9 +87,8 @@ export function TurfListing() {
 
       return matchesSport && matchesSearch && matchesArea && matchesRating && matchesPrice;
     });
-  }, [rawTurfs, activeSport, searchQuery, areaFilter, priceFilter, ratingFilter]);
+  }, [displayTurfs, activeSport, searchQuery, areaFilter, priceFilter, ratingFilter]);
 
-  // Interleave ads every 6th card
   const itemsWithAds = useMemo(() => {
     const result = [];
     const availableAds = [...(ads || [])];
@@ -137,13 +127,22 @@ export function TurfListing() {
         onClearAll={handleClearAll}
       />
 
+      {isUsingCache && (
+        <div className="bg-amber-500/10 border-b border-amber-500/20 py-2 px-4 flex items-center justify-center gap-2">
+          <WifiOff className="h-3 w-3 text-amber-500" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-amber-500 italic">
+            Network Unstable — Showing Cached Arena Intel
+          </span>
+        </div>
+      )}
+
       <section className="flex-1 py-12 px-4 md:px-8 bg-background">
         <div className="max-w-7xl mx-auto">
           <div className="mb-8 flex items-center justify-between">
             <h2 className="text-xl font-bold uppercase tracking-tight flex items-center gap-2">
-              <Zap className="h-5 w-5 text-primary" />
-              {activeSport === 'all' ? 'All Venues' : `${activeSport} Arenas`}
-              <span className="ml-2 text-muted text-sm font-medium">({filteredTurfs.length} found)</span>
+              <Database className="h-5 w-5 text-primary" />
+              {activeSport === 'all' ? 'Mysuru Network' : `${activeSport} Arenas`}
+              <span className="ml-2 text-muted text-sm font-medium">({filteredTurfs.length} verified)</span>
             </h2>
           </div>
 
@@ -163,26 +162,15 @@ export function TurfListing() {
             </div>
           ) : (
             <div className="py-24 text-center border border-dashed border-border rounded-[24px]">
-              <div className="text-muted mb-4 text-4xl">🔎</div>
-              <h3 className="text-xl font-bold mb-2">No turfs yet</h3>
-              <p className="text-muted text-sm max-w-xs mx-auto">Try broadening your search or clear all filters to see all Mysuru turfs.</p>
+              <Zap className="h-12 w-12 text-muted mx-auto mb-6 opacity-20" />
+              <h3 className="text-xl font-black uppercase italic mb-2">No nodes found</h3>
+              <p className="text-muted text-sm max-w-xs mx-auto italic">Broaden your discovery parameters or clear the circuit filters.</p>
               <Button 
                 variant="outline" 
                 onClick={handleClearAll} 
                 className="mt-6 uppercase font-black text-[11px] tracking-widest h-11"
               >
-                Clear all filters
-              </Button>
-            </div>
-          )}
-
-          {!loadingTurfs && rawTurfs && rawTurfs.length >= pageSize && (
-            <div className="mt-16 flex justify-center">
-              <Button 
-                onClick={() => setPageSize(prev => prev + 12)}
-                className="bg-primary text-black font-black uppercase text-[12px] tracking-[0.2em] px-12 h-14 rounded-[10px] shadow-2xl hover:scale-105 transition-transform"
-              >
-                Load More Venues
+                Reset Search
               </Button>
             </div>
           )}

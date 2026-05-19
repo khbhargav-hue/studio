@@ -32,7 +32,8 @@ import {
   Swords,
   AlertCircle,
   ExternalLink,
-  RefreshCw
+  RefreshCw,
+  ShieldCheck
 } from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";

@@ -99,7 +99,7 @@ function NewTurfForm() {
     pitchSizes: [] as string[],
     dimensions: "",
     maxPlayers: 14,
-    price: "₹900/hr",
+    price: "Price may vary • Ask before booking",
     slotDuration: 60,
     openTime: "06:00",
     closeTime: "22:00",
@@ -133,7 +133,7 @@ function NewTurfForm() {
   }, [existingTurf]);
 
   const uploadToCloudinary = (file: File): Promise<string | null> => {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       if (!CLOUDINARY_CLOUD_NAME) {
         resolve(null);
         return;
@@ -144,11 +144,16 @@ function NewTurfForm() {
       
       const xhr = new XMLHttpRequest();
       xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, true);
+      
+      // Add a local 8s timeout for the image specifically to keep the 10s total limit
+      xhr.timeout = 8000; 
+
       xhr.onload = () => {
         if (xhr.status === 200) resolve(JSON.parse(xhr.responseText).secure_url);
         else resolve(null);
       };
       xhr.onerror = () => resolve(null);
+      xhr.ontimeout = () => resolve(null);
       xhr.send(form);
     });
   };
@@ -157,28 +162,48 @@ function NewTurfForm() {
     e.preventDefault();
     if (!db) return;
     
+    console.log("STEP_1_FORM_SUBMIT");
     setIsSaving(true);
-    console.log("1_UPLOAD_START");
+
+    // Watchdog Timer to prevent infinite spinner
+    const watchdogId = setTimeout(() => {
+      if (isSaving) {
+        console.warn("STEP_X_WATCHDOG_TIMEOUT");
+        setIsSaving(false);
+        toast({ 
+          title: "Save timeout", 
+          description: "Submission taking too long. Data may have been stored. Check dashboard.", 
+          variant: "destructive" 
+        });
+      }
+    }, 10000);
 
     try {
       let finalImageUrl = formData.imageUrl;
 
+      // STEP 2 & 3: Optional Media Sync
       if (pendingFile) {
+        console.log("STEP_2_IMAGE_UPLOAD_START");
         try {
           const url = await uploadToCloudinary(pendingFile);
           if (url) {
             finalImageUrl = url;
-            console.log("2_IMAGE_SUCCESS");
+            console.log("STEP_3_IMAGE_UPLOAD_SUCCESS");
+          } else {
+            console.warn("STEP_3_IMAGE_UPLOAD_FALLBACK_TRIGGERED");
           }
         } catch (err) {
-          console.warn("Media sync failed — using fallback placeholder");
+          console.error("STEP_3_IMAGE_UPLOAD_FAILED", err);
         }
       }
 
+      // Ensure a fallback image exists
       if (!finalImageUrl && !formData.imageUrl) {
         finalImageUrl = "https://picsum.photos/seed/turf/1200/800";
       }
 
+      // STEP 4: Firestore Sync
+      console.log("STEP_4_FIRESTORE_SAVE_START");
       const id = editId || formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
       const turfRef = doc(db, "turfs", id);
       
@@ -190,31 +215,43 @@ function NewTurfForm() {
         createdAt: existingTurf?.createdAt || serverTimestamp()
       };
 
-      console.log("3_FIRESTORE_START");
+      // Non-blocking write to prevent network hanging the UI
       setDoc(turfRef, dataToSave, { merge: true })
         .then(() => {
-          console.log("4_FIRESTORE_SUCCESS");
+          console.log("STEP_5_FIRESTORE_SAVE_SUCCESS");
+          
+          // STEP 6: UI Finalization
+          clearTimeout(watchdogId);
+          console.log("STEP_6_RESET_FORM");
           toast({ title: editId ? "Intel Synchronized" : "Arena Deployed" });
-          router.push("/studio");
+          
+          // STEP 7: Immediate Spinner Stop
+          setIsSaving(false);
+          console.log("STEP_7_LOADING_FALSE");
+
+          // STEP 8: Hard Redirect
+          console.log("STEP_8_REDIRECT");
+          window.location.href = "/studio";
         })
         .catch(async (err: any) => {
+          console.error("STEP_X_FIRESTORE_FAILED", err);
+          clearTimeout(watchdogId);
+          setIsSaving(false);
           errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: turfRef.path,
             operation: 'write',
             requestResourceData: dataToSave,
             message: err.message
           }));
-        })
-        .finally(() => {
-          setIsSaving(false);
-          console.log("5_LOADING_FALSE");
         });
       
     } catch (err: any) {
+      console.error("STEP_X_FATAL_ERROR", err);
+      clearTimeout(watchdogId);
       setIsSaving(false);
       toast({ 
         title: "Deployment Halted", 
-        description: err.message || "Circuit interrupted. Please retry.",
+        description: err.message || "Circuit interrupted.",
         variant: "destructive" 
       });
     }
@@ -231,7 +268,7 @@ function NewTurfForm() {
         turfName: formData.name,
         location: `${formData.area}, Mysuru`,
         sportTypes: formData.sports.length > 0 ? formData.sports as any : ["Football"],
-        pricePerHour: 900, // Legacy fallback
+        pricePerHour: 900,
         amenities: Object.entries(formData.amenities).filter(([_, v]) => v).map(([k]) => k),
       });
       setFormData(p => ({ ...p, description: result.description }));

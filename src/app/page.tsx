@@ -2,156 +2,114 @@
 
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
+import { MobileNav } from "@/components/mobile-nav"
 import { Button } from "@/components/ui/button"
-import { ChevronDown } from "lucide-react"
+import { Zap, Users, Trophy, ChevronRight, MapPin, Swords } from "lucide-react"
 import Link from "next/link"
-import Image from "next/image"
-import { useFirestore, useDoc, useMemoFirebase } from "@/firebase"
-import { doc } from "firebase/firestore"
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase"
+import { collection, query, where, limit, orderBy } from "firebase/firestore"
+import { TurfCard } from "@/components/turf-card"
 import { motion } from "framer-motion"
-import { TurfListing } from "@/components/turf-listing"
-import { HeroBannerAd } from "@/components/ads/hero-banner-ad"
 
 export default function Home() {
   const db = useFirestore()
   
-  const brandingRef = useMemoFirebase(() => {
-    if (!db) return null
-    return doc(db, "settings", "branding")
-  }, [db])
+  // Network Data Feeds
+  const turfsQuery = useMemoFirebase(() => query(collection(db, "turfs"), where("isActive", "==", true), limit(4)), [db])
+  const challengesQuery = useMemoFirebase(() => query(collection(db, "challenges"), where("status", "==", "open"), limit(3)), [db])
+  const teamsQuery = useMemoFirebase(() => query(collection(db, "teams"), limit(4)), [db])
 
-  const { data: branding } = useDoc(brandingRef)
-
-  const heroBg = branding?.heroImageUrl || "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&q=75&w=1920";
-  const optimizedHeroBg = heroBg.includes('cloudinary.com') 
-    ? heroBg.replace('/upload/', '/upload/f_webp,w_1920,q_12/') 
-    : heroBg;
-
-  const scrollToTurfs = () => {
-    document.getElementById('listings')?.scrollIntoView({ behavior: 'smooth' });
-  }
+  const { data: turfs } = useCollection(turfsQuery)
+  const { data: challenges } = useCollection(challengesQuery)
+  const { data: teams } = useCollection(teamsQuery)
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#0A0A0A] selection:bg-primary selection:text-black">
+    <div className="flex min-h-screen flex-col bg-background selection:bg-primary selection:text-black">
       <Navbar />
       
-      <section className="relative h-screen flex flex-col items-center justify-center px-4 overflow-hidden">
-        <div className="absolute inset-0 z-0">
-          <Image 
-            src={optimizedHeroBg}
-            alt="Mysuru Turf Network"
-            fill
-            className="object-cover opacity-[0.12] grayscale"
-            priority
-            loading="eager"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-[#0A0A0A]/50 via-transparent to-[#0A0A0A]" />
-        </div>
-
-        <div className="relative z-10 max-w-7xl mx-auto text-center space-y-10">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-[#1A1A1A] border border-[#222222] text-[11px] font-black uppercase tracking-[0.3em] text-white"
-          >
-            <span className="text-primary">●</span> Mysuru's Turf Network — Est. 2024
-          </motion.div>
-          
-          <motion.h1 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="font-sans text-[36px] md:text-[56px] lg:text-[72px] font-[800] tracking-tighter leading-[1.0] uppercase italic"
-          >
-            <span className="text-white block">Book Turfs.</span>
-            <span className="text-white block">Build Teams.</span>
-            <span className="text-primary text-neon block">Rule Mysuru.</span>
-          </motion.h1>
-          
-          <motion.p 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="text-[16px] md:text-[18px] text-[#888888] max-w-[520px] mx-auto leading-relaxed font-medium"
-          >
-            Football • Cricket • Pickleball • Swimming • Coaching — all in one place.
-          </motion.p>
-
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4"
-          >
-            <Button 
-              onClick={scrollToTurfs}
-              className="w-full sm:w-auto h-[64px] px-12 text-[14px] uppercase font-black tracking-widest bg-primary text-black rounded-[10px] hover:scale-[1.02] transition-transform shadow-2xl shadow-primary/20"
-            >
-              ⚽ Book a Turf
-            </Button>
-            <Button 
-              asChild 
-              variant="outline" 
-              className="w-full sm:w-auto h-[64px] px-12 text-[14px] uppercase font-black tracking-widest border-[#222] text-white rounded-[10px] bg-[#111] hover:bg-[#1A1A1A] hover:border-primary transition-all"
-            >
-              <Link href="/teams">👥 Create Team</Link>
-            </Button>
-          </motion.div>
-
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="pt-16 md:pt-24 flex flex-wrap items-center justify-center gap-x-8 gap-y-4 text-[12px] font-bold uppercase tracking-[0.2em] text-[#888888]"
-          >
-            <div className="flex items-center gap-2"><span className="text-white">⚽</span> 20+ Turfs</div>
-            <div className="hidden sm:block text-[#222]">•</div>
-            <div className="flex items-center gap-2"><span className="text-white">👥</span> 500+ Players</div>
-            <div className="hidden sm:block text-[#222]">•</div>
-            <div className="flex items-center gap-2"><span className="text-white">🏆</span> 50+ Tournaments</div>
-            <div className="hidden sm:block text-[#222]">•</div>
-            <div className="flex items-center gap-2"><span className="text-white">📍</span> Mysuru Only</div>
-          </motion.div>
-        </div>
-
-        <motion.div 
-          animate={{ y: [0, 10, 0] }}
-          transition={{ repeat: Infinity, duration: 2 }}
-          className="absolute bottom-10 left-1/2 -translate-x-1/2 text-[#222] cursor-pointer"
-          onClick={scrollToTurfs}
-        >
-          <ChevronDown className="h-8 w-8" />
-        </motion.div>
-      </section>
-
-      <HeroBannerAd />
-
-      <section className="bg-[#111] border-t border-b border-[#222] py-12 md:py-20 px-4">
-        <div className="max-w-7xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-12 text-center">
-          <div>
-            <div className="text-4xl md:text-5xl font-[900] italic text-primary tracking-tighter mb-2">24</div>
-            <div className="text-[10px] font-black uppercase tracking-[0.3em] text-[#888888]">Turfs Listed</div>
+      <main className="flex-1 pb-32">
+        {/* Grassroots Hero */}
+        <section className="pt-32 pb-20 px-4 max-w-7xl mx-auto">
+          <div className="space-y-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 border border-primary/20 text-[10px] font-black uppercase tracking-[0.3em] text-primary">
+              <span className="animate-pulse">●</span> Mysuru Sports Network
+            </div>
+            <h1 className="max-w-3xl">
+              Play More. <br />
+              <span className="text-primary text-neon">Connect Local.</span>
+            </h1>
+            <p className="text-[#888] text-lg font-medium max-w-xl italic">
+              Find players, teams, match challenges and sports turfs across Mysuru. 
+              Built for the city's active sporting community.
+            </p>
+            <div className="flex flex-wrap gap-4 pt-4">
+              <Button asChild className="h-14 px-10 bg-primary text-black font-black uppercase tracking-widest text-xs">
+                <Link href="/#turfs">Find Turf</Link>
+              </Button>
+              <Button asChild variant="outline" className="h-14 px-10 border-[#222] text-white font-black uppercase tracking-widest text-xs">
+                <Link href="/teams">Join Team</Link>
+              </Button>
+            </div>
           </div>
-          <div>
-            <div className="text-4xl md:text-5xl font-[900] italic text-primary tracking-tighter mb-2">142</div>
-            <div className="text-[10px] font-black uppercase tracking-[0.3em] text-[#888888]">Active Teams</div>
-          </div>
-          <div>
-            <div className="text-4xl md:text-5xl font-[900] italic text-primary tracking-tighter mb-2">38</div>
-            <div className="text-[10px] font-black uppercase tracking-[0.3em] text-[#888888]">Challenges This Month</div>
-          </div>
-          <div>
-            <div className="text-4xl md:text-5xl font-[900] italic text-primary tracking-tighter mb-2">1</div>
-            <div className="text-[10px] font-black uppercase tracking-[0.3em] text-[#888888]">Cities Served</div>
-          </div>
-        </div>
-      </section>
+        </section>
 
-      <div id="listings" className="scroll-mt-[64px]">
-        <TurfListing />
-      </div>
+        {/* 1. Open Challenges / Needed Players Today */}
+        <section className="px-4 max-w-7xl mx-auto mb-20">
+          <div className="flex items-center justify-between mb-8 border-b border-white/5 pb-4">
+            <h2 className="flex items-center gap-3"><Swords className="h-5 w-5 text-primary" /> Open Challenges</h2>
+            <Link href="/challenges" className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline">View All</Link>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {challenges?.map((challenge: any) => (
+              <div key={challenge.id} className="bg-card border border-border p-6 flex flex-col justify-between">
+                <div>
+                  <p className="text-[10px] font-bold text-primary uppercase tracking-widest mb-2">{challenge.sport} • {challenge.date}</p>
+                  <h3 className="text-lg font-black uppercase italic mb-1">{challenge.teamName} <span className="text-[#444] mx-2">VS</span> ???</h3>
+                  <p className="text-xs text-[#888] flex items-center gap-1"><MapPin className="h-3 w-3" /> {challenge.turf || "Location Pending"}</p>
+                </div>
+                <Button asChild size="sm" className="mt-6 bg-white/5 border border-white/10 text-white font-bold uppercase tracking-widest text-[10px] hover:bg-primary hover:text-black">
+                  <Link href={`/challenges`}>Accept Match</Link>
+                </Button>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* 2. Nearby Turfs */}
+        <section id="turfs" className="px-4 max-w-7xl mx-auto mb-20 scroll-mt-20">
+          <div className="flex items-center justify-between mb-8 border-b border-white/5 pb-4">
+            <h2 className="flex items-center gap-3"><Zap className="h-5 w-5 text-primary" /> Top Venues</h2>
+            <Link href="/#turfs" className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline">Refresh</Link>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {turfs?.map((turf) => (
+              <TurfCard key={turf.id} turf={turf as any} />
+            ))}
+          </div>
+        </section>
+
+        {/* 3. Featured Teams */}
+        <section className="px-4 max-w-7xl mx-auto mb-20">
+          <div className="flex items-center justify-between mb-8 border-b border-white/5 pb-4">
+            <h2 className="flex items-center gap-3"><Users className="h-5 w-5 text-primary" /> Active Squads</h2>
+            <Link href="/teams" className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline">Browse Roster</Link>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {teams?.map((team: any) => (
+              <Link key={team.id} href={`/teams/${team.id}`} className="bg-card border border-border p-6 hover:border-primary group">
+                <div className="h-12 w-12 bg-primary/10 flex items-center justify-center mb-4 text-primary font-black italic">
+                  {team.name[0]}
+                </div>
+                <h3 className="font-black uppercase italic text-sm group-hover:text-primary truncate">{team.name}</h3>
+                <p className="text-[10px] text-[#444] font-bold uppercase tracking-widest mt-1">{team.sport} • {team.area}</p>
+              </Link>
+            ))}
+          </div>
+        </section>
+      </main>
 
       <Footer />
+      <MobileNav />
     </div>
   )
 }

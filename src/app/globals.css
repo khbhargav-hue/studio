@@ -5,95 +5,51 @@
 @layer base {
   :root {
     --background: 0 0% 4%; /* #0A0A0A */
-    --foreground: 0 0% 96%; /* #F5F5F5 */
-    
-    --card: 0 0% 7%; /* #111111 */
-    --card-foreground: 0 0% 96%;
-    
-    --popover: 0 0% 7%;
-    --popover-foreground: 0 0% 96%;
-    
+    --foreground: 0 0% 96%;
+    --card: 0 0% 7%;
     --primary: 80 100% 50%; /* #AAFF00 */
     --primary-foreground: 0 0% 4%;
-    
-    --secondary: 0 0% 10%; /* #1A1A1A */
-    --secondary-foreground: 0 0% 96%;
-    
-    --muted: 0 0% 53%; /* #888888 */
+    --muted: 0 0% 53%;
     --muted-foreground: 0 0% 53%;
-    
-    --accent: 80 100% 50%;
-    --accent-foreground: 0 0% 4%;
-    
-    --destructive: 0 100% 63%; /* #FF4444 */
-    --destructive-foreground: 0 0% 96%;
-    
-    --border: 0 0% 13%; /* #222222 */
+    --border: 0 0% 12%;
     --input: 0 0% 10%;
     --ring: 80 100% 50%;
-    
-    --radius: 10px;
-    
-    --whatsapp: 142 70% 49%; /* #25D366 */
+    --radius: 0px; /* Flat Design Protocol */
   }
 }
 
 @layer base {
   * {
     @apply border-border;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    -webkit-tap-highlight-color: transparent;
   }
   
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Inter', sans-serif;
-    /* Font: never below 13px */
-    font-size: 14px; 
+    font-size: 14px;
   }
 
-  h1 { @apply text-[36px] md:text-[56px] font-extrabold tracking-tighter leading-tight uppercase italic; }
-  h2 { @apply text-[24px] md:text-[32px] font-bold tracking-tight leading-tight uppercase; }
-  
-  .label-caps {
-    @apply text-[11px] font-bold uppercase tracking-[0.2em];
-  }
+  h1 { @apply text-[32px] md:text-[56px] font-black tracking-tighter leading-[0.95] uppercase italic; }
+  h2 { @apply text-[20px] md:text-[24px] font-extrabold tracking-tight uppercase italic; }
 }
 
-/* Flat Design Protocol - Zero Shadows, Zero Gradients */
-* {
-  box-shadow: none !important;
-  text-shadow: none !important;
-  background-image: none !important;
-  transition: all 0.15s ease !important;
+.text-neon {
+  color: #AAFF00;
+  filter: brightness(1.2);
 }
 
-/* Enforce Touch Target Sizing */
-button, a {
-  min-height: 44px;
-}
+.bg-flat-black { background-color: #0A0A0A; }
+.border-flat { border-width: 1px; border-color: #222; }
 
-.glass-navbar {
-  @apply bg-[#0A0A0A]/95 backdrop-blur-[12px] border-b border-border;
-}
+/* Ultra Fast Transitions */
+* { transition: all 0.1s ease-out !important; }
 
-::-webkit-scrollbar {
-  width: 6px;
-}
-::-webkit-scrollbar-track {
-  @apply bg-background;
-}
-::-webkit-scrollbar-thumb {
-  @apply bg-border rounded-full;
-}
+/* Hide Scrollbars */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-.btn-whatsapp {
-  background-color: hsl(var(--whatsapp)) !important;
-  color: white !important;
-}
-
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
+/* Touch Targets */
+button, a { min-height: 44px; }

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from "react";
@@ -29,7 +30,9 @@ import {
   Settings2,
   Save,
   Clock,
-  Swords
+  Swords,
+  AlertCircle,
+  ExternalLink
 } from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
@@ -46,6 +49,7 @@ export default function ProfilePage() {
   const { toast } = useToast();
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
   
   const userProfileRef = useMemoFirebase(() => {
     if (!db || !user) return null;
@@ -112,13 +116,25 @@ export default function ProfilePage() {
   const handleGoogleSignIn = async () => {
     if (!auth) return;
     setIsSigningIn(true);
+    setAuthError(null);
     const provider = new GoogleAuthProvider();
     try {
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       if (isMobile) await signInWithRedirect(auth, provider);
       else await signInWithPopup(auth, provider);
     } catch (error: any) {
-      console.error(error);
+      if (error.code === 'auth/unauthorized-domain') {
+        const domain = typeof window !== 'undefined' ? window.location.hostname : 'your domain';
+        setAuthError(`This domain (${domain}) is not authorized. Please update your Firebase Console settings.`);
+        toast({ 
+          title: "Domain Restricted", 
+          description: "Authorize this domain in the Firebase Console.",
+          variant: "destructive"
+        });
+      } else {
+        console.error(error);
+        toast({ title: "Identification Failed", variant: "destructive" });
+      }
     } finally {
       setIsSigningIn(false);
     }
@@ -148,7 +164,25 @@ export default function ProfilePage() {
                 <UserCircle className="h-16 w-16 text-primary" />
               </div>
               <h1 className="text-5xl font-black tracking-tighter uppercase italic mb-6">Identity Required</h1>
-              <p className="text-white/40 text-lg mb-12 leading-relaxed font-medium italic">Join the Mysuru athlete circuit to form squads, find tactical matches, and earn Turf Coins.</p>
+              <p className="text-white/40 text-lg mb-8 leading-relaxed font-medium italic">Join the Mysuru athlete circuit to form squads, find tactical matches, and earn Turf Coins.</p>
+              
+              {authError && (
+                <div className="bg-destructive/5 border border-destructive/20 rounded-2xl p-5 mb-8 text-left">
+                  <div className="flex items-center gap-2 text-destructive font-black text-[10px] uppercase tracking-widest mb-2">
+                    <AlertCircle className="h-4 w-4" /> Config Signal Blocked
+                  </div>
+                  <p className="text-[11px] text-white/60 italic mb-4">{authError}</p>
+                  <a 
+                    href="https://console.firebase.google.com/" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-[10px] uppercase font-black tracking-widest text-primary hover:underline"
+                  >
+                    Authorize via Console <ExternalLink className="h-3 w-3" />
+                  </a>
+                </div>
+              )}
+
               <Button onClick={handleGoogleSignIn} disabled={isSigningIn} className="w-full h-20 bg-primary text-black font-black uppercase tracking-widest rounded-[2rem] shadow-xl shadow-primary/20 hover:scale-[1.02] transition-transform">
                 {isSigningIn ? <Loader2 className="h-6 w-6 animate-spin" /> : "Identify with Google"}
               </Button>

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from "react";
@@ -22,7 +23,7 @@ import {
   signInWithRedirect,
   sendPasswordResetEmail
 } from "firebase/auth";
-import { Loader2, Mail, Lock, User, ShieldCheck, Chrome } from "lucide-react";
+import { Loader2, Mail, Lock, User, ShieldCheck, Chrome, AlertCircle, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -39,19 +40,44 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [error, setError] = useState<React.ReactNode | null>(null);
 
   const handleGoogleSignIn = async () => {
     if (!auth) return;
     setIsLoading(true);
+    setError(null);
     const provider = new GoogleAuthProvider();
     try {
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       if (isMobile) await signInWithRedirect(auth, provider);
       else await signInWithPopup(auth, provider);
       toast({ title: "Identity Verified", description: "Welcome back to the Mysuru circuit." });
-    } catch (error: any) {
-      console.error(error);
-      toast({ title: "Authentication Failed", variant: "destructive" });
+      if (onOpenChange) onOpenChange(false);
+    } catch (err: any) {
+      if (err.code === 'auth/unauthorized-domain') {
+        const domain = typeof window !== 'undefined' ? window.location.hostname : 'your domain';
+        setError(
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-destructive font-bold text-[10px] uppercase tracking-tighter">
+              <AlertCircle className="h-3.5 w-3.5" /> Domain Not Authorized
+            </div>
+            <p className="text-[10px] leading-relaxed opacity-70">
+              Please add <code className="bg-destructive/10 px-1 py-0.5 rounded text-white">{domain}</code> to your Firebase authorized domains.
+            </p>
+            <a 
+              href="https://console.firebase.google.com/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-[9px] uppercase font-black tracking-widest text-primary hover:underline"
+            >
+              Open Console <ExternalLink className="h-2.5 w-2.5" />
+            </a>
+          </div>
+        );
+      } else {
+        console.error("Auth error:", err);
+        toast({ title: "Authentication Failed", variant: "destructive" });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -61,11 +87,18 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
     e.preventDefault();
     if (!auth) return;
     setIsLoading(true);
+    setError(null);
     try {
       await signInWithEmailAndPassword(auth, email, password);
       toast({ title: "Welcome Athlete", description: "Access granted to the network." });
-    } catch (error: any) {
-      toast({ title: "Invalid Credentials", description: "Check your email or passcode.", variant: "destructive" });
+      if (onOpenChange) onOpenChange(false);
+    } catch (err: any) {
+      if (err.code === 'auth/unauthorized-domain') {
+        const domain = typeof window !== 'undefined' ? window.location.hostname : 'your domain';
+        setError("This domain is not authorized for authentication.");
+      } else {
+        toast({ title: "Invalid Credentials", description: "Check your email or passcode.", variant: "destructive" });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -75,12 +108,14 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
     e.preventDefault();
     if (!auth) return;
     setIsLoading(true);
+    setError(null);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(userCredential.user, { displayName: name });
       toast({ title: "Squad Member Registered", description: "Your athlete profile is now active." });
-    } catch (error: any) {
-      toast({ title: "Registration Blocked", description: error.message, variant: "destructive" });
+      if (onOpenChange) onOpenChange(false);
+    } catch (err: any) {
+      toast({ title: "Registration Blocked", description: err.message, variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -112,6 +147,12 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
           </DialogTitle>
           <p className="text-[#888] text-[11px] font-bold uppercase tracking-widest mt-2">Secure Network Node</p>
         </DialogHeader>
+
+        {error && (
+          <div className="bg-destructive/5 border border-destructive/20 rounded-[12px] p-5 mb-8">
+            <div className="text-xs font-medium">{error}</div>
+          </div>
+        )}
 
         <Tabs defaultValue="signin" className="space-y-8">
           <TabsList className="bg-[#1A1A1A] p-1 h-12 rounded-[10px] border border-[#222] w-full">

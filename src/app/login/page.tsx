@@ -64,18 +64,17 @@ function LoginForm() {
       });
       router.push("/studio");
     } catch (err: any) {
-      console.error("Login error:", err);
       let message: React.ReactNode = "Verification failed. Check credentials.";
       
       if (err.code === 'auth/unauthorized-domain') {
         const domain = typeof window !== 'undefined' ? window.location.hostname : 'your domain';
         message = (
           <div className="space-y-4">
-            <div className="flex items-center gap-2 text-danger font-bold text-sm uppercase tracking-tighter">
+            <div className="flex items-center gap-2 text-destructive font-bold text-sm uppercase tracking-tighter">
               <AlertCircle className="h-4 w-4" /> Domain Authorization Required
             </div>
             <p className="text-xs leading-relaxed opacity-80">
-              This domain (<code className="bg-danger/20 px-1.5 py-0.5 rounded text-white">{domain}</code>) is not authorized in your Firebase Project.
+              This domain (<code className="bg-destructive/20 px-1.5 py-0.5 rounded text-white">{domain}</code>) is not authorized in your Firebase Project.
             </p>
             <div className="p-4 bg-white/5 border border-white/10 rounded-[10px] space-y-3">
               <p className="text-[10px] font-black uppercase tracking-widest text-primary">Resolution Steps:</p>
@@ -97,6 +96,8 @@ function LoginForm() {
         );
       } else if (err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
         message = "Invalid identity or passcode.";
+      } else {
+        console.error("Login fatal error:", err);
       }
 
       setError(message);
@@ -133,7 +134,7 @@ function LoginForm() {
           <CardContent className="pt-4">
             <form onSubmit={handleLogin} className="space-y-6">
               {error && (
-                <div className="bg-danger/5 border border-danger/20 rounded-[10px] p-5">
+                <div className="bg-destructive/5 border border-destructive/20 rounded-[10px] p-5">
                   <div className="text-xs font-medium">{error}</div>
                 </div>
               )}

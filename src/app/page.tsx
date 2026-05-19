@@ -1,4 +1,3 @@
-
 "use client"
 
 import { Navbar } from "@/components/navbar"
@@ -20,15 +19,17 @@ export default function Home() {
   const challengesQuery = useMemoFirebase(() => query(collection(db, "challenges"), limit(3)), [db])
   const teamsQuery = useMemoFirebase(() => query(collection(db, "teams"), limit(4)), [db])
 
-  const { data: turfs } = useCollection(turfs => {
-    if (turfs) {
-      console.log("FETCH_SUCCESS: homepage", turfs.length);
-      console.log(turfs);
-    }
-  }, turfsQuery)
-  
+  const { data: turfs } = useCollection(turfsQuery)
   const { data: challenges } = useCollection(challengesQuery)
   const { data: teams } = useCollection(teamsQuery)
+
+  // Diagnostic Logs
+  useEffect(() => {
+    if (turfs) {
+      console.log("FETCH_SUCCESS: homepage turfs", turfs.length);
+      console.log(turfs);
+    }
+  }, [turfs]);
 
   // Audit Fetch for Console Debugging
   useEffect(() => {

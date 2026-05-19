@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -41,25 +40,27 @@ export function TurfListing() {
     );
   }, [db]);
 
-  const { data: rawTurfs, loading: loadingTurfs } = useCollection(rawTurfs => {
+  const { data: rawTurfs, loading: loadingTurfs } = useCollection(turfsQuery);
+  const { data: ads } = useCollection(adsQuery);
+
+  // Diagnostic Logs
+  useEffect(() => {
     if (rawTurfs) {
       console.log("FETCH_SUCCESS", rawTurfs.length);
       console.log(rawTurfs);
     }
-  }, turfsQuery);
-  
-  const { data: ads } = useCollection(adsQuery);
+  }, [rawTurfs]);
 
-  // Audit Fetch for Console Debugging as requested
+  // Audit Fetch for Console Debugging
   useEffect(() => {
     async function runAudit() {
       if (!db) return;
       console.log("FETCH_START");
       try {
         const snapshot = await getDocs(collection(db, "turfs"));
-        console.log("FETCH_SUCCESS", snapshot.docs.length);
+        console.log("FETCH_SUCCESS audit", snapshot.docs.length);
         const mapped = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        console.log(mapped);
+        console.log("Audit data:", mapped);
       } catch (err) {
         console.error("FETCH_ERROR", err);
       }
@@ -72,7 +73,7 @@ export function TurfListing() {
     if (!rawTurfs) return [];
     
     return rawTurfs.filter((turf: any) => {
-      // 1. Sport filter (checking if 'sports' array exists)
+      // 1. Sport filter
       const matchesSport = activeSport === 'all' || 
         (turf.sports && Array.isArray(turf.sports) && turf.sports.includes(activeSport));
 

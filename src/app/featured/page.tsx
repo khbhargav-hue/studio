@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useEffect } from "react";
@@ -19,11 +18,7 @@ export default function FeaturedPage() {
     return query(collection(db, "turfs"), limit(20));
   }, [db]);
 
-  const { data: rawTurfs, loading } = useCollection(rawTurfs => {
-    if (rawTurfs) {
-      console.log("FETCH_SUCCESS: featured", rawTurfs.length);
-    }
-  }, featuredQuery);
+  const { data: rawTurfs, loading } = useCollection(featuredQuery);
 
   // Filter for 'isPremium' or 'featured' on the client side
   const turfs = useMemo(() => {

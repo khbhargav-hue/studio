@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Star, User, Loader2, Send, MessageSquare } from 'lucide-react';
+import { Star, User, Loader2, Send, MessageSquare, Gift } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
@@ -10,6 +10,7 @@ import { collection, query, orderBy, limit, addDoc, serverTimestamp, doc, update
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { REWARD_POINTS } from '@/lib/rewards';
 
 export function ReviewSection({ turfId, currentRating, reviewCount }: { turfId: string, currentRating: number, reviewCount: number }) {
   const { user } = useUser();
@@ -56,7 +57,14 @@ export function ReviewSection({ turfId, currentRating, reviewCount }: { turfId: 
         reviewCount: increment(1)
       });
 
-      toast({ title: "Feedback Transmitted", description: "Your performance review has been recorded." });
+      // Grant Reward Points for Review
+      const userRef = doc(db, "users", user.uid);
+      await updateDoc(userRef, {
+        rewardPoints: increment(REWARD_POINTS.REVIEW),
+        updatedAt: serverTimestamp()
+      });
+
+      toast({ title: "Feedback Transmitted", description: "You earned 15 Turf Coins!" });
       setRating(0);
       setComment('');
     } catch (err) {
@@ -68,9 +76,14 @@ export function ReviewSection({ turfId, currentRating, reviewCount }: { turfId: 
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center gap-3">
-        <MessageSquare className="h-5 w-5 text-[#AAFF00]" />
-        <h2 className="text-xl font-[800] italic uppercase tracking-tighter">Athlete <span className="text-[#888888]">Feedback</span></h2>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <MessageSquare className="h-5 w-5 text-primary" />
+          <h2 className="text-xl font-[800] italic uppercase tracking-tighter">Athlete <span className="text-[#888888]">Feedback</span></h2>
+        </div>
+        <div className="flex items-center gap-2 px-3 py-1 bg-primary/10 rounded-full border border-primary/20 text-[9px] font-black text-primary uppercase tracking-widest">
+          <Gift className="h-3 w-3" /> Earn 15 Coins
+        </div>
       </div>
 
       {/* Review Form */}
@@ -84,7 +97,7 @@ export function ReviewSection({ turfId, currentRating, reviewCount }: { turfId: 
                 onClick={() => setRating(s)}
                 className="focus:outline-none transition-transform hover:scale-110"
               >
-                <Star className={cn("h-6 w-6", s <= rating ? "fill-[#AAFF00] text-[#AAFF00]" : "text-white/5")} />
+                <Star className={cn("h-6 w-6", s <= rating ? "fill-primary text-primary" : "text-white/5")} />
               </button>
             ))}
             <span className="ml-4 text-[10px] font-black uppercase tracking-widest opacity-40">Rate Performance</span>
@@ -92,7 +105,7 @@ export function ReviewSection({ turfId, currentRating, reviewCount }: { turfId: 
           
           <Textarea 
             placeholder="Describe the turf condition, lighting quality, or match experience..."
-            className="bg-[#1A1A1A] border-[#222222] rounded-[10px] p-6 min-h-[100px] italic text-sm text-[#F5F5F5] focus:border-[#AAFF00]/50"
+            className="bg-[#1A1A1A] border-[#222222] rounded-[10px] p-6 min-h-[100px] italic text-sm text-[#F5F5F5] focus:border-primary/50"
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             required
@@ -101,14 +114,14 @@ export function ReviewSection({ turfId, currentRating, reviewCount }: { turfId: 
           <Button 
             type="submit" 
             disabled={isSubmitting || rating === 0} 
-            className="w-full h-14 bg-[#AAFF00] text-black rounded-[10px] font-black uppercase tracking-widest text-[11px]"
+            className="w-full h-14 bg-primary text-black rounded-[10px] font-black uppercase tracking-widest text-[11px]"
           >
             {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Transmit Feedback"}
           </Button>
         </form>
       ) : (
         <div className="p-10 border border-dashed border-[#222222] rounded-[16px] text-center bg-[#111111]/50">
-          <p className="text-[#888888] text-xs font-bold uppercase tracking-widest italic">Join the network to submit arena feedback.</p>
+          <p className="text-[#888888] text-xs font-bold uppercase tracking-widest italic">Join the network to submit arena feedback and earn coins.</p>
         </div>
       )}
 
@@ -116,7 +129,7 @@ export function ReviewSection({ turfId, currentRating, reviewCount }: { turfId: 
       <div className="space-y-4">
         {loading ? (
           <div className="flex justify-center py-10">
-            <Loader2 className="h-6 w-6 animate-spin text-[#AAFF00] opacity-20" />
+            <Loader2 className="h-6 w-6 animate-spin text-primary opacity-20" />
           </div>
         ) : reviews && reviews.length > 0 ? (
           reviews.map((review: any) => (
@@ -139,7 +152,7 @@ export function ReviewSection({ turfId, currentRating, reviewCount }: { turfId: 
                 </div>
                 <div className="flex gap-0.5">
                   {[1, 2, 3, 4, 5].map((s) => (
-                    <Star key={s} className={cn("h-2.5 w-2.5", s <= review.rating ? "fill-[#AAFF00] text-[#AAFF00]" : "text-white/5")} />
+                    <Star key={s} className={cn("h-2.5 w-2.5", s <= review.rating ? "fill-primary text-primary" : "text-white/5")} />
                   ))}
                 </div>
               </div>

@@ -1,9 +1,10 @@
+
 "use client"
 
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Menu, X, UserCircle } from "lucide-react"
+import { Menu, X, UserCircle, Trophy } from "lucide-react"
 import { useUser } from "@/firebase"
 import { TurfistaLogo } from "./brand-logo"
 import { cn } from "@/lib/utils"
@@ -12,8 +13,8 @@ const LINKS = [
   { label: "Home", href: "/" },
   { label: "Turfs", href: "/#turfs" },
   { label: "Teams", href: "/teams" },
+  { label: "Rankings", href: "/leaderboard" },
   { label: "Challenges", href: "/challenges" },
-  { label: "Tournaments", href: "/tournaments" },
   { label: "Coaches", href: "/coaching" },
 ]
 
@@ -45,6 +46,9 @@ export function Navbar() {
         </div>
 
         <div className="flex items-center gap-4">
+          <Link href="/leaderboard" className="hidden md:flex h-9 px-4 bg-primary/10 border border-primary/20 rounded-full items-center gap-2 text-[9px] font-black uppercase tracking-widest text-primary hover:bg-primary hover:text-black transition-all">
+            <Trophy className="h-3 w-3" /> Rankings
+          </Link>
           <Link href="/profile" className="h-10 w-10 flex items-center justify-center text-[#888] hover:text-primary">
             {user?.photoURL ? (
               <img src={user.photoURL} alt={user.displayName || "User"} className="h-7 w-7 rounded-full border border-border" />

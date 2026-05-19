@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useParams, useRouter } from "next/navigation"
@@ -25,13 +26,14 @@ import {
   Bath,
   CircleDot
 } from "lucide-react"
-import { useDoc, useFirestore, useMemoFirebase } from "@/firebase"
-import { doc, increment, setDoc, addDoc, serverTimestamp, collection } from "firebase/firestore"
+import { useDoc, useFirestore, useMemoFirebase, useUser } from "@/firebase"
+import { doc, increment, setDoc, addDoc, serverTimestamp, collection, updateDoc } from "firebase/firestore"
 import { useEffect, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
 import * as gtag from "@/lib/gtag"
 import { ReviewSection } from "@/components/review-section"
 import { Switch } from "@/components/ui/switch"
+import { REWARD_POINTS } from "@/lib/rewards"
 import {
   Accordion,
   AccordionContent,
@@ -64,6 +66,7 @@ export default function TurfDetail() {
   const id = params?.id as string
   const router = useRouter()
   const db = useFirestore()
+  const { user } = useUser()
   const hasIncremented = useRef(false)
   const [isThrottled, setIsThrottled] = useState(false)
   const [addInsurance, setAddInsurance] = useState(false)
@@ -102,11 +105,20 @@ export default function TurfDetail() {
       };
       addDoc(collection(db, "leads"), leadData);
       setDoc(doc(db, "turfs", id), { whatsappClicks: increment(1) }, { merge: true });
+
+      // Grant Reward Points for Booking Attempt
+      if (user) {
+        const userRef = doc(db, "users", user.uid);
+        updateDoc(userRef, {
+          rewardPoints: increment(REWARD_POINTS.BOOKING),
+          updatedAt: serverTimestamp()
+        });
+      }
     }
   }
 
   if (loading) {
-    return <div className="flex h-screen items-center justify-center bg-[#0A0A0A]"><Loader2 className="h-10 w-10 animate-spin text-[#AAFF00]" /></div>
+    return <div className="flex h-screen items-center justify-center bg-[#0A0A0A]"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>
   }
 
   if (!turf) {
@@ -114,10 +126,10 @@ export default function TurfDetail() {
       <div className="flex flex-col min-h-screen bg-[#0A0A0A]">
         <Navbar />
         <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-          <Zap className="h-16 w-16 text-[#AAFF00]/20 mb-8" />
+          <Zap className="h-16 w-16 text-primary/20 mb-8" />
           <h1 className="text-4xl font-bold uppercase italic">Arena Offline</h1>
           <p className="text-[#888888] mt-4 font-medium italic">This circuit node could not be retrieved from the network.</p>
-          <Button onClick={() => router.push("/")} className="bg-[#AAFF00] text-black mt-10 h-14 px-10 rounded-[10px] font-black uppercase tracking-widest">Return to Roster</Button>
+          <Button onClick={() => router.push("/")} className="bg-primary text-black mt-10 h-14 px-10 rounded-[10px] font-black uppercase tracking-widest">Return to Roster</Button>
         </div>
         <Footer />
       </div>
@@ -131,16 +143,16 @@ export default function TurfDetail() {
   const whatsappUrl = `https://wa.me/${turf.whatsapp}?text=${encodeURIComponent(`Hi! I want to book ${turf.name} at ${turf.area}.`)}`;
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#0A0A0A] text-[#F5F5F5] selection:bg-[#AAFF00] selection:text-black">
+    <div className="flex flex-col min-h-screen bg-[#0A0A0A] text-[#F5F5F5] selection:bg-primary selection:text-black">
       <Navbar />
       
       <main className="flex-1 pt-24 pb-40 max-w-7xl mx-auto w-full px-4">
         {/* Navigation Breadcrumb */}
         <div className="flex items-center justify-between mb-8">
-          <Button variant="ghost" onClick={() => router.back()} className="rounded-[10px] group font-black text-[11px] uppercase tracking-widest text-[#888888] hover:text-[#F5F5F5] h-12 px-2">
+          <Button variant="ghost" onClick={() => router.back()} className="rounded-[10px] group font-black text-[10px] uppercase tracking-widest text-[#888888] hover:text-[#F5F5F5] h-12 px-2">
             <ArrowLeft className="mr-3 h-4 w-4 group-hover:-translate-x-1 transition-transform" /> BACK TO CIRCUIT
           </Button>
-          <Button variant="outline" onClick={() => navigator.share({ title: turf.name, url: window.location.href })} className="border-[#222222] text-[11px] font-black uppercase tracking-widest h-12 px-6 rounded-[10px] hidden md:flex">
+          <Button variant="outline" onClick={() => navigator.share({ title: turf.name, url: window.location.href })} className="border-[#222222] text-[10px] font-black uppercase tracking-widest h-12 px-6 rounded-[10px] hidden md:flex">
             <Share2 className="h-4 w-4 mr-3" /> SHARE
           </Button>
         </div>
@@ -174,7 +186,7 @@ export default function TurfDetail() {
                 )}
               </Carousel>
               {turf.isPremium && (
-                <div className="absolute top-4 left-4 bg-[#AAFF00] text-black text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-[6px]">ELITE FEATURED</div>
+                <div className="absolute top-4 left-4 bg-primary text-black text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-[6px]">ELITE FEATURED</div>
               )}
             </section>
 
@@ -182,37 +194,40 @@ export default function TurfDetail() {
             <section className="bg-[#111111] p-6 md:p-12 rounded-[16px] border border-[#222222] space-y-8">
               <div className="flex flex-wrap gap-2">
                 {turf.sports?.map((s: string) => (
-                  <Badge key={s} className="bg-[#AAFF00]/10 text-[#AAFF00] border-none px-4 py-1 rounded-[6px] font-black uppercase tracking-widest text-[10px]">{s}</Badge>
+                  <Badge key={s} className="bg-primary/10 text-primary border-none px-4 py-1 rounded-[6px] font-black uppercase tracking-widest text-[10px]">{s}</Badge>
                 ))}
-                <div className="flex items-center gap-1.5 px-4 py-1 rounded-[6px] bg-white/5 border border-white/5 text-[10px] font-black text-[#AAFF00] uppercase tracking-widest">
+                <div className="flex items-center gap-1.5 px-4 py-1 rounded-[6px] bg-white/5 border border-white/5 text-[10px] font-black text-primary uppercase tracking-widest">
                   <Star className="h-3 w-3 fill-current" /> {turf.rating || 4.5}
+                </div>
+                <div className="flex items-center gap-1.5 px-4 py-1 rounded-[6px] bg-primary/20 border border-primary/20 text-[10px] font-black text-primary uppercase tracking-widest">
+                  <Gift className="h-3 w-3" /> EARN 50 COINS
                 </div>
               </div>
               
               <div>
                 <h1 className="text-4xl md:text-6xl font-black tracking-tighter uppercase italic leading-none mb-4">{turf.name}</h1>
                 <div className="flex items-center gap-2 text-[#888888] font-bold bg-[#1A1A1A] w-fit px-4 py-2 rounded-[10px] border border-[#222222]">
-                  <MapPin className="h-4 w-4 text-[#AAFF00]" />
-                  <span className="text-[12px] uppercase tracking-widest">{turf.address || turf.area}, MYSURU</span>
+                  <MapPin className="h-4 w-4 text-primary" />
+                  <span className="text-[11px] uppercase tracking-widest">{turf.address || turf.area}, MYSURU</span>
                 </div>
               </div>
 
               <div className="space-y-4">
-                <h3 className="text-[11px] font-black uppercase tracking-[0.4em] text-[#AAFF00]/60">ARENA STRATEGY</h3>
-                <p className="text-lg leading-relaxed italic text-[#F5F5F5]/80 border-l-2 border-[#AAFF00]/30 pl-6 font-medium">
+                <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/60">ARENA STRATEGY</h3>
+                <p className="text-lg leading-relaxed italic text-[#F5F5F5]/80 border-l-2 border-primary/30 pl-6 font-medium">
                   {turf.description || "Elite sporting facility optimized for high-intensity community matches and professional training sessions in Mysuru."}
                 </p>
               </div>
 
               <div className="pt-8 border-t border-[#222222]">
-                <h3 className="text-[11px] font-black uppercase tracking-[0.4em] text-[#AAFF00]/60 mb-6">FACILITY INTEL</h3>
+                <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/60 mb-6">FACILITY INTEL</h3>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {Object.entries(turf.amenities || {}).map(([key, val]) => {
                     if (!val) return null;
                     const Icon = AMENITY_ICONS[key] || CircleDot;
                     return (
                       <div key={key} className="flex flex-col items-center justify-center gap-2.5 p-4 bg-[#1A1A1A] border border-[#222222] rounded-[12px] text-center min-h-[80px]">
-                        <Icon className="h-5 w-5 text-[#AAFF00]" />
+                        <Icon className="h-5 w-5 text-primary" />
                         <span className="text-[9px] font-black uppercase tracking-widest text-[#888888] leading-tight">
                           {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
                         </span>
@@ -226,7 +241,7 @@ export default function TurfDetail() {
             {/* 3. Pitch & Rules */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <section className="bg-[#111111] p-6 md:p-8 rounded-[16px] border border-[#222222] space-y-6">
-                <h3 className="text-[11px] font-black uppercase tracking-[0.4em] text-[#AAFF00]/60">PITCH SPEC</h3>
+                <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/60">PITCH SPEC</h3>
                 <div className="space-y-4">
                   {[
                     { label: "Surface", value: turf.pitchType || "Artificial Turf" },
@@ -242,10 +257,10 @@ export default function TurfDetail() {
               </section>
 
               <section className="bg-[#111111] p-6 md:p-8 rounded-[16px] border border-[#222222] space-y-6">
-                <h3 className="text-[11px] font-black uppercase tracking-[0.4em] text-[#AAFF00]/60">REGULATIONS</h3>
+                <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/60">REGULATIONS</h3>
                 <Accordion type="single" collapsible className="w-full">
                   <AccordionItem value="rules" className="border-none">
-                    <AccordionTrigger className="text-[11px] font-black uppercase tracking-widest hover:no-underline pt-0 pb-4">View Operational Rules</AccordionTrigger>
+                    <AccordionTrigger className="text-[10px] font-black uppercase tracking-widest hover:no-underline pt-0 pb-4">View Operational Rules</AccordionTrigger>
                     <AccordionContent className="text-[#888888] text-xs leading-relaxed space-y-3 pt-2 italic">
                       {turf.rules && turf.rules.length > 0 ? turf.rules.map((rule: string, i: number) => (
                         <p key={i} className="flex gap-2"><span>●</span> {rule}</p>
@@ -260,11 +275,11 @@ export default function TurfDetail() {
                   </AccordionItem>
                 </Accordion>
                 <div className="pt-6 border-t border-[#222222]">
-                  <div className="flex items-center justify-between p-4 bg-[#AAFF00]/5 border border-[#AAFF00]/10 rounded-[12px]">
+                  <div className="flex items-center justify-between p-4 bg-primary/5 border border-primary/10 rounded-[12px]">
                     <div className="flex items-center gap-3">
-                      <ShieldCheck className="h-5 w-5 text-[#AAFF00]" />
+                      <ShieldCheck className="h-5 w-5 text-primary" />
                       <div>
-                        <p className="text-[11px] font-black uppercase tracking-widest text-[#AAFF00]">Match Insurance</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-primary">Match Insurance</p>
                         <p className="text-[9px] text-[#444] font-bold uppercase">From ₹15 / player</p>
                       </div>
                     </div>
@@ -289,14 +304,12 @@ export default function TurfDetail() {
                 <div className="space-y-2">
                   <p className="text-[10px] font-black uppercase tracking-[0.4em] text-[#444]">HOURLY BASE RATE</p>
                   <div className="flex items-baseline justify-center gap-2">
-                    <span className="text-6xl font-black text-[#AAFF00] italic tracking-tighter">₹{turf.pricePerHour}</span>
+                    <span className="text-6xl font-black text-primary italic tracking-tighter">₹{turf.pricePerHour}</span>
                     <span className="text-[#888888] font-black text-xs uppercase tracking-widest">/ HR</span>
                   </div>
-                  {turf.peakHourPrice > 0 && (
-                    <div className="text-[10px] font-black text-[#444] uppercase tracking-widest pt-2">
-                      Peak Cycle: ₹{turf.peakHourPrice} (From {turf.peakHoursStart})
-                    </div>
-                  )}
+                  <div className="text-[9px] font-black text-primary uppercase tracking-[0.2em] bg-primary/5 py-2 px-4 rounded-full mt-4">
+                    Earn 50 Coins per booking
+                  </div>
                 </div>
 
                 <div className="space-y-3">
@@ -305,7 +318,7 @@ export default function TurfDetail() {
                       <MessageCircle className="h-6 w-6 mr-3" /> WhatsApp
                     </a>
                   </Button>
-                  <Button variant="secondary" className="w-full h-14 bg-[#1A1A1A] text-[#F5F5F5] hover:bg-[#222] text-[11px] font-black uppercase tracking-widest rounded-[12px]">
+                  <Button variant="secondary" className="w-full h-14 bg-[#1A1A1A] text-[#F5F5F5] hover:bg-[#222] text-[10px] font-black uppercase tracking-widest rounded-[12px]">
                     <Calendar className="h-4 w-4 mr-3" /> Check Slots
                   </Button>
                 </div>
@@ -313,12 +326,12 @@ export default function TurfDetail() {
                 <div className="pt-8 border-t border-[#222222] text-left space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="text-[9px] font-black text-[#444] uppercase tracking-widest">Circuit Status</span>
-                    <span className={cn("text-[9px] font-black uppercase tracking-widest", turf.isActive ? "text-[#AAFF00]" : "text-destructive")}>
+                    <span className={cn("text-[9px] font-black uppercase tracking-widest", turf.isActive ? "text-primary" : "text-destructive")}>
                       {turf.isActive ? "● Node Active" : "Offline"}
                     </span>
                   </div>
                   <div className="flex items-center gap-4 p-4 bg-[#1A1A1A] rounded-[12px] border border-[#222222]">
-                    <Clock className="h-5 w-5 text-[#AAFF00]" />
+                    <Clock className="h-5 w-5 text-primary" />
                     <div className="text-left">
                       <p className="text-sm font-black uppercase italic leading-none">{turf.openTime} — {turf.closeTime}</p>
                       <p className="text-[9px] text-[#444] font-black uppercase mt-1.5 tracking-widest">Daily Window</p>
@@ -329,14 +342,14 @@ export default function TurfDetail() {
 
               <button 
                 onClick={() => window.open(turf.googleMapsUrl || `https://maps.google.com/?q=${turf.name}`, '_blank')}
-                className="w-full bg-[#111111] border border-[#222222] p-6 rounded-[16px] text-left hover:border-[#AAFF00]/40 transition-colors group"
+                className="w-full bg-[#111111] border border-[#222222] p-6 rounded-[16px] text-left hover:border-primary/40 transition-colors group"
               >
                 <div className="flex items-center gap-3 mb-4">
-                  <Navigation className="h-5 w-5 text-[#AAFF00]" />
-                  <span className="text-[11px] font-black uppercase tracking-widest">Launch Navigation</span>
+                  <Navigation className="h-5 w-5 text-primary" />
+                  <span className="text-[10px] font-black uppercase tracking-widest">Launch Navigation</span>
                 </div>
                 <p className="text-[13px] font-bold text-[#888] uppercase leading-snug italic line-clamp-2">{turf.address || turf.area}, MYSURU</p>
-                <div className="flex items-center gap-2 text-[#AAFF00] font-black text-[9px] uppercase tracking-[0.3em] mt-6 group-hover:translate-x-1 transition-transform">
+                <div className="flex items-center gap-2 text-primary font-black text-[9px] uppercase tracking-[0.3em] mt-6 group-hover:translate-x-1 transition-transform">
                   GPS GUIDANCE ACTIVE <ArrowLeft className="h-3 w-3 rotate-180" />
                 </div>
               </button>
@@ -345,17 +358,17 @@ export default function TurfDetail() {
         </div>
       </main>
 
-      {/* Sticky Mobile Conversion Bar - Hardened for Touch */}
+      {/* Sticky Mobile Conversion Bar */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 p-4 bg-[#0A0A0A]/95 backdrop-blur-2xl border-t border-[#222]">
         <div className="max-w-md mx-auto flex items-center justify-between gap-4">
           <div className="flex flex-col">
-            <p className="text-[9px] font-black text-[#444] uppercase tracking-widest mb-1">Hourly Node</p>
+            <p className="text-[9px] font-black text-[#444] uppercase tracking-widest mb-1">Earn 50 Coins</p>
             <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-black text-[#AAFF00] italic leading-none">₹{turf.pricePerHour}</span>
-              <span className="text-[10px] text-[#888] font-black uppercase tracking-widest">/hr</span>
+              <span className="text-2xl font-black text-primary italic leading-none">₹{turf.pricePerHour}</span>
+              <span className="text-[9px] text-[#888] font-black uppercase tracking-widest">/hr</span>
             </div>
           </div>
-          <Button asChild className="flex-1 h-14 bg-[#25D366] text-white font-black uppercase text-[12px] tracking-widest px-6 rounded-[12px] shadow-2xl shadow-[#25D366]/10" onClick={handleWhatsAppClick}>
+          <Button asChild className="flex-1 h-14 bg-[#25D366] text-white font-black uppercase text-[11px] tracking-widest px-6 rounded-[12px] shadow-2xl shadow-[#25D366]/10" onClick={handleWhatsAppClick}>
             <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-3">
               <MessageCircle className="h-5 w-5" /> Book WhatsApp
             </a>

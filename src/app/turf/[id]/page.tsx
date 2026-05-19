@@ -140,7 +140,7 @@ export default function TurfDetail() {
     ? turf.images 
     : [turf.imageUrl || "https://picsum.photos/seed/turf/1200/800"];
 
-  const whatsappUrl = `https://wa.me/${turf.whatsapp}?text=${encodeURIComponent(`Hi! I want to book ${turf.name} at ${turf.area}.`)}`;
+  const whatsappUrl = `https://wa.me/${turf.whatsapp}?text=${encodeURIComponent(`Hi! I want to ask availability for ${turf.name} at ${turf.area}.`)}`;
 
   return (
     <div className="flex flex-col min-h-screen bg-[#0A0A0A] text-[#F5F5F5] selection:bg-primary selection:text-black">
@@ -304,18 +304,20 @@ export default function TurfDetail() {
                 <div className="space-y-2">
                   <p className="text-[10px] font-black uppercase tracking-[0.4em] text-[#444]">HOURLY BASE RATE</p>
                   <div className="flex items-baseline justify-center gap-2">
-                    <span className="text-6xl font-black text-primary italic tracking-tighter">₹{turf.pricePerHour}</span>
-                    <span className="text-[#888888] font-black text-xs uppercase tracking-widest">/ HR</span>
+                    <span className="text-6xl font-black text-primary italic tracking-tighter">
+                      {turf.pricePerHour > 0 ? `₹${turf.pricePerHour}` : "Ask"}
+                    </span>
+                    {turf.pricePerHour > 0 && <span className="text-[#888888] font-black text-xs uppercase tracking-widest">/ HR</span>}
                   </div>
                   <div className="text-[9px] font-black text-primary uppercase tracking-[0.2em] bg-primary/5 py-2 px-4 rounded-full mt-4">
-                    Earn 50 Coins per booking
+                    Price may vary • Ask before booking
                   </div>
                 </div>
 
                 <div className="space-y-3">
-                  <Button asChild className="w-full h-16 bg-[#25D366] text-white hover:bg-[#20ba5a] text-lg font-black uppercase rounded-[12px]" onClick={handleWhatsAppClick}>
+                  <Button asChild className="w-full h-16 bg-[#25D366] text-white hover:bg-[#20ba5a] text-lg font-black uppercase rounded-[12px] active:scale-[0.98] transition-all" onClick={handleWhatsAppClick}>
                     <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
-                      <MessageCircle className="h-6 w-6 mr-3" /> WhatsApp
+                      <MessageCircle className="h-6 w-6 mr-3" /> Ask availability
                     </a>
                   </Button>
                   <Button variant="secondary" className="w-full h-14 bg-[#1A1A1A] text-[#F5F5F5] hover:bg-[#222] text-[10px] font-black uppercase tracking-widest rounded-[12px]">
@@ -364,13 +366,15 @@ export default function TurfDetail() {
           <div className="flex flex-col">
             <p className="text-[9px] font-black text-[#444] uppercase tracking-widest mb-1">Earn 50 Coins</p>
             <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-black text-primary italic leading-none">₹{turf.pricePerHour}</span>
-              <span className="text-[9px] text-[#888] font-black uppercase tracking-widest">/hr</span>
+              <span className="text-2xl font-black text-primary italic leading-none">
+                {turf.pricePerHour > 0 ? `₹${turf.pricePerHour}` : "Ask"}
+              </span>
+              {turf.pricePerHour > 0 && <span className="text-[9px] text-[#888] font-black uppercase tracking-widest">/hr</span>}
             </div>
           </div>
-          <Button asChild className="flex-1 h-14 bg-[#25D366] text-white font-black uppercase text-[11px] tracking-widest px-6 rounded-[12px] shadow-2xl shadow-[#25D366]/10" onClick={handleWhatsAppClick}>
+          <Button asChild className="flex-1 h-14 bg-[#25D366] text-white font-black uppercase text-[11px] tracking-widest px-6 rounded-[12px] shadow-2xl shadow-[#25D366]/10 active:scale-[0.98] transition-all" onClick={handleWhatsAppClick}>
             <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-3">
-              <MessageCircle className="h-5 w-5" /> Book WhatsApp
+              <MessageCircle className="h-5 w-5" /> Ask availability
             </a>
           </Button>
         </div>

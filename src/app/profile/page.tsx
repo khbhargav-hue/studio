@@ -1,13 +1,17 @@
+
 'use client';
 
 import { useEffect, useState } from "react";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUser, useAuth, useCollection, useFirestore, useDoc, useMemoFirebase } from "@/firebase";
-import { GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut } from "firebase/auth";
-import { query, collection, where, doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut } from "firebase/auth";
+import { query, collection, where, doc, setDoc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { 
   UserCircle, 
   LogOut, 
@@ -18,18 +22,20 @@ import {
   ChevronRight,
   Loader2,
   Mail,
-  AlertCircle,
   Activity,
   Star,
-  ExternalLink,
   Gift,
   Share2,
-  Copy
+  Settings2,
+  Save
 } from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { REWARD_POINTS, calculateLevel, getProgressToNextLevel } from "@/lib/rewards";
 import { cn } from "@/lib/utils";
+
+const SKILL_LEVELS = ["Beginner", "Intermediate", "Advanced", "Pro"];
+const AVAILABILITY = ["Morning", "Evening", "Weekend", "All-Time"];
 
 export default function ProfilePage() {
   const { user, loading: userLoading } = useUser();
@@ -37,6 +43,7 @@ export default function ProfilePage() {
   const db = useFirestore();
   const { toast } = useToast();
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   
   const userProfileRef = useMemoFirebase(() => {
     if (!db || !user) return null;
@@ -45,9 +52,28 @@ export default function ProfilePage() {
 
   const { data: profile } = useDoc(userProfileRef);
 
+  const [formData, setFormData] = useState({
+    skillLevel: "Intermediate",
+    availability: "Evening",
+    favoriteSport: "Football",
+    age: "",
+    area: ""
+  });
+
+  useEffect(() => {
+    if (profile) {
+      setFormData({
+        skillLevel: profile.skillLevel || "Intermediate",
+        availability: profile.availability || "Evening",
+        favoriteSport: profile.favoriteSport || "Football",
+        age: profile.age || "",
+        area: profile.area || ""
+      });
+    }
+  }, [profile]);
+
   useEffect(() => {
     if (user && db && !profile && !userLoading) {
-      // Sync auth user to Firestore profile if it doesn't exist
       const ref = doc(db, "users", user.uid);
       setDoc(ref, {
         uid: user.uid,
@@ -61,6 +87,23 @@ export default function ProfilePage() {
     }
   }, [user, db, profile, userLoading]);
 
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!db || !user) return;
+    setIsSaving(true);
+    try {
+      await updateDoc(doc(db, "users", user.uid), {
+        ...formData,
+        updatedAt: serverTimestamp()
+      });
+      toast({ title: "Identity Updated", description: "Your tactical profile is now live." });
+    } catch (err) {
+      toast({ title: "Update Failed", variant: "destructive" });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleGoogleSignIn = async () => {
     if (!auth) return;
     setIsSigningIn(true);
@@ -73,13 +116,6 @@ export default function ProfilePage() {
       console.error(error);
     } finally {
       setIsSigningIn(false);
-    }
-  };
-
-  const handleLogout = async () => {
-    if (auth) {
-      await signOut(auth);
-      toast({ title: "Session Terminated" });
     }
   };
 
@@ -108,81 +144,121 @@ export default function ProfilePage() {
       <main className="flex-1 pt-32 pb-32">
         <div className="mx-auto max-w-xl px-4 space-y-8">
           {!user ? (
-            <div className="bg-card border border-border rounded-[16px] p-12 text-center">
-              <div className="h-20 w-20 bg-primary/10 rounded-[10px] flex items-center justify-center mx-auto mb-8">
-                <UserCircle className="h-10 w-10 text-primary opacity-50" />
+            <div className="bg-card border border-border rounded-[32px] p-12 text-center shadow-2xl">
+              <div className="h-24 w-24 bg-primary/10 rounded-[32px] flex items-center justify-center mx-auto mb-10 shadow-inner border border-primary/20">
+                <UserCircle className="h-12 w-12 text-primary opacity-50" />
               </div>
-              <h1 className="text-3xl font-bold tracking-tight uppercase mb-4">Athlete Identity</h1>
-              <p className="text-muted-foreground text-sm mb-10 leading-relaxed font-medium">Join the Mysuru athlete circuit to form squads and earn Turf Coins.</p>
-              <Button onClick={handleGoogleSignIn} disabled={isSigningIn} className="w-full h-12 bg-primary text-black font-bold uppercase tracking-widest">
+              <h1 className="text-4xl font-black tracking-tighter uppercase italic mb-4">Identity Required</h1>
+              <p className="text-muted-foreground text-sm mb-12 leading-relaxed font-medium">Join the Mysuru athlete circuit to form squads, find tactical matches, and earn Turf Coins.</p>
+              <Button onClick={handleGoogleSignIn} disabled={isSigningIn} className="w-full h-16 bg-primary text-black font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-primary/20">
                 {isSigningIn ? <Loader2 className="h-5 w-5 animate-spin" /> : "Identify with Google"}
               </Button>
             </div>
           ) : (
-            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
               {/* Profile Header */}
-              <section className="bg-card border border-border rounded-[16px] p-8 flex items-center gap-6">
-                <div className="h-20 w-20 rounded-[10px] border border-border overflow-hidden bg-subtle shrink-0">
+              <section className="bg-card border border-border rounded-[32px] p-8 flex items-center gap-8 shadow-xl">
+                <div className="h-24 w-24 rounded-[24px] border-2 border-primary p-0.5 overflow-hidden bg-surface shrink-0 shadow-2xl">
                   {user.photoURL ? (
-                    <img src={user.photoURL} alt={user.displayName || "Athlete"} className="h-full w-full object-cover" />
+                    <img src={user.photoURL} alt={user.displayName || "Athlete"} className="h-full w-full object-cover rounded-[22px]" />
                   ) : (
                     <UserCircle className="h-full w-full p-4 text-muted" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className={cn("text-[10px] font-black uppercase tracking-widest mb-1", level.color)}>
-                    {level.name} Athlete
+                  <div className={cn("text-[10px] font-black uppercase tracking-[0.3em] mb-2 px-3 py-1 rounded-full w-fit bg-white/5", level.color)}>
+                    {level.name} ATHLETE
                   </div>
-                  <h2 className="text-2xl font-bold truncate text-foreground uppercase italic">{user.displayName || "ATHLETE"}</h2>
-                  <p className="text-muted-foreground text-[10px] font-medium uppercase tracking-wider flex items-center gap-2 mt-1">
+                  <h2 className="text-3xl font-black truncate text-foreground uppercase italic tracking-tighter">{user.displayName || "ATHLETE"}</h2>
+                  <p className="text-muted-foreground text-[10px] font-black uppercase tracking-widest flex items-center gap-2 mt-2 opacity-50">
                     <Mail className="h-3 w-3" /> {user.email}
                   </p>
                 </div>
               </section>
 
               {/* Rewards Hub */}
-              <section className="bg-[#111111] border border-primary/20 rounded-[20px] p-8 relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-6 opacity-5">
-                  <Gift className="h-32 w-32 text-primary" />
+              <section className="bg-[#111] border border-primary/20 rounded-[32px] p-10 relative overflow-hidden shadow-2xl">
+                <div className="absolute top-0 right-0 p-8 opacity-5">
+                  <Gift className="h-40 w-40 text-primary" />
                 </div>
                 
-                <div className="relative z-10 space-y-6">
+                <div className="relative z-10 space-y-10">
                    <div className="flex justify-between items-end">
                       <div>
-                        <p className="text-[10px] font-black text-primary uppercase tracking-[0.3em] mb-1">CURRENT BALANCE</p>
-                        <div className="flex items-center gap-2">
-                           <Star className="h-6 w-6 text-primary fill-current" />
-                           <span className="text-5xl font-black italic text-white tracking-tighter">{points}</span>
+                        <p className="text-[11px] font-black text-primary uppercase tracking-[0.4em] mb-2">CURRENT BALANCE</p>
+                        <div className="flex items-center gap-3">
+                           <Star className="h-8 w-8 text-primary fill-current" />
+                           <span className="text-6xl font-black italic text-white tracking-tighter">{points}</span>
                         </div>
                       </div>
                       <div className="text-right">
-                         <p className="text-[10px] font-black text-muted uppercase tracking-widest mb-1">NEXT LEVEL</p>
-                         <p className="text-sm font-bold text-white uppercase italic">
+                         <p className="text-[10px] font-black text-muted uppercase tracking-widest mb-2 opacity-40">NEXT LEVEL</p>
+                         <p className="text-base font-black text-white uppercase italic tracking-tight">
                            {calculateLevel(points + 100).name}
                          </p>
                       </div>
                    </div>
 
-                   <div className="space-y-2">
-                      <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-muted">
+                   <div className="space-y-4">
+                      <div className="flex justify-between text-[11px] font-black uppercase tracking-widest text-muted">
                         <span>XP Progress</span>
-                        <span>{progress}%</span>
+                        <span className="text-primary">{progress}%</span>
                       </div>
                       <Progress value={progress} className="h-2 bg-white/5" />
                    </div>
 
-                   <div className="pt-4 grid grid-cols-2 gap-4">
-                      <Button asChild variant="outline" className="h-11 border-white/5 bg-white/5 text-[10px] font-black uppercase tracking-widest">
-                         <Link href="/leaderboard"><Trophy className="mr-2 h-3 w-3" /> Leaderboard</Link>
+                   <div className="pt-6 grid grid-cols-2 gap-4">
+                      <Button asChild variant="outline" className="h-14 border-border bg-white/[0.02] text-[10px] font-black uppercase tracking-widest rounded-2xl hover:border-primary transition-all">
+                         <Link href="/leaderboard"><Trophy className="mr-2 h-4 w-4 text-primary" /> Rankings</Link>
                       </Button>
-                      <Button onClick={copyReferral} className="h-11 bg-primary text-black text-[10px] font-black uppercase tracking-widest">
-                         <Share2 className="mr-2 h-3 w-3" /> Invite Friend
+                      <Button onClick={copyReferral} className="h-14 bg-primary text-black text-[10px] font-black uppercase tracking-widest rounded-2xl hover:scale-[1.02] transition-all">
+                         <Share2 className="mr-2 h-4 w-4" /> Invite Friend
                       </Button>
                    </div>
                 </div>
               </section>
 
-              <div className="grid gap-3">
+              {/* Tactical Update Form */}
+              <section className="bg-card border border-border rounded-[32px] p-10 space-y-10 shadow-xl">
+                 <div className="flex items-center gap-3">
+                    <Settings2 className="h-5 w-5 text-primary" />
+                    <h3 className="text-xl font-black uppercase italic tracking-tighter">Tactical <span className="text-muted">Identity</span></h3>
+                 </div>
+
+                 <form onSubmit={handleUpdateProfile} className="space-y-8">
+                    <div className="grid grid-cols-2 gap-6">
+                       <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-muted ml-1">Current Skill</Label>
+                          <Select value={formData.skillLevel} onValueChange={v => setFormData({...formData, skillLevel: v})}>
+                             <SelectTrigger className="h-14 bg-surface border-border rounded-2xl"><SelectValue /></SelectTrigger>
+                             <SelectContent className="bg-card">{SKILL_LEVELS.map(l => <SelectItem key={l} value={l} className="font-bold">{l}</SelectItem>)}</SelectContent>
+                          </Select>
+                       </div>
+                       <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-muted ml-1">Availability</Label>
+                          <Select value={formData.availability} onValueChange={v => setFormData({...formData, availability: v})}>
+                             <SelectTrigger className="h-14 bg-surface border-border rounded-2xl"><SelectValue /></SelectTrigger>
+                             <SelectContent className="bg-card">{AVAILABILITY.map(a => <SelectItem key={a} value={a} className="font-bold">{a}</SelectItem>)}</SelectContent>
+                          </Select>
+                       </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-6">
+                       <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-muted ml-1">Area in Mysuru</Label>
+                          <Input placeholder="e.g. Vijayanagar" className="h-14 bg-surface rounded-2xl" value={formData.area} onChange={e => setFormData({...formData, area: e.target.value})} />
+                       </div>
+                       <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-muted ml-1">Age (Optional)</Label>
+                          <Input type="number" placeholder="24" className="h-14 bg-surface rounded-2xl" value={formData.age} onChange={e => setFormData({...formData, age: e.target.value})} />
+                       </div>
+                    </div>
+                    <Button type="submit" disabled={isSaving} className="w-full h-16 bg-white text-black font-black uppercase tracking-widest text-xs rounded-2xl hover:bg-primary transition-all">
+                       {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <><Save className="mr-2 h-4 w-4" /> Save Tactical Data</>}
+                    </Button>
+                 </form>
+              </section>
+
+              <div className="grid gap-4">
                 {[
                   { label: "Squad Roster", icon: Users, href: "/teams", sub: "Recruitment & Tactics" },
                   { label: "Circuit Ranking", icon: Trophy, href: "/leaderboard", sub: "View Elite Rankings" },
@@ -191,27 +267,27 @@ export default function ProfilePage() {
                   <Link 
                     key={item.label}
                     href={item.href}
-                    className="flex items-center justify-between p-6 bg-card border border-border rounded-[16px] hover:border-primary transition-colors group"
+                    className="flex items-center justify-between p-8 bg-card border border-border rounded-[24px] hover:border-primary transition-all group"
                   >
                     <div className="flex items-center gap-6">
-                      <div className="h-12 w-12 rounded-[10px] bg-subtle border border-border flex items-center justify-center group-hover:bg-primary group-hover:text-black transition-colors">
-                        <item.icon className="h-5 w-5" />
+                      <div className="h-16 w-16 rounded-2xl bg-subtle border border-border flex items-center justify-center group-hover:bg-primary group-hover:text-black transition-all shadow-inner">
+                        <item.icon className="h-6 w-6" />
                       </div>
                       <div>
-                        <p className="text-base font-bold uppercase tracking-tight">{item.label}</p>
-                        <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest mt-0.5">{item.sub}</p>
+                        <p className="text-xl font-black uppercase italic tracking-tight">{item.label}</p>
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] mt-1">{item.sub}</p>
                       </div>
                     </div>
-                    <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary" />
+                    <ChevronRight className="h-6 w-6 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
                   </Link>
                 ))}
               </div>
 
-              <div className="pt-6">
+              <div className="pt-10">
                 <Button 
-                  onClick={handleLogout}
+                  onClick={() => signOut(auth!)}
                   variant="ghost"
-                  className="w-full h-12 text-destructive hover:bg-destructive/10 uppercase tracking-widest font-black text-[10px]"
+                  className="w-full h-14 text-destructive hover:bg-destructive/10 uppercase tracking-widest font-black text-[10px] rounded-2xl"
                 >
                   <LogOut className="mr-3 h-4 w-4" /> TERMINATE SESSION
                 </Button>

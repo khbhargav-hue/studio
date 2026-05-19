@@ -78,6 +78,8 @@ function NewTurfForm() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [uploadingStates, setUploadingStates] = useState<Record<string, boolean>>({});
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>("");
 
   const [formData, setFormData] = useState({
     name: "",
@@ -134,24 +136,23 @@ function NewTurfForm() {
     }
   }, [existingTurf]);
 
-  const uploadToCloudinary = (file: File, key: string): Promise<string | null> => {
+  const uploadToCloudinary = (file: File): Promise<string | null> => {
     return new Promise((resolve) => {
       if (!CLOUDINARY_CLOUD_NAME) {
-        toast({ title: "Config Missing", variant: "destructive" });
         resolve(null);
         return;
       }
       const form = new FormData();
       form.append('file', file);
       form.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-      setUploadingStates(prev => ({ ...prev, [key]: true }));
+      
       const xhr = new XMLHttpRequest();
       xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, true);
       xhr.onload = () => {
-        setUploadingStates(prev => ({ ...prev, [key]: false }));
         if (xhr.status === 200) resolve(JSON.parse(xhr.responseText).secure_url);
         else resolve(null);
       };
+      xhr.onerror = () => resolve(null);
       xhr.send(form);
     });
   };
@@ -159,32 +160,71 @@ function NewTurfForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!db) return;
+    
     setIsSaving(true);
-    const id = editId || formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-    const turfRef = doc(db, "turfs", id);
-    const dataToSave = {
-      ...formData,
-      id,
-      updatedAt: serverTimestamp(),
-      createdAt: existingTurf?.createdAt || serverTimestamp()
-    };
+    console.log("1_UPLOAD_START");
 
-    setDoc(turfRef, dataToSave, { merge: true })
-      .then(() => {
+    try {
+      // Create a timeout race for the whole submission
+      const timeout = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Submission timed out — check your signal")), 10000)
+      );
+
+      const performSubmission = async () => {
+        let finalImageUrl = formData.imageUrl;
+
+        // Part A: Resilient Image Upload
+        if (pendingFile) {
+          try {
+            const url = await uploadToCloudinary(pendingFile);
+            if (url) {
+              finalImageUrl = url;
+              console.log("2_IMAGE_SUCCESS");
+            } else {
+              console.warn("Image upload failed — proceeding with placeholder");
+            }
+          } catch (err) {
+            console.error("Image upload error", err);
+          }
+        }
+
+        if (!finalImageUrl && !formData.imageUrl) {
+          finalImageUrl = "https://picsum.photos/seed/turf/1200/800";
+        }
+
+        // Part B: Firestore Handshake
+        console.log("3_FIRESTORE_START");
+        const id = editId || formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        const turfRef = doc(db, "turfs", id);
+        
+        const dataToSave = {
+          ...formData,
+          imageUrl: finalImageUrl,
+          id,
+          updatedAt: serverTimestamp(),
+          createdAt: existingTurf?.createdAt || serverTimestamp()
+        };
+
+        await setDoc(turfRef, dataToSave, { merge: true });
+        console.log("4_FIRESTORE_SUCCESS");
+
         toast({ title: editId ? "Intel Synchronized" : "Arena Deployed" });
-        setIsSaving(false);
         router.push("/studio");
-      })
-      .catch(async (err) => {
-        setIsSaving(false);
-        const permissionError = new FirestorePermissionError({
-          path: turfRef.path,
-          operation: editId ? 'update' : 'create',
-          requestResourceData: dataToSave,
-          message: err.message
-        });
-        errorEmitter.emit('permission-error', permissionError);
+      };
+
+      await Promise.race([performSubmission(), timeout]);
+
+    } catch (err: any) {
+      console.error("DEPLOYMENT_FAIL", err);
+      toast({ 
+        title: "Deployment Sync Failed", 
+        description: err.message || "Upload timed out. Try again.",
+        variant: "destructive" 
       });
+    } finally {
+      setIsSaving(false);
+      console.log("5_LOADING_FALSE");
+    }
   };
 
   const handleGenerateDescription = async () => {
@@ -450,18 +490,21 @@ function NewTurfForm() {
                   className="relative aspect-video rounded-xl border-2 border-dashed border-border bg-[#1A1A1A] hover:border-primary/50 cursor-pointer overflow-hidden flex flex-col items-center justify-center transition-all group"
                   onClick={() => mainInputRef.current?.click()}
                 >
-                  {uploadingStates['main'] && <Loader2 className="h-6 w-6 animate-spin text-primary absolute z-10" />}
-                  {formData.imageUrl ? (
-                    <img src={formData.imageUrl} className="w-full h-full object-cover group-hover:opacity-50 transition-opacity" alt="Main" />
+                  {isSaving && pendingFile && <Loader2 className="h-6 w-6 animate-spin text-primary absolute z-10" />}
+                  {(previewUrl || formData.imageUrl) ? (
+                    <img src={previewUrl || formData.imageUrl} className="w-full h-full object-cover group-hover:opacity-50 transition-opacity" alt="Main" />
                   ) : (
                     <div className="flex flex-col items-center gap-2">
                       <Upload className="h-6 w-6 text-muted-foreground" />
                       <span className="text-[9px] font-black uppercase text-muted-foreground tracking-widest">Upload Identity</span>
                     </div>
                   )}
-                  <input type="file" ref={mainInputRef} className="hidden" onChange={async (e) => {
-                    const url = await uploadToCloudinary(e.target.files?.[0] as File, 'main');
-                    if (url) setFormData(p => ({ ...p, imageUrl: url }));
+                  <input type="file" ref={mainInputRef} className="hidden" onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setPendingFile(file);
+                      setPreviewUrl(URL.createObjectURL(file));
+                    }
                   }} />
                 </div>
               </CardContent>

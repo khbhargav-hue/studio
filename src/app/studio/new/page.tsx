@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, Suspense, useRef } from "react";
@@ -77,7 +76,6 @@ function NewTurfForm() {
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [uploadingStates, setUploadingStates] = useState<Record<string, boolean>>({});
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>("");
 
@@ -101,9 +99,7 @@ function NewTurfForm() {
     pitchSizes: [] as string[],
     dimensions: "",
     maxPlayers: 14,
-    pricePerHour: 900,
-    peakHourPrice: 1200,
-    peakHoursStart: "18:00",
+    price: "₹900/hr",
     slotDuration: 60,
     openTime: "06:00",
     closeTime: "22:00",
@@ -162,19 +158,17 @@ function NewTurfForm() {
     if (!db) return;
     
     setIsSaving(true);
-    console.log("1_SUBMISSION_INITIATED");
+    console.log("1_UPLOAD_START");
 
     try {
       let finalImageUrl = formData.imageUrl;
 
-      // Handle resilient media upload if a new file is staged
       if (pendingFile) {
-        console.log("2_MEDIA_SYNC_START");
         try {
           const url = await uploadToCloudinary(pendingFile);
           if (url) {
             finalImageUrl = url;
-            console.log("3_MEDIA_SYNC_SUCCESS");
+            console.log("2_IMAGE_SUCCESS");
           }
         } catch (err) {
           console.warn("Media sync failed — using fallback placeholder");
@@ -185,7 +179,6 @@ function NewTurfForm() {
         finalImageUrl = "https://picsum.photos/seed/turf/1200/800";
       }
 
-      // Prepare Firestore payload
       const id = editId || formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
       const turfRef = doc(db, "turfs", id);
       
@@ -197,33 +190,33 @@ function NewTurfForm() {
         createdAt: existingTurf?.createdAt || serverTimestamp()
       };
 
-      // Firestore Write Pattern: Non-blocking for instant UI response
-      console.log("4_FIRESTORE_WRITE_QUEUED");
+      console.log("3_FIRESTORE_START");
       setDoc(turfRef, dataToSave, { merge: true })
+        .then(() => {
+          console.log("4_FIRESTORE_SUCCESS");
+          toast({ title: editId ? "Intel Synchronized" : "Arena Deployed" });
+          router.push("/studio");
+        })
         .catch(async (err: any) => {
-          console.error("5_FIRESTORE_WRITE_ERROR", err);
           errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: turfRef.path,
             operation: 'write',
             requestResourceData: dataToSave,
             message: err.message
           }));
+        })
+        .finally(() => {
+          setIsSaving(false);
+          console.log("5_LOADING_FALSE");
         });
-
-      // Provide immediate feedback to the admin
-      toast({ title: editId ? "Intel Synchronized" : "Arena Deployed" });
-      router.push("/studio");
       
     } catch (err: any) {
-      console.error("CRITICAL_SUBMISSION_FAIL", err);
+      setIsSaving(false);
       toast({ 
         title: "Deployment Halted", 
         description: err.message || "Circuit interrupted. Please retry.",
         variant: "destructive" 
       });
-    } finally {
-      setIsSaving(false);
-      console.log("6_LOADING_RESET");
     }
   };
 
@@ -238,7 +231,7 @@ function NewTurfForm() {
         turfName: formData.name,
         location: `${formData.area}, Mysuru`,
         sportTypes: formData.sports.length > 0 ? formData.sports as any : ["Football"],
-        pricePerHour: formData.pricePerHour,
+        pricePerHour: 900, // Legacy fallback
         amenities: Object.entries(formData.amenities).filter(([_, v]) => v).map(([k]) => k),
       });
       setFormData(p => ({ ...p, description: result.description }));
@@ -388,16 +381,15 @@ function NewTurfForm() {
               </CardHeader>
               <CardContent className="p-6 space-y-6">
                 <div className="space-y-2">
-                  <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">Base Price / HR*</Label>
-                  <Input type="number" className="font-black text-primary text-lg" value={formData.pricePerHour} onChange={e => setFormData({...formData, pricePerHour: Number(e.target.value)})} />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">Peak Price / HR</Label>
-                  <Input type="number" className="font-black text-[#0A0A0A] text-lg" value={formData.peakHourPrice} onChange={e => setFormData({...formData, peakHourPrice: Number(e.target.value)})} />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">Peak Cycle Starts</Label>
-                  <Input type="time" className="font-bold" value={formData.peakHoursStart} onChange={e => setFormData({...formData, peakHoursStart: e.target.value})} />
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Price*</Label>
+                  <Input 
+                    placeholder="₹/hr or Ask before booking" 
+                    className="font-black text-primary text-lg" 
+                    value={formData.price} 
+                    onChange={e => setFormData({...formData, price: e.target.value})} 
+                    required
+                  />
+                  <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Example: ₹900/hr or "Ask before booking"</p>
                 </div>
               </CardContent>
             </Card>

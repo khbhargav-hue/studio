@@ -1,9 +1,8 @@
-
 'use client';
 
 import Image from "next/image";
 import Link from "next/link";
-import { MapPin, MessageCircle, Clock, Star, Zap } from "lucide-react";
+import { MapPin, MessageCircle, Clock, Star, Zap, Banknote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Turf } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -61,9 +60,10 @@ export function TurfCard({ turf }: TurfCardProps) {
         </div>
 
         <div className="mt-auto space-y-3 pt-4 border-t border-border">
-          <p className="text-[10px] font-black uppercase text-[#444] tracking-widest italic">
-            Price may vary • Ask before booking
-          </p>
+          <div className="flex items-center gap-2 text-[11px] font-black uppercase text-white tracking-widest italic">
+            <span className="text-primary">💰</span> 
+            {turf.price ? `Price: ${turf.price}` : "Price may vary • Ask before booking"}
+          </div>
           <Button 
             asChild 
             className="w-full h-12 bg-primary text-black font-black uppercase tracking-widest text-[10px] rounded-none shadow-2xl shadow-primary/10 hover:bg-primary/90 active:scale-[0.98] transition-all"

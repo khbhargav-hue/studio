@@ -305,15 +305,14 @@ export default function TurfDetail() {
             <aside className="sticky top-28 space-y-6 hidden lg:block">
               <div className="bg-[#111111] border border-[#222222] p-10 rounded-[16px] text-center space-y-8">
                 <div className="space-y-2">
-                  <p className="text-[10px] font-black uppercase tracking-[0.4em] text-[#444]">HOURLY BASE RATE</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.4em] text-[#444]">PRICE INTEL</p>
                   <div className="flex items-baseline justify-center gap-2">
-                    <span className="text-6xl font-black text-primary italic tracking-tighter">
-                      {turf.pricePerHour > 0 ? `₹${turf.pricePerHour}` : "Ask"}
+                    <span className="text-4xl font-black text-primary italic tracking-tighter">
+                      {turf.price || "Ask before booking"}
                     </span>
-                    {turf.pricePerHour > 0 && <span className="text-[#888888] font-black text-xs uppercase tracking-widest">/ HR</span>}
                   </div>
                   <div className="flex items-center justify-center gap-2 text-[9px] font-black text-primary uppercase tracking-[0.1em] bg-primary/5 py-2 px-4 rounded-full mt-4">
-                    <AlertCircle className="h-3 w-3" /> Price may vary. Confirm before booking.
+                    <AlertCircle className="h-3 w-3" /> Confirm current price before booking.
                   </div>
                 </div>
 
@@ -372,12 +371,11 @@ export default function TurfDetail() {
       <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 p-4 bg-[#0A0A0A]/95 backdrop-blur-2xl border-t border-[#222]">
         <div className="max-w-md mx-auto flex items-center justify-between gap-4">
           <div className="flex flex-col">
-            <p className="text-[9px] font-black text-[#444] uppercase tracking-widest mb-1">Confirm Price</p>
+            <p className="text-[9px] font-black text-[#444] uppercase tracking-widest mb-1">Price Intel</p>
             <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-black text-primary italic leading-none">
-                {turf.pricePerHour > 0 ? `₹${turf.pricePerHour}` : "Ask"}
+              <span className="text-xl font-black text-primary italic leading-none truncate max-w-[120px]">
+                {turf.price || "Ask"}
               </span>
-              {turf.pricePerHour > 0 && <span className="text-[9px] text-[#888] font-black uppercase tracking-widest">/hr</span>}
             </div>
           </div>
           <div className="flex-1 flex gap-2">

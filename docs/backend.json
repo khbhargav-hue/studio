@@ -26,6 +26,7 @@
         "pitchSizes": { "type": "array", "items": { "type": "string" } },
         "dimensions": { "type": "string" },
         "maxPlayers": { "type": "number" },
+        "price": { "type": "string", "description": "Display price, e.g., ₹900/hr or Ask before booking" },
         "pricePerHour": { "type": "number" },
         "peakHourPrice": { "type": "number" },
         "peakHoursStart": { "type": "string" },
@@ -56,7 +57,7 @@
         "views": { "type": "number" },
         "whatsappClicks": { "type": "number" }
       },
-      "required": ["name", "area", "pricePerHour"]
+      "required": ["name", "area", "price"]
     },
     "Review": {
       "title": "Review",

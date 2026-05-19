@@ -14,6 +14,8 @@ export interface Turf {
   closeTime: string;
   rating: number;
   reviewCount: number;
+  price?: string;
+  pricePerHour?: number;
   updatedAt?: any;
 }
 

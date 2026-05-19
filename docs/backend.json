@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "Turf": {
@@ -17,100 +18,49 @@
         "address": { "type": "string" },
         "area": { "type": "string" },
         "city": { "type": "string" },
-        "pincode": { "type": "string" },
-        "googleMapsUrl": { "type": "string" },
-        "lat": { "type": "number" },
-        "lng": { "type": "number" },
         "sports": { "type": "array", "items": { "type": "string" } },
-        "pitchType": { "type": "string" },
-        "pitchSizes": { "type": "array", "items": { "type": "string" } },
-        "dimensions": { "type": "string" },
-        "maxPlayers": { "type": "number" },
-        "price": { "type": "string", "description": "Display price, e.g., ₹900/hr or Ask before booking" },
-        "pricePerHour": { "type": "number" },
-        "peakHourPrice": { "type": "number" },
-        "peakHoursStart": { "type": "string" },
-        "slotDuration": { "type": "number" },
-        "openTime": { "type": "string" },
-        "closeTime": { "type": "string" },
-        "openDays": { "type": "array", "items": { "type": "string" } },
-        "checkInMinutes": { "type": "number" },
-        "amenities": {
-          "type": "object",
-          "properties": {
-            "parking": { "type": "boolean" },
-            "changingRooms": { "type": "boolean" },
-            "showers": { "type": "boolean" },
-            "drinkingWater": { "type": "boolean" },
-            "floodlights": { "type": "boolean" },
-            "firstAid": { "type": "boolean" },
-            "cafeteria": { "type": "boolean" },
-            "washrooms": { "type": "boolean" },
-            "ballProvided": { "type": "boolean" },
-            "metalStudsOk": { "type": "boolean" }
-          }
-        },
+        "price": { "type": "string" },
         "rating": { "type": "number" },
         "reviewCount": { "type": "number" },
-        "rules": { "type": "array", "items": { "type": "string" } },
-        "createdAt": { "type": "object" },
-        "views": { "type": "number" },
-        "whatsappClicks": { "type": "number" }
-      },
-      "required": ["name", "area", "price"]
-    },
-    "Review": {
-      "title": "Review",
-      "description": "Player feedback and rating for a sports arena",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "userId": { "type": "string" },
-        "userName": { "type": "string" },
-        "userPhoto": { "type": "string" },
-        "rating": { "type": "number" },
-        "comment": { "type": "string" },
-        "timestamp": { "type": "object" }
-      },
-      "required": ["userId", "rating"]
+        "createdAt": { "type": "object" }
+      }
     },
     "UserProfile": {
       "title": "UserProfile",
-      "description": "Extended athlete data including rewards and level",
+      "description": "Extended athlete data including rewards, social stats, and tactical info",
       "type": "object",
       "properties": {
         "uid": { "type": "string" },
         "displayName": { "type": "string" },
         "photoURL": { "type": "string" },
+        "bio": { "type": "string" },
+        "area": { "type": "string" },
+        "skillLevel": { "type": "string", "enum": ["Beginner", "Intermediate", "Advanced", "Pro"] },
+        "favoriteSports": { "type": "array", "items": { "type": "string" } },
+        "playingStyle": { "type": "string" },
+        "availability": { "type": "string" },
+        "status": { "type": "string", "enum": ["online", "away", "offline", "in_match"] },
         "rewardPoints": { "type": "number" },
-        "level": { "type": "string" },
-        "badges": { "type": "array", "items": { "type": "string" } },
-        "referralCode": { "type": "string" },
-        "referredBy": { "type": "string" },
-        "createdAt": { "type": "object" },
-        "updatedAt": { "type": "object" }
+        "lastActive": { "type": "object" }
       }
     },
-    "Team": {
-      "title": "Team",
-      "description": "A permanent sports team created by an athlete",
+    "MatchRequest": {
+      "title": "MatchRequest",
+      "description": "A public request for players to join a match",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
-        "name": { "type": "string" },
+        "creatorId": { "type": "string" },
+        "creatorName": { "type": "string" },
         "sport": { "type": "string" },
-        "area": { "type": "string" },
-        "captain": { "type": "string" },
-        "whatsapp": { "type": "string" },
-        "logoUrl": { "type": "string" },
-        "members": { "type": "array", "items": { "type": "string" } },
-        "ownerId": { "type": "string" },
-        "wins": { "type": "number" },
-        "matchesPlayed": { "type": "number" },
-        "description": { "type": "string" },
+        "playersNeeded": { "type": "number" },
+        "playersJoined": { "type": "number" },
+        "location": { "type": "string" },
+        "date": { "type": "string" },
+        "time": { "type": "string" },
+        "status": { "type": "string", "enum": ["open", "filled", "cancelled"] },
         "createdAt": { "type": "object" }
-      },
-      "required": ["name", "sport", "ownerId"]
+      }
     }
   },
   "auth": {
@@ -119,23 +69,19 @@
   "firestore": {
     "/turfs/{turfId}": {
       "schema": "Turf",
-      "description": "Collection of premium sports arenas"
+      "description": "Collection of sports arenas"
     },
     "/users/{userId}": {
       "schema": "UserProfile",
-      "description": "Collection of athlete profiles and rewards"
+      "description": "Athlete profiles and presence"
     },
-    "/turfs/{turfId}/reviews/{reviewId}": {
-      "schema": "Review",
-      "description": "Sub-collection of player reviews for each arena"
+    "/matchRequests/{matchId}": {
+      "schema": "MatchRequest",
+      "description": "Open game requests"
     },
     "/teams/{teamId}": {
       "schema": "Team",
-      "description": "Collection of permanent athlete squads"
-    },
-    "/challenges/{challengeId}": {
-      "schema": "Challenge",
-      "description": "Collection of match circuit claims"
+      "description": "Athlete squads"
     }
   }
 }

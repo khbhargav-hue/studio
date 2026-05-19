@@ -8,16 +8,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useUser, useAuth, useCollection, useFirestore, useDoc, useMemoFirebase } from "@/firebase";
+import { useUser, useAuth, useFirestore, useDoc, useMemoFirebase } from "@/firebase";
 import { GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut } from "firebase/auth";
-import { query, collection, where, doc, setDoc, serverTimestamp, updateDoc } from "firebase/firestore";
+import { doc, setDoc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { 
   UserCircle, 
   LogOut, 
   Users, 
   Trophy, 
-  ShieldCheck, 
   Zap, 
   ChevronRight,
   Loader2,
@@ -27,7 +27,9 @@ import {
   Gift,
   Share2,
   Settings2,
-  Save
+  Save,
+  Clock,
+  Swords
 } from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
@@ -56,8 +58,9 @@ export default function ProfilePage() {
     skillLevel: "Intermediate",
     availability: "Evening",
     favoriteSport: "Football",
-    age: "",
-    area: ""
+    bio: "",
+    area: "",
+    playingStyle: ""
   });
 
   useEffect(() => {
@@ -66,8 +69,9 @@ export default function ProfilePage() {
         skillLevel: profile.skillLevel || "Intermediate",
         availability: profile.availability || "Evening",
         favoriteSport: profile.favoriteSport || "Football",
-        age: profile.age || "",
-        area: profile.area || ""
+        bio: profile.bio || "",
+        area: profile.area || "",
+        playingStyle: profile.playingStyle || ""
       });
     }
   }, [profile]);
@@ -80,6 +84,7 @@ export default function ProfilePage() {
         displayName: user.displayName,
         photoURL: user.photoURL,
         rewardPoints: REWARD_POINTS.SIGNUP,
+        status: "online",
         referralCode: `TURF-${user.uid.slice(0, 6).toUpperCase()}`,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
@@ -96,7 +101,7 @@ export default function ProfilePage() {
         ...formData,
         updatedAt: serverTimestamp()
       });
-      toast({ title: "Identity Updated", description: "Your tactical profile is now live." });
+      toast({ title: "Identity Updated", description: "Your tactical profile is now live on the circuit." });
     } catch (err) {
       toast({ title: "Update Failed", variant: "destructive" });
     } finally {
@@ -119,12 +124,6 @@ export default function ProfilePage() {
     }
   };
 
-  const copyReferral = () => {
-    const code = profile?.referralCode || '';
-    navigator.clipboard.writeText(`Join Turfista with my code ${code} and earn 20 coins! https://turfista.in/login`);
-    toast({ title: "Link Copied", description: "Share this to earn 100 Turf Coins." });
-  };
-
   if (userLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
@@ -138,158 +137,167 @@ export default function ProfilePage() {
   const progress = getProgressToNextLevel(points);
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex min-h-screen flex-col bg-background selection:bg-primary selection:text-black">
       <Navbar />
       
-      <main className="flex-1 pt-32 pb-32">
-        <div className="mx-auto max-w-xl px-4 space-y-8">
+      <main className="flex-1 pt-32 pb-40">
+        <div className="mx-auto max-w-2xl px-4 space-y-12">
           {!user ? (
-            <div className="bg-card border border-border rounded-[32px] p-12 text-center shadow-2xl">
-              <div className="h-24 w-24 bg-primary/10 rounded-[32px] flex items-center justify-center mx-auto mb-10 shadow-inner border border-primary/20">
-                <UserCircle className="h-12 w-12 text-primary opacity-50" />
+            <div className="bg-card border border-white/5 rounded-[3rem] p-16 text-center shadow-2xl">
+              <div className="h-32 w-32 bg-primary/10 rounded-[3rem] flex items-center justify-center mx-auto mb-10 border border-primary/20 shadow-inner">
+                <UserCircle className="h-16 w-16 text-primary" />
               </div>
-              <h1 className="text-4xl font-black tracking-tighter uppercase italic mb-4">Identity Required</h1>
-              <p className="text-muted-foreground text-sm mb-12 leading-relaxed font-medium">Join the Mysuru athlete circuit to form squads, find tactical matches, and earn Turf Coins.</p>
-              <Button onClick={handleGoogleSignIn} disabled={isSigningIn} className="w-full h-16 bg-primary text-black font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-primary/20">
-                {isSigningIn ? <Loader2 className="h-5 w-5 animate-spin" /> : "Identify with Google"}
+              <h1 className="text-5xl font-black tracking-tighter uppercase italic mb-6">Identity Required</h1>
+              <p className="text-white/40 text-lg mb-12 leading-relaxed font-medium italic">Join the Mysuru athlete circuit to form squads, find tactical matches, and earn Turf Coins.</p>
+              <Button onClick={handleGoogleSignIn} disabled={isSigningIn} className="w-full h-20 bg-primary text-black font-black uppercase tracking-widest rounded-[2rem] shadow-xl shadow-primary/20 hover:scale-[1.02] transition-transform">
+                {isSigningIn ? <Loader2 className="h-6 w-6 animate-spin" /> : "Identify with Google"}
               </Button>
             </div>
           ) : (
-            <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-700">
               {/* Profile Header */}
-              <section className="bg-card border border-border rounded-[32px] p-8 flex items-center gap-8 shadow-xl">
-                <div className="h-24 w-24 rounded-[24px] border-2 border-primary p-0.5 overflow-hidden bg-surface shrink-0 shadow-2xl">
+              <section className="bg-card border border-white/5 rounded-[3rem] p-10 flex flex-col md:flex-row items-center gap-10 shadow-2xl">
+                <div className="h-32 w-32 rounded-[2.5rem] border-4 border-primary/20 p-1 overflow-hidden bg-white/5 shrink-0 relative">
                   {user.photoURL ? (
-                    <img src={user.photoURL} alt={user.displayName || "Athlete"} className="h-full w-full object-cover rounded-[22px]" />
+                    <img src={user.photoURL} alt={user.displayName || "Athlete"} className="h-full w-full object-cover rounded-[2.2rem]" />
                   ) : (
-                    <UserCircle className="h-full w-full p-4 text-muted" />
+                    <UserCircle className="h-full w-full p-6 text-white/10" />
                   )}
+                  <div className="absolute bottom-1 right-1 h-5 w-5 bg-green-500 rounded-full border-4 border-card" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className={cn("text-[10px] font-black uppercase tracking-[0.3em] mb-2 px-3 py-1 rounded-full w-fit bg-white/5", level.color)}>
-                    {level.name} ATHLETE
+                <div className="flex-1 text-center md:text-left min-w-0">
+                  <div className={cn("text-[10px] font-black uppercase tracking-[0.4em] mb-4 px-4 py-1.5 rounded-full w-fit mx-auto md:mx-0 bg-white/5", level.color)}>
+                    {level.name} ATHLETE • CIRCUIT ACTIVE
                   </div>
-                  <h2 className="text-3xl font-black truncate text-foreground uppercase italic tracking-tighter">{user.displayName || "ATHLETE"}</h2>
-                  <p className="text-muted-foreground text-[10px] font-black uppercase tracking-widest flex items-center gap-2 mt-2 opacity-50">
-                    <Mail className="h-3 w-3" /> {user.email}
+                  <h2 className="text-5xl font-black truncate text-white uppercase italic tracking-tighter">{user.displayName || "ATHLETE"}</h2>
+                  <p className="text-white/20 text-[10px] font-black uppercase tracking-[0.3em] flex items-center justify-center md:justify-start gap-2 mt-4">
+                    <Mail className="h-3.5 w-3.5" /> {user.email}
                   </p>
                 </div>
               </section>
 
               {/* Rewards Hub */}
-              <section className="bg-[#111] border border-primary/20 rounded-[32px] p-10 relative overflow-hidden shadow-2xl">
-                <div className="absolute top-0 right-0 p-8 opacity-5">
-                  <Gift className="h-40 w-40 text-primary" />
+              <section className="bg-primary/5 border border-primary/20 rounded-[3rem] p-12 relative overflow-hidden shadow-2xl">
+                <div className="absolute top-0 right-0 p-12 opacity-[0.03] pointer-events-none">
+                  <Trophy className="h-64 w-64 text-primary" />
                 </div>
                 
-                <div className="relative z-10 space-y-10">
-                   <div className="flex justify-between items-end">
-                      <div>
-                        <p className="text-[11px] font-black text-primary uppercase tracking-[0.4em] mb-2">CURRENT BALANCE</p>
-                        <div className="flex items-center gap-3">
-                           <Star className="h-8 w-8 text-primary fill-current" />
-                           <span className="text-6xl font-black italic text-white tracking-tighter">{points}</span>
+                <div className="relative z-10 space-y-12">
+                   <div className="flex flex-col md:flex-row justify-between items-center md:items-end gap-8">
+                      <div className="text-center md:text-left">
+                        <p className="text-[12px] font-black text-primary uppercase tracking-[0.5em] mb-4">CURRENT COIN BALANCE</p>
+                        <div className="flex items-center justify-center md:justify-start gap-4">
+                           <Star className="h-10 w-10 text-primary fill-current shadow-[0_0_20px_rgba(170,255,0,0.4)]" />
+                           <span className="text-8xl font-black italic text-white tracking-tighter leading-none">{points}</span>
                         </div>
                       </div>
-                      <div className="text-right">
-                         <p className="text-[10px] font-black text-muted uppercase tracking-widest mb-2 opacity-40">NEXT LEVEL</p>
-                         <p className="text-base font-black text-white uppercase italic tracking-tight">
+                      <div className="text-center md:text-right">
+                         <p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-2">NEXT MILESTONE</p>
+                         <p className="text-2xl font-black text-white uppercase italic tracking-tight">
                            {calculateLevel(points + 100).name}
                          </p>
                       </div>
                    </div>
 
                    <div className="space-y-4">
-                      <div className="flex justify-between text-[11px] font-black uppercase tracking-widest text-muted">
+                      <div className="flex justify-between text-[11px] font-black uppercase tracking-[0.3em] text-white/40">
                         <span>XP Progress</span>
                         <span className="text-primary">{progress}%</span>
                       </div>
-                      <Progress value={progress} className="h-2 bg-white/5" />
-                   </div>
-
-                   <div className="pt-6 grid grid-cols-2 gap-4">
-                      <Button asChild variant="outline" className="h-14 border-border bg-white/[0.02] text-[10px] font-black uppercase tracking-widest rounded-2xl hover:border-primary transition-all">
-                         <Link href="/leaderboard"><Trophy className="mr-2 h-4 w-4 text-primary" /> Rankings</Link>
-                      </Button>
-                      <Button onClick={copyReferral} className="h-14 bg-primary text-black text-[10px] font-black uppercase tracking-widest rounded-2xl hover:scale-[1.02] transition-all">
-                         <Share2 className="mr-2 h-4 w-4" /> Invite Friend
-                      </Button>
+                      <Progress value={progress} className="h-3 bg-white/5 rounded-full" />
                    </div>
                 </div>
               </section>
 
-              {/* Tactical Update Form */}
-              <section className="bg-card border border-border rounded-[32px] p-10 space-y-10 shadow-xl">
-                 <div className="flex items-center gap-3">
-                    <Settings2 className="h-5 w-5 text-primary" />
-                    <h3 className="text-xl font-black uppercase italic tracking-tighter">Tactical <span className="text-muted">Identity</span></h3>
+              {/* Tactical Identity Form */}
+              <section className="bg-card border border-white/5 rounded-[3rem] p-12 space-y-12 shadow-2xl">
+                 <div className="flex items-center gap-4">
+                    <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/20">
+                      <Settings2 className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="text-3xl font-black uppercase italic tracking-tighter text-white">Tactical <span className="text-white/20">Identity</span></h3>
+                      <p className="text-[10px] font-bold text-white/20 uppercase tracking-widest mt-1">Configure your network signals</p>
+                    </div>
                  </div>
 
-                 <form onSubmit={handleUpdateProfile} className="space-y-8">
-                    <div className="grid grid-cols-2 gap-6">
-                       <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase tracking-widest text-muted ml-1">Current Skill</Label>
+                 <form onSubmit={handleUpdateProfile} className="space-y-10">
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Combat Bio</Label>
+                      <Textarea 
+                        placeholder="Tell the network about your playing style, achievements..." 
+                        className="h-32 bg-white/5 border-white/10 rounded-[1.5rem] italic text-lg leading-relaxed focus:border-primary/50" 
+                        value={formData.bio} 
+                        onChange={e => setFormData({...formData, bio: e.target.value})} 
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                       <div className="space-y-3">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Current Skill</Label>
                           <Select value={formData.skillLevel} onValueChange={v => setFormData({...formData, skillLevel: v})}>
-                             <SelectTrigger className="h-14 bg-surface border-border rounded-2xl"><SelectValue /></SelectTrigger>
-                             <SelectContent className="bg-card">{SKILL_LEVELS.map(l => <SelectItem key={l} value={l} className="font-bold">{l}</SelectItem>)}</SelectContent>
+                             <SelectTrigger className="h-16 bg-white/5 border-white/10 rounded-2xl text-lg font-bold"><SelectValue /></SelectTrigger>
+                             <SelectContent className="bg-card border-white/10">{SKILL_LEVELS.map(l => <SelectItem key={l} value={l} className="font-bold">{l}</SelectItem>)}</SelectContent>
                           </Select>
                        </div>
-                       <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase tracking-widest text-muted ml-1">Availability</Label>
+                       <div className="space-y-3">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Area in Mysuru</Label>
+                          <Input placeholder="e.g. Vijayanagar" className="h-16 bg-white/5 border-white/10 rounded-2xl text-lg italic font-bold" value={formData.area} onChange={e => setFormData({...formData, area: e.target.value})} />
+                       </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                       <div className="space-y-3">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Availability</Label>
                           <Select value={formData.availability} onValueChange={v => setFormData({...formData, availability: v})}>
-                             <SelectTrigger className="h-14 bg-surface border-border rounded-2xl"><SelectValue /></SelectTrigger>
-                             <SelectContent className="bg-card">{AVAILABILITY.map(a => <SelectItem key={a} value={a} className="font-bold">{a}</SelectItem>)}</SelectContent>
+                             <SelectTrigger className="h-16 bg-white/5 border-white/10 rounded-2xl text-lg font-bold"><SelectValue /></SelectTrigger>
+                             <SelectContent className="bg-card border-white/10">{AVAILABILITY.map(a => <SelectItem key={a} value={a} className="font-bold">{a}</SelectItem>)}</SelectContent>
                           </Select>
                        </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-6">
-                       <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase tracking-widest text-muted ml-1">Area in Mysuru</Label>
-                          <Input placeholder="e.g. Vijayanagar" className="h-14 bg-surface rounded-2xl" value={formData.area} onChange={e => setFormData({...formData, area: e.target.value})} />
-                       </div>
-                       <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase tracking-widest text-muted ml-1">Age (Optional)</Label>
-                          <Input type="number" placeholder="24" className="h-14 bg-surface rounded-2xl" value={formData.age} onChange={e => setFormData({...formData, age: e.target.value})} />
+                       <div className="space-y-3">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Main Discipline</Label>
+                          <Input placeholder="e.g. Football / Box Cricket" className="h-16 bg-white/5 border-white/10 rounded-2xl text-lg italic font-bold" value={formData.favoriteSport} onChange={e => setFormData({...formData, favoriteSport: e.target.value})} />
                        </div>
                     </div>
-                    <Button type="submit" disabled={isSaving} className="w-full h-16 bg-white text-black font-black uppercase tracking-widest text-xs rounded-2xl hover:bg-primary transition-all">
-                       {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <><Save className="mr-2 h-4 w-4" /> Save Tactical Data</>}
+
+                    <Button type="submit" disabled={isSaving} className="w-full h-20 bg-white text-black font-black uppercase tracking-[0.2em] text-sm rounded-[2rem] hover:bg-primary hover:scale-[1.01] transition-all shadow-2xl">
+                       {isSaving ? <Loader2 className="h-6 w-6 animate-spin" /> : <><Save className="mr-3 h-5 w-5" /> PUBLISH IDENTITY</>}
                     </Button>
                  </form>
               </section>
 
               <div className="grid gap-4">
                 {[
-                  { label: "Squad Roster", icon: Users, href: "/teams", sub: "Recruitment & Tactics" },
-                  { label: "Circuit Ranking", icon: Trophy, href: "/leaderboard", sub: "View Elite Rankings" },
-                  { label: "Arena Guide", icon: Star, href: "/#turfs", sub: "Venue Intelligence" },
+                  { label: "Open Matches", icon: Swords, href: "/matches", sub: "Recruiting Now" },
+                  { label: "Player Discovery", icon: Users, href: "/players", sub: "Identify Teammates" },
+                  { label: "Circuit Ranking", icon: Trophy, href: "/leaderboard", sub: "Elite Legends" },
                 ].map((item) => (
                   <Link 
                     key={item.label}
                     href={item.href}
-                    className="flex items-center justify-between p-8 bg-card border border-border rounded-[24px] hover:border-primary transition-all group"
+                    className="flex items-center justify-between p-10 bg-card border border-white/5 rounded-[2.5rem] hover:border-primary/40 transition-all group shadow-xl"
                   >
-                    <div className="flex items-center gap-6">
-                      <div className="h-16 w-16 rounded-2xl bg-subtle border border-border flex items-center justify-center group-hover:bg-primary group-hover:text-black transition-all shadow-inner">
-                        <item.icon className="h-6 w-6" />
+                    <div className="flex items-center gap-8">
+                      <div className="h-16 w-16 rounded-2xl bg-white/5 flex items-center justify-center group-hover:bg-primary group-hover:text-black transition-all">
+                        <item.icon className="h-7 w-7" />
                       </div>
                       <div>
-                        <p className="text-xl font-black uppercase italic tracking-tight">{item.label}</p>
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] mt-1">{item.sub}</p>
+                        <p className="text-2xl font-black uppercase italic tracking-tight">{item.label}</p>
+                        <p className="text-[10px] font-bold text-white/20 uppercase tracking-[0.3em] mt-1">{item.sub}</p>
                       </div>
                     </div>
-                    <ChevronRight className="h-6 w-6 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                    <ChevronRight className="h-8 w-8 text-white/10 group-hover:text-primary group-hover:translate-x-2 transition-all" />
                   </Link>
                 ))}
               </div>
 
-              <div className="pt-10">
+              <div className="pt-20">
                 <Button 
                   onClick={() => signOut(auth!)}
                   variant="ghost"
-                  className="w-full h-14 text-destructive hover:bg-destructive/10 uppercase tracking-widest font-black text-[10px] rounded-2xl"
+                  className="w-full h-16 text-destructive/40 hover:text-destructive hover:bg-destructive/5 uppercase tracking-[0.5em] font-black text-[10px] rounded-[1.5rem]"
                 >
-                  <LogOut className="mr-3 h-4 w-4" /> TERMINATE SESSION
+                  <LogOut className="mr-3 h-4 w-4" /> TERMINATE PROTOCOL
                 </Button>
               </div>
             </div>
@@ -298,6 +306,7 @@ export default function ProfilePage() {
       </main>
 
       <Footer />
+      <MobileNav />
     </div>
   );
 }

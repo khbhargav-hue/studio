@@ -4,18 +4,18 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Menu, X, UserCircle, Trophy } from "lucide-react"
+import { Menu, X, UserCircle, Trophy, Users, Swords, Search } from "lucide-react"
 import { useUser } from "@/firebase"
 import { TurfistaLogo } from "./brand-logo"
 import { cn } from "@/lib/utils"
 
 const LINKS = [
-  { label: "Home", href: "/" },
-  { label: "Turfs", href: "/#turfs" },
-  { label: "Teams", href: "/teams" },
+  { label: "Feed", href: "/" },
+  { label: "Arenas", href: "/#turfs" },
+  { label: "Players", href: "/players" },
+  { label: "Matches", href: "/matches" },
+  { label: "Squads", href: "/teams" },
   { label: "Rankings", href: "/leaderboard" },
-  { label: "Challenges", href: "/challenges" },
-  { label: "Coaches", href: "/coaching" },
 ]
 
 export function Navbar() {
@@ -24,20 +24,20 @@ export function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
 
   return (
-    <nav className="fixed top-0 z-50 w-full h-[64px] bg-background/95 backdrop-blur-md border-b border-border px-4 md:px-8">
+    <nav className="fixed top-0 z-50 w-full h-[72px] bg-background/80 backdrop-blur-xl border-b border-white/5 px-4 md:px-8">
       <div className="mx-auto flex h-full max-w-7xl items-center justify-between">
         <Link href="/" className="flex items-center gap-3">
           <TurfistaLogo size="sm" />
         </Link>
         
-        <div className="hidden lg:flex items-center gap-8">
+        <div className="hidden lg:flex items-center gap-6">
           {LINKS.map((link) => (
             <Link 
               key={link.label} 
               href={link.href} 
               className={cn(
-                "text-[10px] font-black uppercase tracking-[0.3em] transition-colors",
-                pathname === link.href ? "text-primary" : "text-[#888] hover:text-white"
+                "text-[10px] font-black uppercase tracking-[0.2em] transition-all hover:text-primary",
+                pathname === link.href ? "text-primary bg-primary/5 px-3 py-1.5 rounded-full" : "text-white/40"
               )}
             >
               {link.label}
@@ -46,14 +46,23 @@ export function Navbar() {
         </div>
 
         <div className="flex items-center gap-4">
-          <Link href="/leaderboard" className="hidden md:flex h-9 px-4 bg-primary/10 border border-primary/20 rounded-full items-center gap-2 text-[9px] font-black uppercase tracking-widest text-primary hover:bg-primary hover:text-black transition-all">
-            <Trophy className="h-3 w-3" /> Rankings
-          </Link>
-          <Link href="/profile" className="h-10 w-10 flex items-center justify-center text-[#888] hover:text-primary">
+          <button className="h-10 w-10 flex items-center justify-center text-white/40 hover:text-primary transition-colors">
+            <Search className="h-5 w-5" />
+          </button>
+          <Link href="/profile" className="flex items-center gap-3 pl-4 border-l border-white/10 group">
+            <div className="text-right hidden sm:block">
+              <p className="text-[10px] font-black text-white uppercase italic group-hover:text-primary transition-colors">{user?.displayName?.split(' ')[0] || "Guest"}</p>
+              <p className="text-[8px] font-bold text-primary/60 uppercase tracking-widest">Athlete Node</p>
+            </div>
             {user?.photoURL ? (
-              <img src={user.photoURL} alt={user.displayName || "User"} className="h-7 w-7 rounded-full border border-border" />
+              <div className="relative">
+                <img src={user.photoURL} alt={user.displayName || "User"} className="h-9 w-9 rounded-full border border-white/10 p-0.5" />
+                <div className="absolute bottom-0 right-0 h-2.5 w-2.5 bg-green-500 rounded-full border-2 border-background" />
+              </div>
             ) : (
-              <UserCircle className="h-6 w-6" />
+              <div className="h-9 w-9 rounded-full bg-white/5 flex items-center justify-center text-white/20 border border-white/5">
+                <UserCircle className="h-6 w-6" />
+              </div>
             )}
           </Link>
           <button className="lg:hidden text-white" onClick={() => setIsOpen(!isOpen)}>
@@ -64,14 +73,14 @@ export function Navbar() {
 
       {/* Mobile Menu */}
       {isOpen && (
-        <div className="fixed inset-0 top-[64px] bg-background z-[100] p-6 animate-in slide-in-from-top duration-200">
-          <div className="flex flex-col gap-1">
+        <div className="fixed inset-0 top-[72px] bg-background/95 backdrop-blur-2xl z-[100] p-8 animate-in fade-in slide-in-from-top duration-300">
+          <div className="flex flex-col gap-4">
             {LINKS.map((link) => (
               <Link 
                 key={link.label} 
                 href={link.href} 
                 onClick={() => setIsOpen(false)}
-                className="text-4xl font-black uppercase tracking-tighter italic text-white py-4 border-b border-white/5"
+                className="text-5xl font-black uppercase tracking-tighter italic text-white/20 hover:text-primary hover:translate-x-2 transition-all py-4"
               >
                 {link.label}
               </Link>

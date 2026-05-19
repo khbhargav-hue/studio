@@ -41,7 +41,7 @@ import {
   Activity
 } from "lucide-react"
 import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase"
-import { collection, query, orderBy, addDoc, serverTimestamp } from "firebase/firestore"
+import { collection, query, orderBy, setDoc, doc, serverTimestamp } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { errorEmitter } from '@/firebase/error-emitter'
 import { FirestorePermissionError } from '@/firebase/errors'
@@ -91,12 +91,13 @@ export default function TeamsPage() {
     e.preventDefault()
     if (!db || !user) return
 
-    console.log("1_MODAL_SUBMIT")
     setIsCreating(true)
-    console.log("2_LOADING_TRUE")
 
+    // Robust Save Flow logic
+    const teamId = crypto.randomUUID()
     const teamData = {
       ...newTeam,
+      id: teamId,
       createdBy: user.uid,
       captain: user.displayName || "Athlete",
       members: [user.uid],
@@ -109,15 +110,20 @@ export default function TeamsPage() {
     }
 
     try {
-      console.log("3_FIRESTORE_START")
-      
-      const docRef = await addDoc(collection(db, "teams"), teamData)
-      
-      console.log("4_FIRESTORE_SUCCESS", docRef.id)
-      
+      const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Save timeout — check your connection")), 10000)
+      )
+
+      const save = setDoc(doc(db, "teams", teamId), teamData)
+
+      await Promise.race([save, timeout])
+
+      toast({ 
+        title: "Your squad is live 🔥", 
+        description: "Tactical data published to the circuit." 
+      })
+
       setShowCreateDialog(false)
-      console.log("5_MODAL_CLOSED")
-      
       setNewTeam({
         name: "",
         sport: "Football",
@@ -128,40 +134,27 @@ export default function TeamsPage() {
         skillLevel: "Intermediate",
         whatsapp: ""
       })
-      console.log("6_FORM_RESET")
 
-      toast({ 
-        title: "Your squad is live 🔥", 
-        description: "Tactical data published to the circuit." 
-      })
-
-      router.refresh()
-      console.log("8_REFRESH_DONE")
-
-      router.push(`/teams/${docRef.id}`)
+      // Success leads to a hard refresh for consistent data view
+      window.location.reload()
       
     } catch (err: any) {
-      console.error("FIRESTORE_ERROR", {
-        code: err.code,
-        message: err.message,
-        details: err
-      })
+      console.error("TEAM_SAVE_FAIL", err)
       
       toast({ 
         title: "Deployment Failed", 
-        description: `Code: ${err.code || 'unknown'}. ${err.message || 'The circuit is currently unavailable.'}`,
+        description: err.message || "The circuit is currently unavailable.",
         variant: "destructive" 
       })
       
       errorEmitter.emit('permission-error', new FirestorePermissionError({
-        path: 'teams',
+        path: `teams/${teamId}`,
         operation: 'create',
         requestResourceData: teamData,
         message: err.message
       }))
     } finally {
       setIsCreating(false)
-      console.log("7_LOADING_FALSE")
     }
   }
 

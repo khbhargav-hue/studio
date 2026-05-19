@@ -87,13 +87,13 @@ export default function TeamsPage() {
   const { data: teams, loading: teamsLoading } = useCollection(teamsQuery)
   const { data: freeAgents, loading: agentsLoading } = useCollection(freeAgentsQuery)
 
-  const handleCreateTeam = async (e: React.FormEvent) => {
+  const handleCreateTeam = (e: React.FormEvent) => {
     e.preventDefault()
     if (!db || !user) return
 
     setIsCreating(true)
 
-    // Robust Save Flow logic
+    // Optimized Save Flow: Non-blocking mutation for high responsiveness
     const teamId = crypto.randomUUID()
     const teamData = {
       ...newTeam,
@@ -109,54 +109,44 @@ export default function TeamsPage() {
       createdAt: serverTimestamp()
     }
 
-    try {
-      // Extended timeout for restricted network environments
-      const timeout = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Save timeout — check your connection. Try refreshing or use a stronger signal.")), 20000)
-      )
-
-      const save = setDoc(doc(db, "teams", teamId), teamData)
-
-      await Promise.race([save, timeout])
-
-      toast({ 
-        title: "Your squad is live 🔥", 
-        description: "Tactical data published to the circuit." 
+    // Initiate the write cycle without awaiting.
+    // The SDK handles background synchronization and local cache updates.
+    setDoc(doc(db, "teams", teamId), teamData)
+      .catch(async (err: any) => {
+        console.error("TEAM_SAVE_FAIL", err)
+        
+        toast({ 
+          title: "Deployment Sync Failed", 
+          description: "Your team is saved locally but sync is pending. Check connection.",
+          variant: "destructive" 
+        })
+        
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: `teams/${teamId}`,
+          operation: 'create',
+          requestResourceData: teamData,
+          message: err.message
+        }))
       })
 
-      setShowCreateDialog(false)
-      setNewTeam({
-        name: "",
-        sport: "Football",
-        area: "",
-        description: "",
-        maxPlayers: 14,
-        type: "Squad (5+)",
-        skillLevel: "Intermediate",
-        whatsapp: ""
-      })
+    // Proceed with UI cleanup immediately for "Instagram-speed" experience
+    toast({ 
+      title: "Your squad is live 🔥", 
+      description: "Tactical data published to the circuit." 
+    })
 
-      // Success leads to a hard refresh for consistent data view
-      window.location.reload()
-      
-    } catch (err: any) {
-      console.error("TEAM_SAVE_FAIL", err)
-      
-      toast({ 
-        title: "Deployment Failed", 
-        description: err.message || "The circuit is currently unavailable.",
-        variant: "destructive" 
-      })
-      
-      errorEmitter.emit('permission-error', new FirestorePermissionError({
-        path: `teams/${teamId}`,
-        operation: 'create',
-        requestResourceData: teamData,
-        message: err.message
-      }))
-    } finally {
-      setIsCreating(false)
-    }
+    setShowCreateDialog(false)
+    setNewTeam({
+      name: "",
+      sport: "Football",
+      area: "",
+      description: "",
+      maxPlayers: 14,
+      type: "Squad (5+)",
+      skillLevel: "Intermediate",
+      whatsapp: ""
+    })
+    setIsCreating(false)
   }
 
   const filteredTeams = useMemo(() => {

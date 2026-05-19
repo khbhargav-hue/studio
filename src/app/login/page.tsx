@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, Suspense } from "react";
@@ -8,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Trophy, Loader2, LogIn, AlertCircle, ShieldCheck, ExternalLink } from "lucide-react";
+import { Trophy, Loader2, LogIn, AlertCircle, ShieldCheck, ExternalLink, RefreshCw } from "lucide-react";
 import { useAuth, useUser } from "@/firebase";
 import { signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
@@ -74,23 +73,34 @@ function LoginForm() {
               <AlertCircle className="h-4 w-4" /> Domain Authorization Required
             </div>
             <p className="text-xs leading-relaxed opacity-80">
-              This domain (<code className="bg-destructive/20 px-1.5 py-0.5 rounded text-white">{domain}</code>) is not authorized in your Firebase Project.
+              This environment (<code className="bg-destructive/20 px-1.5 py-0.5 rounded text-white">{domain}</code>) is not authorized in your Firebase Project.
             </p>
             <div className="p-4 bg-white/5 border border-white/10 rounded-[10px] space-y-3">
-              <p className="text-[10px] font-black uppercase tracking-widest text-primary">Resolution Steps:</p>
-              <ol className="text-[10px] list-decimal pl-4 space-y-2 uppercase tracking-tight">
-                <li>Access Firebase Console</li>
-                <li>Authentication {'->'} Settings {'->'} Authorized Domains</li>
-                <li>Add {domain}</li>
+              <p className="text-[10px] font-black uppercase tracking-widest text-primary">Resolution Protocol:</p>
+              <ol className="text-[10px] list-decimal pl-4 space-y-2 uppercase tracking-tight text-white/60">
+                <li>Open Firebase Console</li>
+                <li>Go to Build {'->'} Authentication</li>
+                <li>Settings {'->'} Authorized Domains</li>
+                <li>Add: <span className="text-white font-bold">{domain}</span></li>
               </ol>
-              <a 
-                href="https://console.firebase.google.com/" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 text-[10px] uppercase font-black tracking-[0.2em] text-primary hover:underline"
-              >
-                Open Console <ExternalLink className="h-3 w-3" />
-              </a>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-8 text-[9px] font-black uppercase tracking-widest bg-primary/10 border-primary/20 text-primary"
+                  onClick={() => window.open("https://console.firebase.google.com/", "_blank")}
+                >
+                  Console <ExternalLink className="ml-1 h-3 w-3" />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-8 text-[9px] font-black uppercase tracking-widest text-white/40"
+                  onClick={() => setError(null)}
+                >
+                  <RefreshCw className="ml-1 h-3 w-3" /> Retry
+                </Button>
+              </div>
             </div>
           </div>
         );
@@ -118,13 +128,13 @@ function LoginForm() {
       <Navbar />
       
       <div className="flex-1 flex items-center justify-center p-4 pt-32">
-        <Card className="w-full max-w-md border-border bg-card overflow-hidden">
+        <Card className="w-full max-w-md border-border bg-card overflow-hidden rounded-[24px]">
           <CardHeader className="space-y-1 text-center pt-8">
             <div className="mx-auto bg-primary/10 p-3 rounded-[10px] w-fit mb-4">
               <Trophy className="h-8 w-8 text-primary" />
             </div>
-            <CardTitle className="text-2xl font-bold tracking-tight uppercase">
-              STUDIO ACCESS
+            <CardTitle className="text-2xl font-bold tracking-tight uppercase italic">
+              STUDIO <span className="text-primary">ACCESS</span>
             </CardTitle>
             <CardDescription className="text-muted-foreground text-xs uppercase tracking-widest font-medium">
               Secure Administrative Node
@@ -134,45 +144,60 @@ function LoginForm() {
           <CardContent className="pt-4">
             <form onSubmit={handleLogin} className="space-y-6">
               {error && (
-                <div className="bg-destructive/5 border border-destructive/20 rounded-[10px] p-5">
+                <div className="bg-destructive/5 border border-destructive/20 rounded-[16px] p-6 animate-in fade-in duration-300">
                   <div className="text-xs font-medium">{error}</div>
                 </div>
               )}
               
-              <div className="space-y-2">
-                <Label htmlFor="email" className="label-caps text-muted-foreground ml-1">Identity (Email)</Label>
-                <Input 
-                  id="email" 
-                  type="email" 
-                  placeholder="khbhargav@gmail.com" 
-                  className="bg-subtle border-border h-12 focus:border-primary"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="password" className="label-caps text-muted-foreground ml-1">Passcode</Label>
-                <Input 
-                  id="password" 
-                  type="password" 
-                  placeholder="••••••••"
-                  className="bg-subtle border-border h-12 focus:border-primary"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
-              
-              <Button 
-                type="submit" 
-                className="w-full h-12 bg-primary text-primary-foreground font-bold text-sm uppercase tracking-widest"
-                disabled={isLoggingIn}
-              >
-                {isLoggingIn ? <Loader2 className="h-5 w-5 animate-spin" /> : <LogIn className="h-5 w-5 mr-2" />}
-                VERIFY IDENTITY
-              </Button>
+              {!error && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Identity (Email)</Label>
+                    <Input 
+                      id="email" 
+                      type="email" 
+                      placeholder="khbhargav@gmail.com" 
+                      className="bg-white/5 border-border h-12 focus:border-primary text-white"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="password" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Passcode</Label>
+                    <Input 
+                      id="password" 
+                      type="password" 
+                      placeholder="••••••••"
+                      className="bg-white/5 border-border h-12 focus:border-primary text-white"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                    />
+                  </div>
+                  
+                  <Button 
+                    type="submit" 
+                    className="w-full h-14 bg-primary text-black font-black text-sm uppercase tracking-widest rounded-[12px] shadow-lg shadow-primary/20 hover:scale-[1.01] transition-all"
+                    disabled={isLoggingIn}
+                  >
+                    {isLoggingIn ? <Loader2 className="h-5 w-5 animate-spin" /> : <LogIn className="h-5 w-5 mr-2" />}
+                    VERIFY IDENTITY
+                  </Button>
+                </>
+              )}
+
+              {error && (
+                <Button 
+                  type="button" 
+                  variant="outline"
+                  onClick={() => setError(null)}
+                  className="w-full h-14 border-border text-white font-black uppercase tracking-widest text-xs rounded-[12px]"
+                >
+                  <RefreshCw className="mr-2 h-4 w-4" /> ABORT & RE-INITIALIZE
+                </Button>
+              )}
             </form>
           </CardContent>
           

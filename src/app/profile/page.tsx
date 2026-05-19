@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from "react";
@@ -32,7 +31,8 @@ import {
   Clock,
   Swords,
   AlertCircle,
-  ExternalLink
+  ExternalLink,
+  RefreshCw
 } from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
@@ -49,7 +49,7 @@ export default function ProfilePage() {
   const { toast } = useToast();
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [authError, setAuthError] = useState<string | null>(null);
+  const [authError, setAuthError] = useState<React.ReactNode | null>(null);
   
   const userProfileRef = useMemoFirebase(() => {
     if (!db || !user) return null;
@@ -125,10 +125,44 @@ export default function ProfilePage() {
     } catch (error: any) {
       if (error.code === 'auth/unauthorized-domain') {
         const domain = typeof window !== 'undefined' ? window.location.hostname : 'your domain';
-        setAuthError(`This domain (${domain}) is not authorized. Please update your Firebase Console settings.`);
+        setAuthError(
+          <div className="space-y-5 text-left">
+            <div className="flex items-center gap-2 text-destructive font-black text-[10px] uppercase tracking-[0.2em]">
+              <AlertCircle className="h-4 w-4" /> Auth Signal Blocked
+            </div>
+            <p className="text-[11px] text-white/50 leading-relaxed italic">
+              This host environment (<span className="text-white font-mono">{domain}</span>) is not yet authorized in your Firebase Project.
+            </p>
+            <div className="p-4 bg-white/5 border border-white/10 rounded-[16px] space-y-4">
+              <p className="text-[9px] font-black uppercase tracking-widest text-primary">Resolution Steps:</p>
+              <ol className="text-[9px] list-decimal pl-4 space-y-2 uppercase tracking-tight text-white/40">
+                <li>Access Firebase Console</li>
+                <li>Build {'->'} Authentication {'->'} Settings</li>
+                <li>Add <span className="text-white">{domain}</span> to Authorized Domains</li>
+              </ol>
+              <div className="flex gap-3">
+                <Button 
+                  size="sm" 
+                  className="h-8 bg-primary text-black text-[9px] font-black uppercase tracking-widest rounded-lg"
+                  onClick={() => window.open("https://console.firebase.google.com/", "_blank")}
+                >
+                  Open Console <ExternalLink className="ml-1 h-3 w-3" />
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-8 border-white/10 text-white/40 text-[9px] font-black uppercase tracking-widest rounded-lg"
+                  onClick={() => setAuthError(null)}
+                >
+                  <RefreshCw className="ml-1 h-3 w-3" /> Retry
+                </Button>
+              </div>
+            </div>
+          </div>
+        );
         toast({ 
           title: "Domain Restricted", 
-          description: "Authorize this domain in the Firebase Console.",
+          description: "Update Authorized Domains in Console.",
           variant: "destructive"
         });
       } else {
@@ -159,33 +193,32 @@ export default function ProfilePage() {
       <main className="flex-1 pt-32 pb-40">
         <div className="mx-auto max-w-2xl px-4 space-y-12">
           {!user ? (
-            <div className="bg-card border border-white/5 rounded-[3rem] p-16 text-center shadow-2xl">
-              <div className="h-32 w-32 bg-primary/10 rounded-[3rem] flex items-center justify-center mx-auto mb-10 border border-primary/20 shadow-inner">
+            <div className="bg-card border border-white/5 rounded-[3rem] p-16 text-center shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-10 opacity-[0.03] pointer-events-none">
+                <ShieldCheck className="h-40 w-40 text-primary" />
+              </div>
+
+              <div className="h-32 w-32 bg-primary/10 rounded-[3rem] flex items-center justify-center mx-auto mb-10 border border-primary/20 shadow-inner relative z-10">
                 <UserCircle className="h-16 w-16 text-primary" />
               </div>
-              <h1 className="text-5xl font-black tracking-tighter uppercase italic mb-6">Identity Required</h1>
-              <p className="text-white/40 text-lg mb-8 leading-relaxed font-medium italic">Join the Mysuru athlete circuit to form squads, find tactical matches, and earn Turf Coins.</p>
+              <h1 className="text-5xl font-black tracking-tighter uppercase italic mb-6 relative z-10">Identity <span className="text-primary">Required</span></h1>
+              <p className="text-white/40 text-lg mb-8 leading-relaxed font-medium italic relative z-10">Join the Mysuru athlete circuit to form squads, find matches, and earn Turf Coins.</p>
               
               {authError && (
-                <div className="bg-destructive/5 border border-destructive/20 rounded-2xl p-5 mb-8 text-left">
-                  <div className="flex items-center gap-2 text-destructive font-black text-[10px] uppercase tracking-widest mb-2">
-                    <AlertCircle className="h-4 w-4" /> Config Signal Blocked
-                  </div>
-                  <p className="text-[11px] text-white/60 italic mb-4">{authError}</p>
-                  <a 
-                    href="https://console.firebase.google.com/" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-[10px] uppercase font-black tracking-widest text-primary hover:underline"
-                  >
-                    Authorize via Console <ExternalLink className="h-3 w-3" />
-                  </a>
+                <div className="mb-10 animate-in fade-in slide-in-from-top-4 duration-500">
+                  {authError}
                 </div>
               )}
 
-              <Button onClick={handleGoogleSignIn} disabled={isSigningIn} className="w-full h-20 bg-primary text-black font-black uppercase tracking-widest rounded-[2rem] shadow-xl shadow-primary/20 hover:scale-[1.02] transition-transform">
-                {isSigningIn ? <Loader2 className="h-6 w-6 animate-spin" /> : "Identify with Google"}
-              </Button>
+              {!authError && (
+                <Button onClick={handleGoogleSignIn} disabled={isSigningIn} className="w-full h-20 bg-primary text-black font-black uppercase tracking-widest rounded-[2rem] shadow-xl shadow-primary/20 hover:scale-[1.02] transition-transform">
+                  {isSigningIn ? <Loader2 className="h-6 w-6 animate-spin" /> : "Identify with Google"}
+                </Button>
+              )}
+              
+              <div className="mt-8">
+                <p className="text-[10px] font-bold text-white/20 uppercase tracking-[0.3em]">Guest Mode Active • Roster Restricted</p>
+              </div>
             </div>
           ) : (
             <div className="space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-700">
@@ -260,7 +293,7 @@ export default function ProfilePage() {
                       <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Combat Bio</Label>
                       <Textarea 
                         placeholder="Tell the network about your playing style, achievements..." 
-                        className="h-32 bg-white/5 border-white/10 rounded-[1.5rem] italic text-lg leading-relaxed focus:border-primary/50" 
+                        className="h-32 bg-white/5 border-white/10 rounded-[1.5rem] italic text-lg leading-relaxed focus:border-primary/50 text-white" 
                         value={formData.bio} 
                         onChange={e => setFormData({...formData, bio: e.target.value})} 
                       />
@@ -270,13 +303,13 @@ export default function ProfilePage() {
                        <div className="space-y-3">
                           <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Current Skill</Label>
                           <Select value={formData.skillLevel} onValueChange={v => setFormData({...formData, skillLevel: v})}>
-                             <SelectTrigger className="h-16 bg-white/5 border-white/10 rounded-2xl text-lg font-bold"><SelectValue /></SelectTrigger>
-                             <SelectContent className="bg-card border-white/10">{SKILL_LEVELS.map(l => <SelectItem key={l} value={l} className="font-bold">{l}</SelectItem>)}</SelectContent>
+                             <SelectTrigger className="h-16 bg-white/5 border-white/10 rounded-2xl text-lg font-bold text-white"><SelectValue /></SelectTrigger>
+                             <SelectContent className="bg-[#0A0A0A] border-white/10">{SKILL_LEVELS.map(l => <SelectItem key={l} value={l} className="font-bold text-white">{l}</SelectItem>)}</SelectContent>
                           </Select>
                        </div>
                        <div className="space-y-3">
                           <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Area in Mysuru</Label>
-                          <Input placeholder="e.g. Vijayanagar" className="h-16 bg-white/5 border-white/10 rounded-2xl text-lg italic font-bold" value={formData.area} onChange={e => setFormData({...formData, area: e.target.value})} />
+                          <Input placeholder="e.g. Vijayanagar" className="h-16 bg-white/5 border-white/10 rounded-2xl text-lg italic font-bold text-white" value={formData.area} onChange={e => setFormData({...formData, area: e.target.value})} />
                        </div>
                     </div>
 
@@ -284,13 +317,13 @@ export default function ProfilePage() {
                        <div className="space-y-3">
                           <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Availability</Label>
                           <Select value={formData.availability} onValueChange={v => setFormData({...formData, availability: v})}>
-                             <SelectTrigger className="h-16 bg-white/5 border-white/10 rounded-2xl text-lg font-bold"><SelectValue /></SelectTrigger>
-                             <SelectContent className="bg-card border-white/10">{AVAILABILITY.map(a => <SelectItem key={a} value={a} className="font-bold">{a}</SelectItem>)}</SelectContent>
+                             <SelectTrigger className="h-16 bg-white/5 border-white/10 rounded-2xl text-lg font-bold text-white"><SelectValue /></SelectTrigger>
+                             <SelectContent className="bg-[#0A0A0A] border-white/10">{AVAILABILITY.map(a => <SelectItem key={a} value={a} className="font-bold text-white">{a}</SelectItem>)}</SelectContent>
                           </Select>
                        </div>
                        <div className="space-y-3">
                           <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Main Discipline</Label>
-                          <Input placeholder="e.g. Football / Box Cricket" className="h-16 bg-white/5 border-white/10 rounded-2xl text-lg italic font-bold" value={formData.favoriteSport} onChange={e => setFormData({...formData, favoriteSport: e.target.value})} />
+                          <Input placeholder="e.g. Football / Box Cricket" className="h-16 bg-white/5 border-white/10 rounded-2xl text-lg italic font-bold text-white" value={formData.favoriteSport} onChange={e => setFormData({...formData, favoriteSport: e.target.value})} />
                        </div>
                     </div>
 
@@ -316,7 +349,7 @@ export default function ProfilePage() {
                         <item.icon className="h-7 w-7" />
                       </div>
                       <div>
-                        <p className="text-2xl font-black uppercase italic tracking-tight">{item.label}</p>
+                        <p className="text-2xl font-black uppercase italic tracking-tight text-white">{item.label}</p>
                         <p className="text-[10px] font-bold text-white/20 uppercase tracking-[0.3em] mt-1">{item.sub}</p>
                       </div>
                     </div>

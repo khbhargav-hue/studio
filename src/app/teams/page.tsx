@@ -92,8 +92,10 @@ export default function TeamsPage() {
     e.preventDefault()
     if (!db || !user) return
 
-    console.log("TEAM_SAVE_START")
+    console.log("1_MODAL_SUBMIT")
+    
     setIsCreating(true)
+    console.log("2_LOADING_TRUE")
 
     const teamData = {
       ...newTeam,
@@ -109,18 +111,13 @@ export default function TeamsPage() {
     }
 
     try {
+      console.log("3_FIRESTORE_START")
       const docRef = await addDoc(collection(db, "teams"), teamData)
-      console.log("TEAM_SAVE_SUCCESS", docRef.id)
+      console.log("4_FIRESTORE_SUCCESS")
       
-      toast({ 
-        title: "Your squad is live 🔥", 
-        description: "Tactical data published to the circuit." 
-      })
-
-      console.log("TEAM_MODAL_CLOSE")
       setShowCreateDialog(false)
+      console.log("5_MODAL_CLOSED")
       
-      // Reset form
       setNewTeam({
         name: "",
         sport: "Football",
@@ -131,13 +128,25 @@ export default function TeamsPage() {
         skillLevel: "Intermediate",
         whatsapp: ""
       })
+      console.log("6_FORM_RESET")
 
-      // Redirect to team detail page
-      router.push(`/teams/${docRef.id}`)
+      setIsCreating(false)
+      console.log("7_LOADING_FALSE")
+
+      toast({ 
+        title: "Your squad is live 🔥", 
+        description: "Tactical data published to the circuit." 
+      })
+
       router.refresh()
+      console.log("8_REFRESH_DONE")
+
+      // Move to detail page after diagnosis
+      router.push(`/teams/${docRef.id}`)
       
     } catch (err: any) {
-      console.error("TEAM_SAVE_FAIL", err)
+      console.error("FAIL", err)
+      setIsCreating(false)
       toast({ 
         title: "Deployment Failed", 
         description: err.message || "The circuit is currently unavailable.",
@@ -150,8 +159,6 @@ export default function TeamsPage() {
         requestResourceData: teamData,
         message: err.message
       }))
-    } finally {
-      setIsCreating(false)
     }
   }
 

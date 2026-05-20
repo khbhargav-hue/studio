@@ -138,6 +138,25 @@ export default function SocialWallPage() {
           </div>
         </div>
 
+        {/* Tactical Test Button */}
+        <button 
+          onClick={() => {
+            import("firebase/firestore").then(({ addDoc, collection, serverTimestamp }) => {
+              addDoc(collection(db, "posts"), {
+                text: "Test post from UI node",
+                sport: "Football", 
+                location: "Vijayanagar",
+                likes: 0,
+                createdAt: serverTimestamp()
+              }).then(() => alert("SAVED!"))
+                .catch(e => alert("FAILED: " + e.message));
+            });
+          }}
+          className="w-full h-12 mb-6 bg-red-500/10 text-red-500 font-black uppercase text-[10px] tracking-widest border border-red-500/20 rounded-xl hover:bg-red-500/20 transition-colors"
+        >
+          Test Firestore Write ⚡
+        </button>
+
         {loading ? (
           <div className="space-y-3">
             {[...Array(4)].map((_, i) => <SkeletonCard key={i} />)}

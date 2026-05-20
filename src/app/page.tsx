@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
@@ -42,23 +41,16 @@ export default function SocialWallPage() {
     }
   }, []);
 
-  // SIMPLEST POST FETCH Node
   useEffect(() => {
-    const db = getFirestore();
     const unsub = onSnapshot(
-      collection(db, "posts"),
-      (snapshot) => {
-        const list: any[] = [];
-        snapshot.forEach((doc) => {
-          list.push({ id: doc.id, ...doc.data() });
-        });
-        list.sort((a, b) => {
-          const at = a.createdAt?.seconds || 0;
-          const bt = b.createdAt?.seconds || 0;
-          return bt - at;
-        });
-        setPosts(list);
+      collection(getFirestore(), "posts"),
+      (snap) => {
+        setPosts(snap.docs.map(d => ({ id: d.id, ...d.data() })));
         setLoading(false);
+      },
+      (err) => {
+        console.error(err);
+        setLoading(false);  
       }
     );
     return () => unsub();
@@ -150,7 +142,6 @@ export default function SocialWallPage() {
           </div>
         ) : feedItems.length > 0 ? (
           <div className="space-y-3">
-            {console.log("Rendering posts count:", posts.length)}
             {feedItems.map((item, idx) => (
               item.type === 'post' ? (
                 <div key={item.data.id} style={{background:"#111",border:"1px solid #222",
@@ -170,11 +161,14 @@ export default function SocialWallPage() {
             ))}
           </div>
         ) : (
+          <>
+          <div style={{color:"red",fontSize:12}}>Posts count: {posts.length}</div>
           <div className="py-32 text-center border border-dashed border-[#222] rounded-2xl bg-[#111]/30">
             <Zap className="h-12 w-12 text-white/5 mx-auto mb-4" />
             <h3 className="text-xl font-black uppercase italic text-white/10">No signals detected</h3>
             <p className="text-white/20 text-xs mt-2 italic">Try adjusting your sport filter or broadcast a new plan.</p>
           </div>
+          </>
         )}
       </main>
 

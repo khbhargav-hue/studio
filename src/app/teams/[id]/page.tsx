@@ -64,6 +64,31 @@ export default function TeamDetailPage() {
     }
   }
 
+  const handleShare = async () => {
+    const shareData = {
+      title: `Turfista Squad | ${team?.name}`,
+      text: `Join the ${team?.name} squad on Turfista!`,
+      url: window.location.href,
+    };
+
+    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') {
+          console.log('Share failed:', err);
+        }
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        toast({ title: "Link Copied 🔗", description: "Squad link copied to clipboard." });
+      } catch (err) {
+        toast({ title: "Sharing Error", variant: "destructive" });
+      }
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex h-screen flex-col items-center justify-center bg-background gap-4">
@@ -103,7 +128,7 @@ export default function TeamDetailPage() {
           <Button variant="ghost" onClick={() => router.back()} className="text-muted hover:text-white font-black text-[11px] uppercase tracking-widest h-10 px-0">
             <ArrowLeft className="mr-2 h-4 w-4" /> Circuit Roster
           </Button>
-          <Button variant="outline" size="icon" className="rounded-xl border-border h-12 w-12" onClick={() => navigator.share({ title: team.name, url: window.location.href })}>
+          <Button variant="outline" size="icon" className="rounded-xl border-border h-12 w-12" onClick={handleShare}>
             <Share2 className="h-4 w-4" />
           </Button>
         </div>

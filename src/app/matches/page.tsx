@@ -27,7 +27,8 @@ import {
   Activity,
   ShieldCheck,
   CheckCircle2,
-  Trash2
+  Trash2,
+  Share2
 } from "lucide-react"
 import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase"
 import { collection, query, orderBy, addDoc, serverTimestamp, where, doc, updateDoc, increment, deleteDoc, arrayUnion } from "firebase/firestore"
@@ -213,6 +214,31 @@ function MatchCard({ request }: { request: any }) {
     }
   }
 
+  const handleShare = async () => {
+    const shareData = {
+      title: `Turfista Match | ${request.game}`,
+      text: `Join this match of ${request.game} at ${request.location}!`,
+      url: window.location.href,
+    };
+
+    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') {
+          console.log('Share error:', err);
+        }
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        toast({ title: "Link Copied", description: "Match link saved to clipboard." });
+      } catch (err) {
+        toast({ title: "Sharing Error", variant: "destructive" });
+      }
+    }
+  };
+
   const handleDelete = async () => {
     if (!db || !canManage) return
     if (!confirm("Retract this match signal?")) return
@@ -240,11 +266,16 @@ function MatchCard({ request }: { request: any }) {
             <p className="text-xl font-black text-primary leading-none">{Math.max(0, (request.playersNeeded || 0) + 1 - (request.slotsFilled || 1))}</p>
             <p className="text-[8px] font-bold text-white/40 uppercase tracking-widest mt-1">Needed</p>
           </div>
-          {canManage && (
-            <button onClick={handleDelete} className="p-2 text-destructive/40 hover:text-destructive transition-colors">
-              <Trash2 className="h-4 w-4" />
+          <div className="flex gap-2">
+            <button onClick={handleShare} className="p-2 text-white/20 hover:text-primary transition-colors">
+              <Share2 className="h-4 w-4" />
             </button>
-          )}
+            {canManage && (
+              <button onClick={handleDelete} className="p-2 text-destructive/40 hover:text-destructive transition-colors">
+                <Trash2 className="h-4 w-4" />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

@@ -364,6 +364,39 @@ function PostCard({ post }: { post: any }) {
     } catch (e) {}
   }
 
+  const handleShare = async () => {
+    const shareData = {
+      title: `Turfista Match | ${post.game}`,
+      text: `Join ${post.creatorName} for a match of ${post.game} at ${post.location}!`,
+      url: window.location.href,
+    };
+
+    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        // Only log non-abort errors
+        if ((err as Error).name !== 'AbortError') {
+          console.log('Share failed:', err);
+        }
+      }
+    } else {
+      // Fallback: Copy to clipboard
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        toast({ 
+          title: "Link Copied 🔗", 
+          description: "Match signal link copied to clipboard." 
+        });
+      } catch (err) {
+        toast({ 
+          title: "Sharing Unavailable", 
+          description: "Your browser doesn't support sharing nodes." 
+        });
+      }
+    }
+  };
+
   const handleDelete = async () => {
     if (!db || !canManage) return
     if (!confirm("Are you sure you want to retract this match signal?")) return
@@ -432,7 +465,7 @@ function PostCard({ post }: { post: any }) {
               <MessageCircle className="h-5 w-5" />
               <span className="text-xs font-black">{post.comments || 0}</span>
             </button>
-            <button className="flex items-center gap-2 text-white/30 hover:text-white transition-colors" onClick={() => navigator.share({ title: post.game, url: window.location.href })}>
+            <button className="flex items-center gap-2 text-white/30 hover:text-white transition-colors" onClick={handleShare}>
               <Share2 className="h-5 w-5" />
             </button>
           </div>

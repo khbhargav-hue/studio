@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useParams, useRouter } from "next/navigation"
@@ -119,6 +120,31 @@ export default function TurfDetail() {
     }
   }
 
+  const handleShare = async () => {
+    const shareData = {
+      title: `Turfista | ${turf?.name}`,
+      text: `Check out ${turf?.name} in ${turf?.area} on Turfista!`,
+      url: window.location.href,
+    };
+
+    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') {
+          console.log('Share failed:', err);
+        }
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        toast({ title: "Link Copied 🔗", description: "Arena link copied to clipboard." });
+      } catch (err) {
+        toast({ title: "Sharing Error", variant: "destructive" });
+      }
+    }
+  };
+
   if (loading) {
     return <div className="flex h-screen items-center justify-center bg-[#0A0A0A]"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>
   }
@@ -155,7 +181,7 @@ export default function TurfDetail() {
           <Button variant="ghost" onClick={() => router.back()} className="rounded-[10px] group font-black text-[10px] uppercase tracking-widest text-[#888888] hover:text-[#F5F5F5] h-12 px-2">
             <ArrowLeft className="mr-3 h-4 w-4 group-hover:-translate-x-1 transition-transform" /> BACK TO CIRCUIT
           </Button>
-          <Button variant="outline" onClick={() => navigator.share({ title: turf.name, url: window.location.href })} className="border-[#222222] text-[10px] font-black uppercase tracking-widest h-12 px-6 rounded-[10px] hidden md:flex">
+          <Button variant="outline" onClick={handleShare} className="border-[#222222] text-[10px] font-black uppercase tracking-widest h-12 px-6 rounded-[10px] hidden md:flex">
             <Share2 className="h-4 w-4 mr-3" /> SHARE
           </Button>
         </div>

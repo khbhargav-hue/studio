@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect } from "react"
@@ -41,7 +42,8 @@ import {
   Trophy,
   Target,
   Trash2,
-  CheckCircle2
+  CheckCircle2,
+  Edit2
 } from "lucide-react"
 import { useFirestore, useUser } from "@/firebase"
 import { collection, query, orderBy, addDoc, doc, serverTimestamp, updateDoc, increment, arrayUnion, deleteDoc, onSnapshot } from "firebase/firestore"
@@ -72,6 +74,8 @@ const TACTICAL_CHIPS = [
   { label: "Intermediate", icon: "💪" },
   { label: "Advanced", icon: "⚡" },
 ]
+
+const ADMIN_EMAIL = 'khbhargav@gmail.com';
 
 export default function FeedPage() {
   const db = useFirestore()
@@ -148,14 +152,7 @@ export default function FeedPage() {
         updatedAt: serverTimestamp()
       }
 
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Submit timeout")), 10000)
-      )
-
-      await Promise.race([
-        addDoc(collection(db, "matches"), payload),
-        timeoutPromise
-      ])
+      await addDoc(collection(db, "matches"), payload);
 
       toast({ 
         title: "Match posted 🚀", 
@@ -335,7 +332,10 @@ function PostCard({ post }: { post: any }) {
   const isFull = (post.slotsFilled || 0) >= ((post.playersNeeded || 0) + 1)
   const [likes, setLikes] = useState(post.likes || 0)
 
-  const canManage = user && (post.postedBy?.uid === user.uid || (user as any).role === "admin")
+  const canManage = user && (
+    post.postedBy?.uid === user.uid || 
+    user.email === ADMIN_EMAIL
+  )
 
   const createdAt = post.createdAt?.seconds 
     ? formatDistanceToNow(new Date(post.createdAt.seconds * 1000)) + " ago" 
@@ -445,13 +445,24 @@ function PostCard({ post }: { post: any }) {
               <p className="text-[9px] font-bold text-white/20 uppercase tracking-widest mt-1.5">{createdAt}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             {canManage && (
-              <button onClick={handleDelete} className="text-destructive/40 hover:text-destructive transition-colors p-2">
-                <Trash2 className="h-4 w-4" />
-              </button>
+              <>
+                <button 
+                  onClick={() => toast({ title: "Edit Protocol", description: "Edit functionality coming to the circuit soon." })} 
+                  className="text-white/20 hover:text-primary transition-colors p-2"
+                >
+                  <Edit2 className="h-4 w-4" />
+                </button>
+                <button 
+                  onClick={handleDelete} 
+                  className="text-destructive/20 hover:text-destructive transition-colors p-2"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </>
             )}
-            <button className="text-white/10 hover:text-white transition-colors"><MoreVertical className="h-5 w-5" /></button>
+            <button className="text-white/10 hover:text-white transition-colors p-2"><MoreVertical className="h-5 w-5" /></button>
           </div>
         </div>
 
@@ -481,7 +492,7 @@ function PostCard({ post }: { post: any }) {
 
         <div className="flex items-center justify-between border-t border-white/5 pt-6">
           <div className="flex items-center gap-6">
-            <button onClick={handleLike} className="flex items-center gap-2 text-white/30 hover:text-red-500 transition-colors group/btn">
+            <button onClick={handleLike} className="flex items-center gap-2 text-white/30 hover:text-red-50 transition-colors group/btn">
               <Heart className={cn("h-5 w-5", likes > 0 && "fill-red-500 text-red-500")} />
               <span className="text-xs font-black">{likes}</span>
             </button>

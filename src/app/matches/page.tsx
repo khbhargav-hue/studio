@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect } from "react"
@@ -28,7 +29,8 @@ import {
   ShieldCheck,
   CheckCircle2,
   Trash2,
-  Share2
+  Share2,
+  Edit2
 } from "lucide-react"
 import { useFirestore, useUser } from "@/firebase"
 import { collection, query, orderBy, addDoc, doc, serverTimestamp, where, updateDoc, increment, deleteDoc, arrayUnion, onSnapshot } from "firebase/firestore"
@@ -36,6 +38,8 @@ import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 import { errorEmitter } from '@/firebase/error-emitter'
 import { FirestorePermissionError } from '@/firebase/errors'
+
+const ADMIN_EMAIL = 'khbhargav@gmail.com';
 
 export default function MatchesPage() {
   const db = useFirestore()
@@ -109,14 +113,7 @@ export default function MatchesPage() {
         updatedAt: serverTimestamp()
       }
 
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Submit timeout")), 10000)
-      )
-
-      await Promise.race([
-        addDoc(collection(db, "matches"), payload),
-        timeoutPromise
-      ])
+      await addDoc(collection(db, "matches"), payload);
 
       toast({ 
         title: "Match posted 🚀", 
@@ -232,7 +229,11 @@ function MatchCard({ request }: { request: any }) {
   
   const isJoined = user && request.joinedPlayers?.includes(user.uid)
   const isFull = (request.slotsFilled || 0) >= ((request.playersNeeded || 0) + 1)
-  const canManage = user && (request.postedBy?.uid === user.uid || (user as any).role === "admin")
+  
+  const canManage = user && (
+    request.postedBy?.uid === user.uid || 
+    user.email === ADMIN_EMAIL
+  )
 
   const playersJoined = Math.max(0, request.slotsFilled || 0);
   const avatarCount = Math.min(playersJoined, 3);
@@ -322,14 +323,22 @@ function MatchCard({ request }: { request: any }) {
             <p className="text-xl font-black text-primary leading-none">{Math.max(0, (request.playersNeeded || 0) + 1 - (request.slotsFilled || 1))}</p>
             <p className="text-[8px] font-bold text-white/40 uppercase tracking-widest mt-1">Needed</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-1">
             <button onClick={handleShare} className="p-2 text-white/20 hover:text-primary transition-colors">
               <Share2 className="h-4 w-4" />
             </button>
             {canManage && (
-              <button onClick={handleDelete} className="p-2 text-destructive/40 hover:text-destructive transition-colors">
-                <Trash2 className="h-4 w-4" />
-              </button>
+              <>
+                <button 
+                  onClick={() => toast({ title: "Edit Protocol", description: "Edit functionality coming to the circuit soon." })} 
+                  className="p-2 text-white/20 hover:text-primary transition-colors"
+                >
+                  <Edit2 className="h-4 w-4" />
+                </button>
+                <button onClick={handleDelete} className="p-2 text-destructive/20 hover:text-destructive transition-colors">
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </>
             )}
           </div>
         </div>

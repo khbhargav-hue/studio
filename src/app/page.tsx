@@ -124,53 +124,46 @@ export default function FeedPage() {
     return () => unsub();
   }, [db]);
 
-  const handlePost = (e: React.FormEvent) => {
+  const handlePost = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!db || !user || isPosting) return
     
     setIsPosting(true)
 
-    const payload = {
-      ...newPost,
-      createdBy: user.uid,
-      creatorName: user.displayName || "Athlete Node",
-      creatorPhoto: user.photoURL,
-      joinedPlayers: [user.uid],
-      slotsFilled: 1,
-      status: "active",
-      likes: 0,
-      comments: 0,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
+    try {
+      const payload = {
+        ...newPost,
+        createdBy: user.uid,
+        creatorName: user.displayName || "Athlete Node",
+        creatorPhoto: user.photoURL,
+        joinedPlayers: [user.uid],
+        slotsFilled: 1,
+        status: "active",
+        likes: 0,
+        comments: 0,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      }
+
+      await addDoc(collection(db, "matches"), payload);
+
+      toast({ 
+        title: "Match posted 🚀", 
+        description: "Signal broadcast successful."
+      })
+      
+      setShowDialog(false)
+      setNewPost(initialFormState)
+    } catch (error: any) {
+      console.error("SAVE_ERROR", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to post match"
+      })
+    } finally {
+      setIsPosting(false)
     }
-
-    // OPTIMISTIC UI: Perform local actions immediately
-    toast({ 
-      title: "Signal Transmitted 🚀", 
-      description: `Broadcasting to the circuit nodes.`
-    })
-    setNewPost(initialFormState)
-    setShowDialog(false)
-    router.refresh()
-
-    // Firestore mutation (Non-blocking)
-    addDoc(collection(db, "matches"), payload)
-      .then((docRef) => {
-        console.log("POST_SUCCESS", docRef.id);
-      })
-      .catch(async (error: any) => {
-        console.error("SAVE_ERROR", error);
-        const permissionError = new FirestorePermissionError({
-          path: 'matches',
-          operation: 'create',
-          requestResourceData: payload,
-          message: error.message
-        });
-        errorEmitter.emit('permission-error', permissionError);
-      })
-      .finally(() => {
-        setIsPosting(false)
-      })
   }
 
   const addChipToDescription = (chip: string) => {

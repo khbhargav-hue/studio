@@ -85,7 +85,7 @@ export default function MatchesPage() {
     return () => unsub();
   }, [db]);
 
-  const handlePost = (e: React.FormEvent) => {
+  const handlePost = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!db || !user || isPosting) {
       if (!user) toast({ title: "Identification Required", description: "Login required" })
@@ -94,45 +94,38 @@ export default function MatchesPage() {
     
     setIsPosting(true)
 
-    const payload = {
-      ...newRequest,
-      createdBy: user.uid,
-      creatorName: user.displayName || "Athlete",
-      creatorPhoto: user.photoURL,
-      slotsFilled: 1,
-      joinedPlayers: [user.uid],
-      status: "active",
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
+    try {
+      const payload = {
+        ...newRequest,
+        createdBy: user.uid,
+        creatorName: user.displayName || "Athlete",
+        creatorPhoto: user.photoURL,
+        slotsFilled: 1,
+        joinedPlayers: [user.uid],
+        status: "active",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      }
+
+      await addDoc(collection(db, "matches"), payload);
+
+      toast({ 
+        title: "Match posted 🚀", 
+        description: "Signal Transmitted successfully."
+      })
+      
+      setShowDialog(false)
+      setNewRequest({ game: "Football", playersNeeded: 2, location: "", matchDate: "", matchTime: "", details: "" })
+    } catch (error: any) {
+      console.error("SAVE_ERROR", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to post match"
+      })
+    } finally {
+      setIsPosting(false)
     }
-
-    // OPTIMISTIC UI: Perform local feedback immediately
-    toast({ 
-      title: "Posted 🚀", 
-      description: `Match signal active.` 
-    })
-    setShowDialog(false)
-    setNewRequest({ game: "Football", playersNeeded: 2, location: "", matchDate: "", matchTime: "", details: "" })
-    router.refresh()
-
-    // Firestore mutation (Non-blocking)
-    addDoc(collection(db, "matches"), payload)
-      .then((docRef) => {
-        console.log("POST_SUCCESS", docRef.id);
-      })
-      .catch((error: any) => {
-        console.error("SAVE_ERROR", error.code, error.message);
-        const permissionError = new FirestorePermissionError({
-          path: 'matches',
-          operation: 'create',
-          requestResourceData: payload,
-          message: error.message
-        });
-        errorEmitter.emit('permission-error', permissionError);
-      })
-      .finally(() => {
-        setIsPosting(false)
-      })
   }
 
   return (

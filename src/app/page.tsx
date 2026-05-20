@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { MobileNav } from "@/components/mobile-nav"
@@ -70,12 +71,13 @@ const TACTICAL_CHIPS = [
 
 export default function FeedPage() {
   const db = useFirestore()
+  const router = useRouter()
   const { user } = useUser()
   const { toast } = useToast()
   const [isPosting, setIsPosting] = useState(false)
   const [showDialog, setShowDialog] = useState(false)
 
-  const [newPost, setNewPost] = useState({
+  const initialFormState = {
     sport: "Football",
     slotsNeeded: 1,
     location: "",
@@ -84,7 +86,9 @@ export default function FeedPage() {
     description: "",
     gender: "Anyone",
     skillLevel: "Intermediate"
-  })
+  }
+
+  const [newPost, setNewPost] = useState(initialFormState)
 
   const feedQuery = useMemoFirebase(() => {
     if (!db) return null
@@ -101,6 +105,19 @@ export default function FeedPage() {
     }
     
     setIsPosting(true)
+
+    // Safety Watchdog: Prevent infinite loading
+    const watchdogId = setTimeout(() => {
+      if (isPosting) {
+        setIsPosting(false)
+        toast({ 
+          title: "Transmission Delayed", 
+          description: "Network is slow. Signal may be pending. Check feed in a moment.",
+          variant: "destructive"
+        })
+      }
+    }, 10000)
+
     try {
       await addDoc(collection(db, "matchRequests"), {
         ...newPost,
@@ -113,11 +130,30 @@ export default function FeedPage() {
         likes: 0,
         createdAt: serverTimestamp()
       })
-      toast({ title: "Match request posted successfully", description: "Your signal is live on the circuit." })
+
+      clearTimeout(watchdogId)
+      
+      toast({ 
+        title: "Match request posted 🚀", 
+        description: "Your signal is live on the circuit." 
+      })
+
+      // UI Cleanup
+      setNewPost(initialFormState)
       setShowDialog(false)
-      setNewPost({ sport: "Football", slotsNeeded: 1, location: "", date: "", time: "", description: "", gender: "Anyone", skillLevel: "Intermediate" })
-    } catch (err) {
-      toast({ title: "Transmission Failed", variant: "destructive" })
+      
+      // Forced Feed Sync
+      router.push('/')
+      router.refresh()
+      
+    } catch (err: any) {
+      console.error("POST_ERROR", err)
+      clearTimeout(watchdogId)
+      toast({ 
+        title: "Transmission Failed", 
+        description: err.message || "Circuit interrupted. Check your link.",
+        variant: "destructive" 
+      })
     } finally {
       setIsPosting(false)
     }
@@ -164,7 +200,7 @@ export default function FeedPage() {
                       <SelectTrigger className="h-12 bg-white/5 border-white/10 text-white">
                         <SelectValue placeholder="Select Game" />
                       </SelectTrigger>
-                      <SelectContent className="bg-card border-white/10">
+                      <SelectContent className="bg-[#0A0A0A] border-white/10">
                         {SPORTS.map(s => (
                           <SelectItem key={s.value} value={s.value} className="text-white hover:bg-white/10">
                             {s.label}
@@ -202,8 +238,8 @@ export default function FeedPage() {
                       <SelectTrigger className="h-12 bg-white/5 border-white/10 text-white">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-card border-white/10">
-                        {["Anyone", "Men", "Women", "Mixed"].map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                      <SelectContent className="bg-[#0A0A0A] border-white/10">
+                        {["Anyone", "Men", "Women", "Mixed"].map(g => <SelectItem key={g} value={g} className="text-white hover:bg-white/10">{g}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
@@ -213,8 +249,8 @@ export default function FeedPage() {
                       <SelectTrigger className="h-12 bg-white/5 border-white/10 text-white">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-card border-white/10">
-                        {["Beginner", "Intermediate", "Advanced", "Professional"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                      <SelectContent className="bg-[#0A0A0A] border-white/10">
+                        {["Beginner", "Intermediate", "Advanced", "Professional"].map(s => <SelectItem key={s} value={s} className="text-white hover:bg-white/10">{s}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
@@ -235,7 +271,7 @@ export default function FeedPage() {
                     ))}
                   </div>
                   <Textarea 
-                    placeholder="Examples: Need 1 badminton player this Sunday 7 PM. Intermediate level. Friendly match. Bogadi area." 
+                    placeholder={`Examples:\nNeed 1 badminton player this Sunday 7 PM.\nIntermediate level.\nFriendly match.\nBogadi area.`} 
                     className="bg-white/5 border-white/10 italic min-h-[100px]" 
                     value={newPost.description} 
                     onChange={e => setNewPost({...newPost, description: e.target.value})} 

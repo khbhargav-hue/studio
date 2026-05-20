@@ -4,33 +4,16 @@ import { useState, useEffect, useMemo } from "react"
 import { Footer } from "@/components/footer"
 import { MobileNav } from "@/components/mobile-nav"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import PostCard from "@/components/PostCard"
+import { PostModal } from "@/components/PostModal"
 import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger 
-} from "@/components/ui/dialog"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { 
-  Plus, 
   Loader2, 
   Zap,
   UserCircle,
   ExternalLink
 } from "lucide-react"
 import { useFirestore, useUser } from "@/firebase"
-import { collection, query, orderBy, addDoc, doc, serverTimestamp, updateDoc, increment, deleteDoc, onSnapshot, limit, getDocs } from "firebase/firestore"
+import { collection, query, orderBy, doc, updateDoc, increment, deleteDoc, onSnapshot, limit, getDocs } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 
@@ -42,13 +25,6 @@ const SPORTS_FILTERS = [
   { label: "Swimming", value: "Swimming", icon: "🏊" },
 ];
 
-const POST_SPORTS = [
-  { label: "Football ⚽", value: "Football" },
-  { label: "Cricket 🏏", value: "Cricket" },
-  { label: "Pickleball 🎾", value: "Pickleball" },
-  { label: "Badminton 🏸", value: "Badminton" },
-]
-
 export default function SocialWallPage() {
   const db = useFirestore()
   const { user } = useUser()
@@ -57,7 +33,7 @@ export default function SocialWallPage() {
   const [posts, setPosts] = useState<any[]>([])
   const [ads, setAds] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [showDialog, setShowDialog] = useState(false)
+  const [showModal, setShowModal] = useState(false)
   const [activeFilter, setActiveFilter] = useState("All")
   const [likedPosts, setLikedPosts] = useState<string[]>([])
 
@@ -85,39 +61,6 @@ export default function SocialWallPage() {
 
     return () => unsub();
   }, [db]);
-
-  // Form States
-  const [text, setText] = useState("")
-  const [sport, setSport] = useState("Football")
-  const [location, setLocation] = useState("")
-  const [playersNeeded, setPlayersNeeded] = useState(1)
-
-  const handleSubmit = () => {
-    if (!user || !db) {
-      alert("Please sign in first");
-      return
-    }
-    
-    addDoc(collection(db, "posts"), {
-      text: text,
-      sport: sport,
-      location: location,
-      playersNeeded: Number(playersNeeded),
-      likes: 0,
-      postedBy: {
-        uid: user.uid,
-        name: user.displayName || "Player",
-        photo: user.photoURL || ""
-      },
-      createdAt: serverTimestamp()
-    }).then(() => {
-      setText("");
-      setLocation("");
-      setPlayersNeeded(1);
-      setShowDialog(false);
-      toast({ title: "Signal Broadcasted 🚀" });
-    }).catch(err => alert(err.message));
-  }
 
   const handleDelete = (postId: string) => {
     if (!db) return;
@@ -188,50 +131,12 @@ export default function SocialWallPage() {
                 <UserCircle className="h-5 w-5 text-white/20" />
               )}
             </div>
-            <Dialog open={showDialog} onOpenChange={setShowDialog}>
-              <DialogTrigger asChild>
-                <button className="flex-1 h-10 bg-[#1A1A1A] border border-[#222] rounded-full px-5 text-left text-white/40 text-[13px] font-medium hover:border-primary/20 transition-all">
-                  Looking for players in Mysuru...
-                </button>
-              </DialogTrigger>
-              <DialogContent className="bg-[#0A0A0A] border-[#222] rounded-[24px] p-8 max-w-lg shadow-2xl">
-                <DialogHeader>
-                  <DialogTitle className="text-2xl font-black uppercase italic text-white tracking-tighter">
-                    NEW <span className="text-primary">SIGNAL</span>
-                  </DialogTitle>
-                </DialogHeader>
-                <div className="space-y-6 pt-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Discipline</Label>
-                      <Select value={sport} onValueChange={setSport}>
-                        <SelectTrigger className="h-12 bg-[#1A1A1A] border-[#222] text-white">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="bg-[#111] border-[#222]">
-                          {POST_SPORTS.map(s => <SelectItem key={s.value} value={s.value} className="text-white font-bold">{s.label}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Needed</Label>
-                      <Input type="number" className="h-12 bg-[#1A1A1A] border-[#222] text-white" value={playersNeeded} onChange={e => setPlayersNeeded(Number(e.target.value))} />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Area in Mysuru</Label>
-                    <Input placeholder="e.g. Bogadi / Vijayanagar" className="h-12 bg-[#1A1A1A] border-[#222] text-white" value={location} onChange={e => setLocation(e.target.value)} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Message</Label>
-                    <Textarea placeholder="Share your match details..." className="bg-[#1A1A1A] border-[#222] italic min-h-[100px] text-white text-[15px]" value={text} onChange={e => setText(e.target.value)} />
-                  </div>
-                  <Button onClick={handleSubmit} className="w-full h-14 bg-primary text-black font-black uppercase tracking-widest text-xs rounded-xl shadow-lg shadow-primary/20">
-                    ⚡ Post to Circuit
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
+            <button 
+              onClick={() => setShowModal(true)}
+              className="flex-1 h-10 bg-[#1A1A1A] border border-[#222] rounded-full px-5 text-left text-white/40 text-[13px] font-medium hover:border-primary/20 transition-all"
+            >
+              Looking for players in Mysuru...
+            </button>
           </div>
         </div>
 
@@ -267,6 +172,7 @@ export default function SocialWallPage() {
         )}
       </main>
 
+      <PostModal isOpen={showModal} onClose={() => setShowModal(false)} />
       <Footer />
       <MobileNav />
     </div>

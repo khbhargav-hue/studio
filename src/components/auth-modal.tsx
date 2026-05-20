@@ -22,7 +22,7 @@ import {
   signInWithRedirect,
   sendPasswordResetEmail
 } from "firebase/auth";
-import { Loader2, Mail, Lock, User, ShieldCheck, Chrome, AlertCircle, ExternalLink, RefreshCw } from "lucide-react";
+import { Loader2, Mail, Lock, User, ShieldCheck, Chrome, AlertCircle, ExternalLink, RefreshCw, Copy, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -40,6 +40,15 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [error, setError] = useState<React.ReactNode | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const copyHostname = () => {
+    if (typeof window !== 'undefined') {
+      navigator.clipboard.writeText(window.location.hostname);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   const handleGoogleSignIn = async () => {
     if (!auth) return;
@@ -53,7 +62,6 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
       toast({ title: "Identity Verified", description: "Welcome back to the Mysuru circuit." });
       if (onOpenChange) onOpenChange(false);
     } catch (err: any) {
-      // Gracefully handle user cancellation without showing a fatal error
       if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
         setIsLoading(false);
         return;
@@ -63,29 +71,40 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
         const domain = typeof window !== 'undefined' ? window.location.hostname : 'your domain';
         setError(
           <div className="space-y-4">
-            <div className="flex items-center gap-2 text-destructive font-bold text-[10px] uppercase tracking-tighter">
+            <div className="flex items-center gap-2 text-destructive font-black text-[10px] uppercase tracking-tighter">
               <AlertCircle className="h-4 w-4" /> Domain Not Authorized
             </div>
             <p className="text-[10px] leading-relaxed opacity-70">
-              Please authorize <code className="bg-destructive/10 px-1 py-0.5 rounded text-white font-mono">{domain}</code> in the Firebase Console.
+              This host (<code className="bg-destructive/10 px-1 py-0.5 rounded text-white font-mono">{domain}</code>) is not authorized in your Firebase Project.
             </p>
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 p-4 bg-white/5 border border-white/10 rounded-xl">
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="h-9 text-[9px] font-black uppercase tracking-widest border-primary/20 text-primary"
-                onClick={() => window.open("https://console.firebase.google.com/", "_blank")}
+                className="h-9 text-[9px] font-black uppercase tracking-widest bg-primary/10 border-primary/20 text-primary w-full"
+                onClick={copyHostname}
               >
-                Firebase Console <ExternalLink className="ml-1.5 h-3 w-3" />
+                {copied ? <CheckCircle2 className="mr-1.5 h-3 w-3" /> : <Copy className="mr-1.5 h-3 w-3" />}
+                {copied ? "COPIED" : "COPY HOSTNAME"}
               </Button>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-9 text-[9px] font-black uppercase tracking-widest text-white/30"
-                onClick={() => setError(null)}
-              >
-                <RefreshCw className="ml-1.5 h-3 w-3" /> Retry Signal
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-9 text-[9px] font-black uppercase tracking-widest border-white/10 text-white flex-1"
+                  onClick={() => window.open("https://console.firebase.google.com/", "_blank")}
+                >
+                  Console <ExternalLink className="ml-1.5 h-3 w-3" />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-9 text-[9px] font-black uppercase tracking-widest text-white/30 flex-1"
+                  onClick={() => setError(null)}
+                >
+                  <RefreshCw className="ml-1.5 h-3 w-3" /> Retry
+                </Button>
+              </div>
             </div>
           </div>
         );
@@ -169,101 +188,103 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
           </div>
         )}
 
-        <Tabs defaultValue="signin" className="space-y-8">
-          <TabsList className="bg-white/5 p-1 h-12 rounded-[12px] border border-white/5 w-full">
-            <TabsTrigger value="signin" className="flex-1 h-full rounded-[10px] font-bold uppercase tracking-widest text-[10px] data-[state=active]:bg-primary data-[state=active]:text-black">Sign In</TabsTrigger>
-            <TabsTrigger value="signup" className="flex-1 h-full rounded-[10px] font-bold uppercase tracking-widest text-[10px] data-[state=active]:bg-primary data-[state=active]:text-black">Sign Up</TabsTrigger>
-          </TabsList>
+        {!error && (
+          <Tabs defaultValue="signin" className="space-y-8">
+            <TabsList className="bg-white/5 p-1 h-12 rounded-[12px] border border-white/5 w-full">
+              <TabsTrigger value="signin" className="flex-1 h-full rounded-[10px] font-bold uppercase tracking-widest text-[10px] data-[state=active]:bg-primary data-[state=active]:text-black">Sign In</TabsTrigger>
+              <TabsTrigger value="signup" className="flex-1 h-full rounded-[10px] font-bold uppercase tracking-widest text-[10px] data-[state=active]:bg-primary data-[state=active]:text-black">Sign Up</TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="signin" className="space-y-6 focus-visible:outline-none">
-            <form onSubmit={handleEmailSignIn} className="space-y-4">
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Combat Email</Label>
-                <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20 z-10" />
-                  <Input 
-                    type="email" 
-                    placeholder="name@email.com" 
-                    className="pl-12 bg-white/5 border-white/5 text-white h-12 focus:border-primary/50" 
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
+            <TabsContent value="signin" className="space-y-6 focus-visible:outline-none">
+              <form onSubmit={handleEmailSignIn} className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Combat Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20 z-10" />
+                    <Input 
+                      type="email" 
+                      placeholder="name@email.com" 
+                      className="pl-12 bg-white/5 border-white/5 text-white h-12 focus:border-primary/50" 
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                    />
+                  </div>
                 </div>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center px-1">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Secure Passcode</Label>
-                  <button type="button" onClick={handleForgotPassword} className="text-[9px] font-black text-primary uppercase hover:underline">Forgot Signal?</button>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center px-1">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Secure Passcode</Label>
+                    <button type="button" onClick={handleForgotPassword} className="text-[9px] font-black text-primary uppercase hover:underline">Forgot Signal?</button>
+                  </div>
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20 z-10" />
+                    <Input 
+                      type="password" 
+                      placeholder="••••••••" 
+                      className="pl-12 bg-white/5 border-white/5 text-white h-12 focus:border-primary/50" 
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                    />
+                  </div>
                 </div>
-                <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20 z-10" />
-                  <Input 
-                    type="password" 
-                    placeholder="••••••••" 
-                    className="pl-12 bg-white/5 border-white/5 text-white h-12 focus:border-primary/50" 
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-              <Button type="submit" disabled={isLoading} className="w-full h-14 bg-primary text-black font-black uppercase tracking-widest text-xs rounded-[12px] mt-4 shadow-lg shadow-primary/20">
-                {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Verify Identity"}
-              </Button>
-            </form>
-          </TabsContent>
+                <Button type="submit" disabled={isLoading} className="w-full h-14 bg-primary text-black font-black uppercase tracking-widest text-xs rounded-[12px] mt-4 shadow-lg shadow-primary/20">
+                  {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Verify Identity"}
+                </Button>
+              </form>
+            </TabsContent>
 
-          <TabsContent value="signup" className="space-y-6 focus-visible:outline-none">
-            <form onSubmit={handleEmailSignUp} className="space-y-4">
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Athlete Alias</Label>
-                <div className="relative">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20 z-10" />
-                  <Input 
-                    type="text" 
-                    placeholder="John Doe" 
-                    className="pl-12 bg-white/5 border-white/5 text-white h-12 focus:border-primary/50" 
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                  />
+            <TabsContent value="signup" className="space-y-6 focus-visible:outline-none">
+              <form onSubmit={handleEmailSignUp} className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Athlete Alias</Label>
+                  <div className="relative">
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20 z-10" />
+                    <Input 
+                      type="text" 
+                      placeholder="John Doe" 
+                      className="pl-12 bg-white/5 border-white/5 text-white h-12 focus:border-primary/50" 
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      required
+                    />
+                  </div>
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Combat Email</Label>
-                <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20 z-10" />
-                  <Input 
-                    type="email" 
-                    placeholder="name@email.com" 
-                    className="pl-12 bg-white/5 border-white/5 text-white h-12 focus:border-primary/50" 
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Combat Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20 z-10" />
+                    <Input 
+                      type="email" 
+                      placeholder="name@email.com" 
+                      className="pl-12 bg-white/5 border-white/5 text-white h-12 focus:border-primary/50" 
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                    />
+                  </div>
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Secure Passcode</Label>
-                <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20 z-10" />
-                  <Input 
-                    type="password" 
-                    placeholder="Min. 8 characters" 
-                    className="pl-12 bg-white/5 border-white/5 text-white h-12 focus:border-primary/50" 
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Secure Passcode</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20 z-10" />
+                    <Input 
+                      type="password" 
+                      placeholder="Min. 8 characters" 
+                      className="pl-12 bg-white/5 border-white/5 text-white h-12 focus:border-primary/50" 
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                    />
+                  </div>
                 </div>
-              </div>
-              <Button type="submit" disabled={isLoading} className="w-full h-14 bg-primary text-black font-black uppercase tracking-widest text-xs rounded-[12px] mt-4 shadow-lg shadow-primary/20">
-                {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Initiate Recruitment"}
-              </Button>
-            </form>
-          </TabsContent>
-        </Tabs>
+                <Button type="submit" disabled={isLoading} className="w-full h-14 bg-primary text-black font-black uppercase tracking-widest text-xs rounded-[12px] mt-4 shadow-lg shadow-primary/20">
+                  {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Initiate Recruitment"}
+                </Button>
+              </form>
+            </TabsContent>
+          </Tabs>
+        )}
 
         <div className="relative my-10">
           <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-white/5"></span></div>

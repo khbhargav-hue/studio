@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Trophy, Loader2, LogIn, AlertCircle, ShieldCheck, ExternalLink, RefreshCw } from "lucide-react";
+import { Trophy, Loader2, LogIn, AlertCircle, ShieldCheck, ExternalLink, RefreshCw, Copy, CheckCircle2 } from "lucide-react";
 import { useAuth, useUser } from "@/firebase";
 import { signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
@@ -24,6 +24,7 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [error, setError] = useState<React.ReactNode | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const errorParam = searchParams.get('error');
@@ -39,6 +40,15 @@ function LoginForm() {
       }
     }
   }, [user, loading, router]);
+
+  const copyHostname = () => {
+    if (typeof window !== 'undefined') {
+      navigator.clipboard.writeText(window.location.hostname);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      toast({ title: "Hostname Copied", description: "Add this to your Firebase Auth settings." });
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,7 +79,7 @@ function LoginForm() {
         const domain = typeof window !== 'undefined' ? window.location.hostname : 'your domain';
         message = (
           <div className="space-y-4">
-            <div className="flex items-center gap-2 text-destructive font-bold text-sm uppercase tracking-tighter">
+            <div className="flex items-center gap-2 text-destructive font-black text-sm uppercase tracking-tighter">
               <AlertCircle className="h-4 w-4" /> Domain Authorization Required
             </div>
             <p className="text-xs leading-relaxed opacity-80">
@@ -83,23 +93,34 @@ function LoginForm() {
                 <li>Settings {'->'} Authorized Domains</li>
                 <li>Add: <span className="text-white font-bold">{domain}</span></li>
               </ol>
-              <div className="flex gap-2">
+              <div className="flex flex-col gap-2 mt-4">
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="h-8 text-[9px] font-black uppercase tracking-widest bg-primary/10 border-primary/20 text-primary"
-                  onClick={() => window.open("https://console.firebase.google.com/", "_blank")}
+                  className="h-9 text-[9px] font-black uppercase tracking-widest bg-primary/10 border-primary/20 text-primary w-full"
+                  onClick={copyHostname}
                 >
-                  Console <ExternalLink className="ml-1 h-3 w-3" />
+                  {copied ? <CheckCircle2 className="mr-1 h-3 w-3" /> : <Copy className="mr-1 h-3 w-3" />}
+                  {copied ? "COPIED HOSTNAME" : "COPY HOSTNAME"}
                 </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-8 text-[9px] font-black uppercase tracking-widest text-white/40"
-                  onClick={() => setError(null)}
-                >
-                  <RefreshCw className="ml-1 h-3 w-3" /> Retry
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-9 text-[9px] font-black uppercase tracking-widest bg-white/5 border-white/10 text-white flex-1"
+                    onClick={() => window.open("https://console.firebase.google.com/", "_blank")}
+                  >
+                    Console <ExternalLink className="ml-1 h-3 w-3" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-9 text-[9px] font-black uppercase tracking-widest text-white/40 flex-1"
+                    onClick={() => setError(null)}
+                  >
+                    <RefreshCw className="ml-1 h-3 w-3" /> Retry
+                  </Button>
+                </div>
               </div>
             </div>
           </div>

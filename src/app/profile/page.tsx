@@ -33,7 +33,9 @@ import {
   AlertCircle,
   ExternalLink,
   RefreshCw,
-  ShieldCheck
+  ShieldCheck,
+  Copy,
+  CheckCircle2
 } from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
@@ -51,6 +53,7 @@ export default function ProfilePage() {
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [authError, setAuthError] = useState<React.ReactNode | null>(null);
+  const [copied, setCopied] = useState(false);
   
   const userProfileRef = useMemoFirebase(() => {
     if (!db || !user) return null;
@@ -97,6 +100,14 @@ export default function ProfilePage() {
     }
   }, [user, db, profile, userLoading]);
 
+  const copyHostname = () => {
+    if (typeof window !== 'undefined') {
+      navigator.clipboard.writeText(window.location.hostname);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!db || !user) return;
@@ -124,7 +135,6 @@ export default function ProfilePage() {
       if (isMobile) await signInWithRedirect(auth, provider);
       else await signInWithPopup(auth, provider);
     } catch (error: any) {
-      // Gracefully handle user cancellation
       if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
         setIsSigningIn(false);
         return;
@@ -147,31 +157,37 @@ export default function ProfilePage() {
                 <li>Build {'->'} Authentication {'->'} Settings</li>
                 <li>Add <span className="text-white">{domain}</span> to Authorized Domains</li>
               </ol>
-              <div className="flex gap-3">
+              <div className="flex flex-col gap-3">
                 <Button 
                   size="sm" 
-                  className="h-8 bg-primary text-black text-[9px] font-black uppercase tracking-widest rounded-lg"
-                  onClick={() => window.open("https://console.firebase.google.com/", "_blank")}
+                  variant="outline"
+                  className="h-9 bg-primary/10 border-primary/20 text-primary text-[9px] font-black uppercase tracking-widest rounded-lg w-full"
+                  onClick={copyHostname}
                 >
-                  Open Console <ExternalLink className="ml-1 h-3 w-3" />
+                  {copied ? <CheckCircle2 className="mr-1.5 h-3 w-3" /> : <Copy className="mr-1.5 h-3 w-3" />}
+                  {copied ? "COPIED HOSTNAME" : "COPY HOSTNAME"}
                 </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="h-8 border-white/10 text-white/40 text-[9px] font-black uppercase tracking-widest rounded-lg"
-                  onClick={() => setAuthError(null)}
-                >
-                  <RefreshCw className="ml-1 h-3 w-3" /> Retry
-                </Button>
+                <div className="flex gap-3">
+                  <Button 
+                    size="sm" 
+                    className="h-9 bg-white/10 border-white/10 text-white text-[9px] font-black uppercase tracking-widest rounded-lg flex-1"
+                    onClick={() => window.open("https://console.firebase.google.com/", "_blank")}
+                  >
+                    Console <ExternalLink className="ml-1 h-3 w-3" />
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-9 border-white/10 text-white/40 text-[9px] font-black uppercase tracking-widest rounded-lg flex-1"
+                    onClick={() => setAuthError(null)}
+                  >
+                    <RefreshCw className="ml-1 h-3 w-3" /> Retry
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
         );
-        toast({ 
-          title: "Domain Restricted", 
-          description: "Update Authorized Domains in Console.",
-          variant: "destructive"
-        });
       } else {
         console.error("Auth process interrupted:", error);
         toast({ title: "Identification Failed", variant: "destructive" });

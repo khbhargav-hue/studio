@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Minus, Plus, MapPin, Zap } from "lucide-react";
-import { useFirestore, useUser } from "@/firebase";
+import { db, auth } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "./ui/button";
@@ -24,9 +24,8 @@ interface PostModalProps {
 }
 
 export function PostModal({ isOpen, onClose }: PostModalProps) {
-  const db = useFirestore();
-  const { user } = useUser();
   const { toast } = useToast();
+  const user = auth.currentUser;
 
   const [text, setText] = useState("");
   const [sport, setSport] = useState("Football");
@@ -35,8 +34,8 @@ export function PostModal({ isOpen, onClose }: PostModalProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !db) {
-      alert("Please sign in first");
+    if (!user) {
+      alert("Please sign in first to broadcast your plan.");
       return;
     }
 
@@ -48,7 +47,7 @@ export function PostModal({ isOpen, onClose }: PostModalProps) {
       likes: 0,
       postedBy: {
         uid: user.uid,
-        name: user.displayName || "Player",
+        name: user.displayName || "Athlete",
         photo: user.photoURL || ""
       },
       createdAt: serverTimestamp()
@@ -57,7 +56,6 @@ export function PostModal({ isOpen, onClose }: PostModalProps) {
     addDoc(collection(db, "posts"), postData)
       .then((docRef) => {
         console.log("SAVED TO FIRESTORE:", docRef.id);
-        // Reset UI state for next broadcast
         setText("");
         setLocation("");
         setPlayersNeeded(1);
@@ -74,7 +72,6 @@ export function PostModal({ isOpen, onClose }: PostModalProps) {
     <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-[200] flex items-end justify-center">
-          {/* Overlay */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -83,7 +80,6 @@ export function PostModal({ isOpen, onClose }: PostModalProps) {
             className="fixed inset-0 bg-black/80 backdrop-blur-sm"
           />
 
-          {/* Bottom Sheet */}
           <motion.div
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
@@ -91,7 +87,6 @@ export function PostModal({ isOpen, onClose }: PostModalProps) {
             transition={{ type: "spring", damping: 30, stiffness: 300 }}
             className="relative w-full max-w-lg bg-[#111111] border-t border-[#333333] rounded-t-[24px] p-6 pb-20 shadow-[0_-20px_50px_rgba(0,0,0,0.5)] overflow-hidden"
           >
-            {/* Drag Handle */}
             <div className="flex justify-center mb-6">
               <div className="w-12 h-1.5 bg-[#333333] rounded-full" />
             </div>
@@ -106,7 +101,6 @@ export function PostModal({ isOpen, onClose }: PostModalProps) {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-8 max-h-[70vh] overflow-y-auto no-scrollbar px-1">
-              {/* Textarea */}
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-[#888888] ml-1">Strategy Narrative</Label>
                 <Textarea
@@ -118,7 +112,6 @@ export function PostModal({ isOpen, onClose }: PostModalProps) {
                 />
               </div>
 
-              {/* Sport Pills */}
               <div className="space-y-3">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-[#888888] ml-1">Target Discipline</Label>
                 <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
@@ -139,7 +132,6 @@ export function PostModal({ isOpen, onClose }: PostModalProps) {
                 </div>
               </div>
 
-              {/* Location */}
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-[#888888] ml-1">Regional Node (Area)</Label>
                 <div className="relative">
@@ -154,7 +146,6 @@ export function PostModal({ isOpen, onClose }: PostModalProps) {
                 </div>
               </div>
 
-              {/* Players Stepper */}
               <div className="flex items-center justify-between p-6 bg-[#1A1A1A] rounded-2xl border border-[#333333]">
                 <div className="space-y-1">
                   <p className="text-[10px] font-black uppercase tracking-widest text-[#888888]">Recruitment</p>
@@ -179,7 +170,6 @@ export function PostModal({ isOpen, onClose }: PostModalProps) {
                 </div>
               </div>
 
-              {/* Submit */}
               <button
                 type="submit"
                 className="w-full h-16 bg-[#AAFF00] text-[#0A0A0A] text-[16px] font-black uppercase tracking-widest rounded-xl shadow-xl shadow-[#AAFF00]/20 active:scale-[0.98] transition-all flex items-center justify-center gap-3"

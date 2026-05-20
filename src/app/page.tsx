@@ -10,8 +10,9 @@ import {
   UserCircle,
   ExternalLink
 } from "lucide-react"
-import { useFirestore, useUser } from "@/firebase"
-import { getFirestore, collection, doc, updateDoc, increment, onSnapshot, getDocs } from "firebase/firestore"
+import { db } from "@/lib/firebase"
+import { useUser } from "@/firebase"
+import { collection, doc, updateDoc, increment, onSnapshot, getDocs } from "firebase/firestore"
 import { cn } from "@/lib/utils"
 import { SkeletonCard } from "@/components/Skeleton"
 import PostCard from "@/components/PostCard"
@@ -25,7 +26,6 @@ const SPORTS_FILTERS = [
 ];
 
 export default function SocialWallPage() {
-  const db = useFirestore()
   const { user } = useUser()
   
   const [posts, setPosts] = useState<any[]>([])
@@ -44,10 +44,9 @@ export default function SocialWallPage() {
 
   useEffect(() => {
     const unsub = onSnapshot(
-      collection(getFirestore(), "posts"),
+      collection(db, "posts"),
       (snap) => {
         const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        // Ensure chronological order if timestamps exist
         list.sort((a: any, b: any) => {
           const at = a.createdAt?.seconds || 0;
           const bt = b.createdAt?.seconds || 0;
@@ -65,14 +64,13 @@ export default function SocialWallPage() {
   }, []);
 
   useEffect(() => {
-    if (!db) return;
     getDocs(collection(db, "ads")).then(snap => {
       setAds(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter((a: any) => a.isActive));
     });
-  }, [db]);
+  }, []);
 
   const handleLike = (postId: string) => {
-    if (!db || likedPosts.includes(postId)) return;
+    if (likedPosts.includes(postId)) return;
     
     const postRef = doc(db, "posts", postId);
     updateDoc(postRef, { likes: increment(1) })
@@ -84,7 +82,6 @@ export default function SocialWallPage() {
   };
 
   const filteredPosts = useMemo(() => {
-    // Applying the user's requested logic for permissive filtering
     return posts.filter(p => !activeFilter || 
       activeFilter === "all" || 
       p.sport === activeFilter);
@@ -105,8 +102,6 @@ export default function SocialWallPage() {
   return (
     <div className="flex min-h-screen flex-col bg-[#050505] selection:bg-primary selection:text-black">
       <main className="flex-1 pt-6 pb-20 max-w-lg mx-auto w-full px-4">
-        
-        {/* Story-style Sport Filters */}
         <div className="flex items-center gap-3 overflow-x-auto no-scrollbar mb-8 pb-1">
           {SPORTS_FILTERS.map((f) => (
             <button
@@ -125,7 +120,6 @@ export default function SocialWallPage() {
           ))}
         </div>
 
-        {/* Post Creation Area */}
         <div className="bg-[#111] border border-[#222] rounded-xl p-4 mb-6">
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 rounded-full bg-[#1A1A1A] overflow-hidden flex items-center justify-center border border-[#222] shrink-0">
@@ -144,7 +138,6 @@ export default function SocialWallPage() {
           </div>
         </div>
 
-        {/* Real-time Wall Feed */}
         {loading ? (
           <div className="space-y-3">
             {[...Array(4)].map((_, i) => <SkeletonCard key={i} />)}
@@ -157,7 +150,7 @@ export default function SocialWallPage() {
                   key={item.data.id} 
                   post={item.data} 
                   currentUser={user}
-                  onDelete={() => {}} // Placeholder for delete action
+                  onDelete={() => {}} 
                   onLike={() => handleLike(item.data.id)}
                   hasLiked={likedPosts.includes(item.data.id)}
                 />
@@ -168,12 +161,12 @@ export default function SocialWallPage() {
           </div>
         ) : (
           <>
-          <div style={{color:"red",fontSize:12}}>Posts count: {posts.length}</div>
-          <div className="py-32 text-center border border-dashed border-[#222] rounded-2xl bg-[#111]/30">
-            <Zap className="h-12 w-12 text-white/5 mx-auto mb-4" />
-            <h3 className="text-xl font-black uppercase italic text-white/10">No signals detected</h3>
-            <p className="text-white/20 text-xs mt-2 italic">Try adjusting your sport filter or broadcast a new plan.</p>
-          </div>
+            <div style={{color:"red",fontSize:12}}>Posts count: {posts.length}</div>
+            <div className="py-32 text-center border border-dashed border-[#222] rounded-2xl bg-[#111]/30">
+              <Zap className="h-12 w-12 text-white/5 mx-auto mb-4" />
+              <h3 className="text-xl font-black uppercase italic text-white/10">No signals detected</h3>
+              <p className="text-white/20 text-xs mt-2 italic">Try adjusting your sport filter or broadcast a new plan.</p>
+            </div>
           </>
         )}
       </main>
@@ -186,10 +179,7 @@ export default function SocialWallPage() {
 }
 
 function AdBanner({ ad }: { ad: any }) {
-  const db = useFirestore();
-  
   const handleAdClick = () => {
-    if (!db) return;
     updateDoc(doc(db, "ads", ad.id), { clickCount: increment(1) });
     window.open(ad.targetUrl, '_blank');
   };

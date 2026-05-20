@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { Footer } from '@/components/footer';
-import { useFirestore, useUser, useDoc, useMemoFirebase } from '@/firebase';
+import { db } from '@/lib/firebase';
+import { useUser } from '@/firebase';
 import { collection, getDocs, addDoc, serverTimestamp, doc } from 'firebase/firestore';
 import { Star, MessageCircle, MapPin, Plus, IndianRupee, Phone, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -33,7 +34,6 @@ const AREAS = ["Vijayanagar", "Yadavagiri", "JP Nagar", "Saraswathipuram", "Kuve
 const SPORT_OPTIONS = ["Football", "Cricket", "Pickleball", "Badminton", "Swimming"];
 
 export default function TurfsPage() {
-  const db = useFirestore();
   const { user } = useUser();
   const { toast } = useToast();
   
@@ -53,21 +53,13 @@ export default function TurfsPage() {
     rating: "4.5"
   });
 
-  const profileRef = useMemoFirebase(() => {
-    if (!db || !user) return null;
-    return doc(db, "users", user.uid);
-  }, [db, user]);
-  const { data: profile } = useDoc(profileRef);
-  const isAdmin = profile?.role === 'admin';
-
   const fetchTurfs = async () => {
-    if (!db) return;
     setLoading(true);
     try {
       const snap = await getDocs(collection(db, "turfs"));
       setTurfs(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     } catch (err) {
-      // suppressed
+      console.error("Registry fetch error", err);
     } finally {
       setLoading(false);
     }
@@ -75,12 +67,10 @@ export default function TurfsPage() {
 
   useEffect(() => {
     fetchTurfs();
-  }, [db]);
+  }, []);
 
   const handleSaveTurf = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!db) return;
-
     setIsAdding(true);
     const payload = {
       ...formData,
@@ -129,127 +119,6 @@ export default function TurfsPage() {
                 MYSURU <br /><span className="text-primary">CIRCUIT</span>
               </h1>
             </div>
-
-            {isAdmin && (
-              <Dialog open={showDialog} onOpenChange={setShowDialog}>
-                <DialogTrigger asChild>
-                  <Button className="h-14 px-8 bg-primary text-black font-black uppercase tracking-widest text-[11px] rounded-xl">
-                    <Plus className="mr-2 h-4 w-4" /> Add Arena Node
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="bg-card border-white/5 rounded-[2rem] p-10 max-w-2xl shadow-2xl overflow-y-auto max-h-[90vh]">
-                  <DialogHeader>
-                    <DialogTitle className="text-3xl font-black uppercase italic text-white tracking-tighter">
-                      ARENA <span className="text-primary">GENESIS</span>
-                    </DialogTitle>
-                  </DialogHeader>
-                  <form onSubmit={handleSaveTurf} className="space-y-6 pt-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Turf Identity</Label>
-                        <Input 
-                          placeholder="e.g. Matchbox Mysore" 
-                          className="h-12 bg-white/5 border-white/10 text-white" 
-                          value={formData.name}
-                          onChange={e => setFormData({...formData, name: e.target.value})}
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Regional Zone</Label>
-                        <Select value={formData.area} onValueChange={v => setFormData({...formData, area: v})}>
-                          <SelectTrigger className="h-12 bg-white/5 border-white/10 text-white">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="bg-[#0A0A0A] border-white/10">
-                            {AREAS.map(a => <SelectItem key={a} value={a} className="text-white">{a}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    <div className="space-y-3">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Discipline Capability</Label>
-                      <div className="flex flex-wrap gap-3">
-                        {SPORT_OPTIONS.map(sport => (
-                          <div key={sport} className="flex items-center gap-2 bg-white/5 px-3 py-2 rounded-lg border border-white/5">
-                            <Checkbox 
-                              id={`add-sport-${sport}`} 
-                              checked={formData.sports.includes(sport)}
-                              onCheckedChange={(checked) => {
-                                const newSports = checked 
-                                  ? [...formData.sports, sport] 
-                                  : formData.sports.filter(s => s !== sport);
-                                setFormData({...formData, sports: newSports});
-                              }}
-                            />
-                            <Label htmlFor={`add-sport-${sport}`} className="text-[10px] font-bold uppercase cursor-pointer text-white">{sport}</Label>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1 flex items-center gap-2">
-                          <IndianRupee className="h-3 w-3" /> Hourly Rate (Text)
-                        </Label>
-                        <Input 
-                          placeholder="₹900/hr" 
-                          className="h-12 bg-white/5 border-white/10 text-white" 
-                          value={formData.price}
-                          onChange={e => setFormData({...formData, price: e.target.value})}
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1 flex items-center gap-2">
-                          <Phone className="h-3 w-3" /> WhatsApp Hub
-                        </Label>
-                        <Input 
-                          placeholder="917411..." 
-                          className="h-12 bg-white/5 border-white/10 text-white" 
-                          value={formData.whatsapp}
-                          onChange={e => setFormData({...formData, whatsapp: e.target.value})}
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1 flex items-center gap-2">
-                        <ImageIcon className="h-3 w-3" /> Media Intelligence (URL)
-                      </Label>
-                      <Input 
-                        placeholder="Paste image URL..." 
-                        className="h-12 bg-white/5 border-white/10 text-white" 
-                        value={formData.imageUrl}
-                        onChange={e => setFormData({...formData, imageUrl: e.target.value})}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1 flex items-center gap-2">
-                        <Star className="h-3 w-3" /> Rating
-                      </Label>
-                      <Input 
-                        type="number"
-                        step="0.1"
-                        min="0"
-                        max="5"
-                        className="h-12 bg-white/5 border-white/10 text-white" 
-                        value={formData.rating}
-                        onChange={e => setFormData({...formData, rating: e.target.value})}
-                      />
-                    </div>
-
-                    <Button type="submit" disabled={isAdding} className="w-full h-16 bg-primary text-black font-black uppercase tracking-widest text-xs rounded-xl">
-                      {isAdding ? <Loader2 className="h-5 w-5 animate-spin" /> : "Deploy to Circuit"}
-                    </Button>
-                  </form>
-                </DialogContent>
-              </Dialog>
-            )}
           </div>
           
           <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
@@ -284,14 +153,6 @@ export default function TurfsPage() {
                     alt={turf.name}
                     loading="lazy"
                     className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                      const placeholder = e.currentTarget.nextElementSibling;
-                      if (placeholder) {
-                        placeholder.classList.remove('hidden');
-                        placeholder.classList.add('flex');
-                      }
-                    }}
                   />
                   <div className="hidden absolute inset-0 items-center justify-center text-[40px] flex-col bg-[#1A1A1A]">
                     <span>⚽</span>

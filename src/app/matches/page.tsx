@@ -85,10 +85,10 @@ export default function MatchesPage() {
     e.preventDefault()
     if (!db || !user) return
     
-    console.log("SAVE_START")
+    console.log("POST_START", newRequest)
     setIsPosting(true)
     try {
-      await addDoc(collection(db, "matches"), {
+      const docRef = await addDoc(collection(db, "matches"), {
         ...newRequest,
         createdBy: user.uid,
         creatorName: user.displayName || "Athlete",
@@ -99,13 +99,23 @@ export default function MatchesPage() {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       })
-      console.log("SAVE_SUCCESS")
-      toast({ title: "Match Claim Posted 🔥", description: "The circuit is permanently notified." })
+      
+      console.log("POST_SUCCESS", docRef.id)
+      
+      toast({ 
+        title: "Saved: " + docRef.id, 
+        description: "The circuit is permanently notified." 
+      })
+      
       setShowDialog(false)
       setNewRequest({ game: "Football", playersNeeded: 2, location: "", matchDate: "", matchTime: "", details: "" })
     } catch (err: any) {
-      console.log("SAVE_ERROR", err)
-      toast({ title: "Transmission Failed", variant: "destructive" })
+      console.error("POST_ERROR", err.code, err.message)
+      toast({ 
+        title: "Transmission Failed", 
+        description: err.message,
+        variant: "destructive" 
+      })
     } finally {
       setIsPosting(false)
     }
@@ -167,7 +177,7 @@ export default function MatchesPage() {
                   </div>
                 </div>
                 <Button type="submit" disabled={isPosting} className="w-full h-16 bg-primary text-black font-black uppercase tracking-widest text-xs rounded-xl">
-                  {isPosting ? <Loader2 className="h-5 w-5 animate-spin" /> : "TRANSMIT TO CIRCUIT"}
+                  {isPosting ? <Loader2 className="h-5 w-5 animate-spin" /> : "POST MATCH REQUEST 🚀"}
                 </Button>
               </form>
             </DialogContent>

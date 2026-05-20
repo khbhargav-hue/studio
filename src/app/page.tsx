@@ -129,19 +129,8 @@ export default function FeedPage() {
       return
     }
     
-    console.log("SAVE_START")
+    console.log("POST_START", newPost);
     setIsPosting(true)
-
-    const watchdogId = setTimeout(() => {
-      if (isPosting) {
-        setIsPosting(false)
-        toast({ 
-          title: "Transmission Delayed", 
-          description: "Network slow. Signal may be pending.",
-          variant: "destructive"
-        })
-      }
-    }, 10000)
 
     try {
       const matchData = {
@@ -158,27 +147,26 @@ export default function FeedPage() {
         updatedAt: serverTimestamp()
       }
 
-      await addDoc(collection(db, "matches"), matchData)
-      console.log("SAVE_SUCCESS")
-
-      clearTimeout(watchdogId)
+      const docRef = await addDoc(collection(db, "matches"), matchData);
+      
+      console.log("POST_SUCCESS", docRef.id);
       
       toast({ 
-        title: "Match request posted 🚀", 
+        title: "Saved: " + docRef.id, 
         description: "Your signal is permanently live on the circuit." 
       })
 
       setNewPost(initialFormState)
       setShowDialog(false)
       
+      router.push('/')
       router.refresh()
       
     } catch (err: any) {
-      console.log("SAVE_ERROR", err)
-      clearTimeout(watchdogId)
+      console.error("POST_ERROR", err.code, err.message);
       toast({ 
         title: "Transmission Failed", 
-        description: err.message || "Circuit interrupted.",
+        description: err.message,
         variant: "destructive" 
       })
     } finally {

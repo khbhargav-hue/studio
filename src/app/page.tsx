@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect } from "react"
@@ -135,9 +134,11 @@ export default function FeedPage() {
     try {
       const payload = {
         ...newPost,
-        createdBy: user.uid,
-        creatorName: user.displayName || "Athlete Node",
-        creatorPhoto: user.photoURL,
+        postedBy: {
+          uid: user.uid,
+          name: user.displayName || "Athlete Node",
+          photo: user.photoURL
+        },
         joinedPlayers: [user.uid],
         slotsFilled: 1,
         status: "active",
@@ -334,7 +335,7 @@ function PostCard({ post }: { post: any }) {
   const isFull = (post.slotsFilled || 0) >= ((post.playersNeeded || 0) + 1)
   const [likes, setLikes] = useState(post.likes || 0)
 
-  const canManage = user && (post.createdBy === user.uid || (user as any).role === "admin")
+  const canManage = user && (post.postedBy?.uid === user.uid || (user as any).role === "admin")
 
   const createdAt = post.createdAt?.seconds 
     ? formatDistanceToNow(new Date(post.createdAt.seconds * 1000)) + " ago" 
@@ -388,7 +389,7 @@ function PostCard({ post }: { post: any }) {
   const handleShare = async () => {
     const shareData = {
       title: `Turfista Match | ${post.game}`,
-      text: `Join ${post.creatorName} for a match of ${post.game} at ${post.location}!`,
+      text: `Join ${post.postedBy?.name || 'Athlete'} for a match of ${post.game} at ${post.location}!`,
       url: window.location.href,
     };
 
@@ -437,10 +438,10 @@ function PostCard({ post }: { post: any }) {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-full border-2 border-primary/20 p-0.5 overflow-hidden bg-white/5">
-              <img src={post.creatorPhoto || `https://picsum.photos/seed/${post.createdBy}/100`} className="h-full w-full object-cover rounded-full" alt="Creator" />
+              <img src={post.postedBy?.photo || `https://picsum.photos/seed/${post.postedBy?.uid || 'anon'}/100`} className="h-full w-full object-cover rounded-full" alt="Creator" />
             </div>
             <div>
-              <p className="text-sm font-black uppercase italic text-white leading-none">{post.creatorName}</p>
+              <p className="text-sm font-black uppercase italic text-white leading-none">{post.postedBy?.name || 'Athlete Node'}</p>
               <p className="text-[9px] font-bold text-white/20 uppercase tracking-widest mt-1.5">{createdAt}</p>
             </div>
           </div>

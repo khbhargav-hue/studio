@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect } from "react"
@@ -98,9 +97,11 @@ export default function MatchesPage() {
     try {
       const payload = {
         ...newRequest,
-        createdBy: user.uid,
-        creatorName: user.displayName || "Athlete",
-        creatorPhoto: user.photoURL,
+        postedBy: {
+          uid: user.uid,
+          name: user.displayName || "Athlete",
+          photo: user.photoURL,
+        },
         slotsFilled: 1,
         joinedPlayers: [user.uid],
         status: "active",
@@ -231,7 +232,7 @@ function MatchCard({ request }: { request: any }) {
   
   const isJoined = user && request.joinedPlayers?.includes(user.uid)
   const isFull = (request.slotsFilled || 0) >= ((request.playersNeeded || 0) + 1)
-  const canManage = user && (request.createdBy === user.uid || (user as any).role === "admin")
+  const canManage = user && (request.postedBy?.uid === user.uid || (user as any).role === "admin")
 
   const playersJoined = Math.max(0, request.slotsFilled || 0);
   const avatarCount = Math.min(playersJoined, 3);

@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
@@ -44,23 +45,22 @@ export default function SocialWallPage() {
     }
   }, []);
 
-  // FEED FETCHING LOGIC: CLIENT-SIDE SORTING TO HANDLE MISSING TIMESTAMPS
+  // SIMPLEST POST FETCH
   useEffect(() => {
     const db = getFirestore();
     const unsub = onSnapshot(
       collection(db, "posts"),
-      (snap) => {
-        const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        data.sort((a, b) => {
-          const aTime = a.createdAt?.toDate?.() || new Date(0);
-          const bTime = b.createdAt?.toDate?.() || new Date(0);
-          return bTime.getTime() - aTime.getTime();
+      (snapshot) => {
+        const list: any[] = [];
+        snapshot.forEach((doc) => {
+          list.push({ id: doc.id, ...doc.data() });
         });
-        setPosts(data);
-        setLoading(false);
-      },
-      (err) => {
-        console.error("Feed error:", err.code);
+        list.sort((a, b) => {
+          const at = a.createdAt?.seconds || 0;
+          const bt = b.createdAt?.seconds || 0;
+          return bt - at;
+        });
+        setPosts(list);
         setLoading(false);
       }
     );

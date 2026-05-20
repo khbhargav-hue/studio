@@ -191,7 +191,10 @@ export default function MatchesPage() {
 function MatchCard({ request, onJoin }: { request: any, onJoin: () => void }) {
   const { user } = useUser()
   const isMember = user && request.joinedUsers?.includes(user.uid)
-  const isFull = request.playersJoined >= (request.playersNeeded + 1)
+  const isFull = (request.playersJoined || 0) >= ((request.playersNeeded || 0) + 1)
+
+  const playersJoined = Math.max(0, request.playersJoined || 0);
+  const avatarCount = Math.min(playersJoined, 3);
 
   return (
     <div className="bg-card border border-white/5 rounded-[2.5rem] p-10 flex flex-col hover:border-primary/40 transition-all group relative overflow-hidden">
@@ -205,7 +208,7 @@ function MatchCard({ request, onJoin }: { request: any, onJoin: () => void }) {
           <h3 className="text-3xl font-black uppercase italic tracking-tighter text-white">{request.sport}</h3>
         </div>
         <div className="h-14 w-14 rounded-2xl bg-white/5 border border-white/10 flex flex-col items-center justify-center">
-          <p className="text-xl font-black text-primary leading-none">{request.playersNeeded - (request.playersJoined - 1)}</p>
+          <p className="text-xl font-black text-primary leading-none">{Math.max(0, (request.playersNeeded || 0) - (playersJoined - 1))}</p>
           <p className="text-[8px] font-bold text-white/40 uppercase tracking-widest mt-1">Needed</p>
         </div>
       </div>
@@ -221,20 +224,20 @@ function MatchCard({ request, onJoin }: { request: any, onJoin: () => void }) {
         </div>
         <div className="flex items-center gap-4 text-white/60 font-bold uppercase italic text-sm">
           <Users className="h-5 w-5 text-primary" />
-          <span>{request.playersJoined} Joined Circuit</span>
+          <span>{playersJoined} Joined Circuit</span>
         </div>
       </div>
 
       <div className="mt-auto flex items-center justify-between gap-4 relative z-10">
         <div className="flex -space-x-3">
-          {[...Array(Math.min(request.playersJoined, 3))].map((_, i) => (
+          {Array.from({ length: avatarCount }).map((_, i) => (
             <div key={i} className="h-10 w-10 rounded-full border-2 border-card bg-white/10 overflow-hidden">
-              <img src={`https://picsum.photos/seed/${request.id}-${i}/100`} className="h-full w-full object-cover" />
+              <img src={`https://picsum.photos/seed/${request.id}-${i}/100`} className="h-full w-full object-cover" alt="Player" />
             </div>
           ))}
-          {request.playersJoined > 3 && (
+          {playersJoined > 3 && (
             <div className="h-10 w-10 rounded-full border-2 border-card bg-white/5 flex items-center justify-center text-[10px] font-black text-white/40">
-              +{request.playersJoined - 3}
+              +{playersJoined - 3}
             </div>
           )}
         </div>

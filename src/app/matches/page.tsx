@@ -60,30 +60,29 @@ export default function MatchesPage() {
   useEffect(() => {
     if (!db) return;
 
-    console.log("MATCHES_INIT: Connecting to circuit telemetry...");
-
     const q = query(
-      collection(db, "matches"), 
-      where("status", "==", "active"), 
+      collection(db, "matches"),
       orderBy("createdAt", "desc")
-    );
+    )
 
-    const unsub = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+    const unsubscribe = onSnapshot(
+      q,
+      snapshot => {
+        const data = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }))
+        setRequests(data)
+        setLoading(false)
+      },
+      err => {
+        console.error(err)
+        setLoading(false)
+      }
+    )
 
-      console.log("MATCHES_LOADED", data);
-      setRequests(data);
-      setLoading(false);
-    }, (error) => {
-      console.error("MATCH_READ_ERROR", error);
-      setLoading(false);
-    });
-
-    return () => unsub();
-  }, [db]);
+    return () => unsubscribe()
+  }, [db])
 
   const handlePost = async (e: React.FormEvent) => {
     e.preventDefault()

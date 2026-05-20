@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
@@ -13,7 +13,7 @@ import {
   Zap
 } from "lucide-react"
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase"
-import { collection, query, orderBy, where } from "firebase/firestore"
+import { collection, query, where } from "firebase/firestore"
 import { cn } from "@/lib/utils"
 
 const SPORT_CATEGORIES = ["All", "Football", "Cricket", "Swimming", "Badminton", "Pickleball"]
@@ -24,14 +24,20 @@ export default function CoachingPage() {
 
   const coachesQuery = useMemoFirebase(() => {
     if (!db) return null
-    let q = query(collection(db, "coaches"), orderBy("rating", "desc"))
+    // Removed orderBy to prevent composite index requirement when sport filter is active
+    let q = query(collection(db, "coaches"))
     if (activeSport !== "All") {
       q = query(q, where("sport", "==", activeSport))
     }
     return q
   }, [db, activeSport])
 
-  const { data: coaches, loading } = useCollection(coachesQuery)
+  const { data: rawCoaches, loading } = useCollection(coachesQuery)
+
+  const coaches = useMemo(() => {
+    if (!rawCoaches) return []
+    return [...rawCoaches].sort((a: any, b: any) => (b.rating || 0) - (a.rating || 0))
+  }, [rawCoaches])
 
   return (
     <div className="flex min-h-screen flex-col bg-background selection:bg-primary selection:text-black">

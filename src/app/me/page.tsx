@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useUser, useAuth, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
-import { collection, query, where, deleteDoc, doc, orderBy } from "firebase/firestore";
-import { UserCircle, LogOut, Settings, LayoutGrid, Zap, Users, MapPin, Loader2 } from "lucide-react";
+import { collection, query, where, deleteDoc, doc } from "firebase/firestore";
+import { UserCircle, LogOut, LayoutGrid, Zap, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import PostCard from "@/components/PostCard";
@@ -22,14 +22,23 @@ export default function MePage() {
 
   const myPostsQuery = useMemoFirebase(() => {
     if (!db || !user) return null;
+    // Removed orderBy to prevent composite index requirement
     return query(
       collection(db, "posts"),
-      where("postedBy.uid", "==", user.uid),
-      orderBy("createdAt", "desc")
+      where("postedBy.uid", "==", user.uid)
     );
   }, [db, user]);
 
-  const { data: myPosts, loading: postsLoading } = useCollection(myPostsQuery);
+  const { data: rawMyPosts, loading: postsLoading } = useCollection(myPostsQuery);
+
+  const myPosts = useMemo(() => {
+    if (!rawMyPosts) return [];
+    return [...rawMyPosts].sort((a: any, b: any) => {
+      const at = a.createdAt?.seconds || 0;
+      const bt = b.createdAt?.seconds || 0;
+      return bt - at;
+    });
+  }, [rawMyPosts]);
 
   const handleSignIn = async () => {
     if (!auth) return;
@@ -89,7 +98,7 @@ export default function MePage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-[#0A0A0A] selection:bg-primary selection:text-black">
-      <main className="flex-1 pt-12 pb-20 max-w-lg mx-auto w-full px-4">
+      <main className="flex-1 pt-12 pb-32 max-w-lg mx-auto w-full px-4">
         {/* Profile Header */}
         <div className="flex flex-col items-center text-center mb-12">
           <div className="relative mb-6">

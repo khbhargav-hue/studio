@@ -1,7 +1,7 @@
 'use client';
 
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, doc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { collection, query, orderBy, doc, deleteDoc, updateDoc, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,10 +14,11 @@ import {
   TableHeader, 
   TableRow 
 } from '@/components/ui/table';
-import { Edit2, Trash2, Plus, Zap, Users, Trophy, UserCheck, TrendingUp, ShieldCheck } from 'lucide-react';
+import { Edit2, Trash2, Plus, Zap, Users, Trophy, UserCheck, Database, LayoutDashboard } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from "@/lib/utils";
+import { mysuuruTurfs } from '@/lib/seed-circuit';
 
 export default function StudioDashboard() {
   const db = useFirestore();
@@ -32,20 +33,48 @@ export default function StudioDashboard() {
   const { data: challenges } = useCollection(challengesQuery);
 
   const toggleStatus = (coll: string, id: string, field: string, val: boolean) => {
-    updateDoc(doc(db, coll, id), { [field]: !val, updatedAt: new Date() })
+    updateDoc(doc(db, coll, id), { [field]: !val, updatedAt: serverTimestamp() })
       .then(() => toast({ title: "Circuit node updated" }));
+  };
+
+  const handleSeedData = () => {
+    if (!db) return;
+    
+    getDocs(collection(db, "turfs")).then(snap => {
+      if (snap.size === 0) {
+        mysuuruTurfs.forEach(t => {
+          addDoc(collection(db, "turfs"), {
+            ...t,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+          });
+        });
+        alert("4 Mysuru turfs added!");
+      } else {
+        alert("Turfs already exist: " + snap.size);
+      }
+    });
   };
 
   return (
     <div className="space-y-12 pb-20 animate-in fade-in duration-500">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h1 className="text-4xl font-black italic uppercase leading-none">Studio <span className="text-primary">Admin</span></h1>
           <p className="text-[#888] text-[10px] font-black uppercase tracking-widest mt-2">Mysuru Sports Circuit Node: 🟢 Stable</p>
         </div>
-        <Button asChild className="bg-primary text-black font-black uppercase tracking-widest text-[11px] h-12 px-8">
-          <Link href="/studio/new"><Plus className="mr-2 h-4 w-4" /> Add New Node</Link>
-        </Button>
+        <div className="flex flex-wrap gap-3">
+          <Button 
+            onClick={handleSeedData}
+            variant="outline"
+            className="border-primary/20 text-primary font-black uppercase tracking-widest text-[10px] h-12 px-6 hover:bg-primary hover:text-black"
+          >
+            <Database className="mr-2 h-4 w-4" /> Seed Circuit Data
+          </Button>
+          <Button asChild className="bg-primary text-black font-black uppercase tracking-widest text-[11px] h-12 px-8">
+            <Link href="/studio/new"><Plus className="mr-2 h-4 w-4" /> Add New Node</Link>
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -55,7 +84,7 @@ export default function StudioDashboard() {
           { label: "Claims", val: challenges?.length, icon: Trophy },
           { label: "Coaches", val: 0, icon: UserCheck }
         ].map((item, i) => (
-          <div key={i} className="bg-card border border-border p-6 group hover:border-primary">
+          <div key={i} className="bg-card border border-border p-6 group hover:border-primary transition-colors">
             <div className="flex items-center justify-between mb-4">
               <span className="text-[10px] font-black text-[#444] uppercase tracking-widest">{item.label}</span>
               <item.icon className="h-4 w-4 text-primary opacity-20 group-hover:opacity-100" />
@@ -74,7 +103,7 @@ export default function StudioDashboard() {
 
         <TabsContent value="turfs" className="bg-card border border-border">
           <div className="p-6 border-b border-border bg-white/[0.02] flex items-center justify-between">
-            <h2 className="text-lg">Arena Registry</h2>
+            <h2 className="text-lg font-black uppercase italic">Arena Registry</h2>
             <Badge className="bg-primary text-black font-black uppercase text-[8px] tracking-widest">LIVE FIRESTORE</Badge>
           </div>
           <div className="overflow-x-auto">
@@ -95,8 +124,8 @@ export default function StudioDashboard() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        <button onClick={() => toggleStatus('turfs', turf.id, 'isPremium', !!turf.isPremium)} className={cn("text-[9px] font-black px-2 py-1 uppercase tracking-widest border", turf.isPremium ? "border-primary text-primary" : "border-[#222] text-[#444]")}>Featured</button>
-                        <button onClick={() => toggleStatus('turfs', turf.id, 'isActive', !!turf.isActive)} className={cn("text-[9px] font-black px-2 py-1 uppercase tracking-widest border", turf.isActive ? "border-green-500 text-green-500" : "border-red-500 text-red-500")}>Active</button>
+                        <button onClick={() => toggleStatus('turfs', turf.id, 'isPremium', !!turf.isPremium)} className={cn("text-[9px] font-black px-2 py-1 uppercase tracking-widest border transition-all", turf.isPremium ? "border-primary text-primary" : "border-[#222] text-[#444]")}>Featured</button>
+                        <button onClick={() => toggleStatus('turfs', turf.id, 'isActive', !!turf.isActive)} className={cn("text-[9px] font-black px-2 py-1 uppercase tracking-widest border transition-all", turf.isActive ? "border-green-500 text-green-500" : "border-red-500 text-red-500")}>Active</button>
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
@@ -104,13 +133,24 @@ export default function StudioDashboard() {
                         <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-primary" asChild>
                           <Link href={`/studio/new?id=${turf.id}`}><Edit2 className="h-3 w-3" /></Link>
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-destructive" onClick={() => deleteDoc(doc(db, 'turfs', turf.id))}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-destructive" onClick={() => {
+                          if (confirm("Redact this arena node?")) {
+                            deleteDoc(doc(db, 'turfs', turf.id));
+                          }
+                        }}>
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>
                     </TableCell>
                   </TableRow>
                 ))}
+                {(!turfs || turfs.length === 0) && !turfsLoading && (
+                  <TableRow>
+                    <TableCell colSpan={3} className="h-40 text-center text-muted text-[10px] font-black uppercase tracking-widest italic">
+                      Registry empty. Use "Seed Circuit Data" to begin.
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </div>

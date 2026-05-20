@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { MobileNav } from "@/components/mobile-nav"
@@ -34,13 +34,15 @@ import {
   UserCircle,
   Trash2,
   MessageCircle,
-  MoreHorizontal
+  MoreHorizontal,
+  ExternalLink
 } from "lucide-react"
 import { useFirestore, useUser } from "@/firebase"
-import { collection, query, orderBy, addDoc, doc, serverTimestamp, updateDoc, increment, deleteDoc, onSnapshot, limit } from "firebase/firestore"
+import { collection, query, orderBy, addDoc, doc, serverTimestamp, updateDoc, increment, deleteDoc, onSnapshot, limit, getDocs } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 import { formatDistanceToNow } from "date-fns"
+import Image from "next/image"
 
 const SPORTS = [
   { label: "Football ⚽", value: "Football" },
@@ -55,6 +57,7 @@ export default function SocialWallPage() {
   const { toast } = useToast()
   
   const [posts, setPosts] = useState<any[]>([])
+  const [ads, setAds] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [showDialog, setShowDialog] = useState(false)
 
@@ -72,6 +75,12 @@ export default function SocialWallPage() {
       setPosts(snap.docs.map(d => ({ id: d.id, ...d.data() })));
       setLoading(false);
     });
+
+    // Fetch Sponsorship Intelligence
+    getDocs(collection(db, "ads")).then(snap => {
+      setAds(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter((a: any) => a.isActive));
+    });
+
     return () => unsub();
   }, [db]);
 
@@ -81,7 +90,6 @@ export default function SocialWallPage() {
       return
     }
     
-    // Direct Mutation Pipeline
     addDoc(collection(db, "posts"), {
       text: text,
       sport: sport,
@@ -103,12 +111,26 @@ export default function SocialWallPage() {
     }).catch(err => alert(err.message));
   }
 
+  // Interleave Posts with Ads Logic
+  const feedItems = useMemo(() => {
+    const items: any[] = [];
+    posts.forEach((post, index) => {
+      items.push({ type: 'post', data: post });
+      // Inject ad after every 5 posts (index 4, 9, 14...)
+      if ((index + 1) % 5 === 0 && ads.length > 0) {
+        const adIndex = Math.floor(index / 5) % ads.length;
+        items.push({ type: 'ad', data: ads[adIndex] });
+      }
+    });
+    return items;
+  }, [posts, ads]);
+
   return (
     <div className="flex min-h-screen flex-col bg-[#050505] selection:bg-primary selection:text-black">
       <Navbar />
       
       <main className="flex-1 pt-24 pb-32 max-w-2xl mx-auto w-full px-4">
-        {/* Post Creation Area (Facebook Style) */}
+        {/* Post Creation Area */}
         <div className="bg-card border border-white/5 rounded-2xl p-6 mb-8 shadow-xl">
           <div className="flex items-center gap-4">
             <div className="h-10 w-10 rounded-full bg-white/5 overflow-hidden flex items-center justify-center border border-white/10 shrink-0">
@@ -171,10 +193,14 @@ export default function SocialWallPage() {
             <Loader2 className="h-10 w-10 animate-spin text-primary opacity-20" />
             <p className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/30">Syncing Wall...</p>
           </div>
-        ) : posts.length > 0 ? (
+        ) : feedItems.length > 0 ? (
           <div className="space-y-6">
-            {posts.map((post) => (
-              <WallCard key={post.id} post={post} currentUser={user} />
+            {feedItems.map((item, idx) => (
+              item.type === 'post' ? (
+                <WallCard key={item.data.id} post={item.data} currentUser={user} />
+              ) : (
+                <AdBanner key={`ad-${idx}`} ad={item.data} />
+              )
             ))}
           </div>
         ) : (
@@ -192,9 +218,48 @@ export default function SocialWallPage() {
   )
 }
 
+function AdBanner({ ad }: { ad: any }) {
+  const db = useFirestore();
+  
+  const handleAdClick = () => {
+    if (!db) return;
+    updateDoc(doc(db, "ads", ad.id), {
+      clickCount: increment(1)
+    });
+    window.open(ad.targetUrl, '_blank');
+  };
+
+  return (
+    <div className="bg-[#111] border border-white/5 rounded-2xl overflow-hidden shadow-2xl relative">
+      <div className="absolute top-3 right-4 z-10">
+        <span className="text-[9px] font-bold text-white/40 uppercase tracking-widest">Sponsored</span>
+      </div>
+      
+      <div className="relative w-full h-[120px]">
+        <img 
+          src={ad.imageUrl || "https://picsum.photos/seed/ad/800/200"} 
+          className="w-full h-full object-cover opacity-60" 
+          alt={ad.title} 
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#111] to-transparent" />
+      </div>
+
+      <div className="p-6 pt-0">
+        <h3 className="text-lg font-black uppercase italic text-white mb-1">{ad.title}</h3>
+        <p className="text-xs text-white/50 italic mb-4 line-clamp-1">{ad.description || "Premium sports equipment and elite coaching batches in Mysuru."}</p>
+        <Button 
+          onClick={handleAdClick}
+          className="w-full h-11 bg-white/5 border border-white/10 text-white font-black uppercase tracking-widest text-[10px] rounded-xl hover:bg-white/10"
+        >
+          Learn More <ExternalLink className="h-3 w-3 ml-2" />
+        </Button>
+      </div>
+    </div>
+  )
+}
+
 function WallCard({ post, currentUser }: { post: any, currentUser: any }) {
   const db = useFirestore()
-  const { toast } = useToast()
   const [hasLiked, setHasLiked] = useState(false)
   
   useEffect(() => {

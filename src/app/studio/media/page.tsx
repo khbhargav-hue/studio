@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from "react";
@@ -34,7 +35,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { TrendingUp, Plus, Edit2, Trash2, ExternalLink, MousePointer2, Loader2, Cloud } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { CloudinaryPicker } from "@/components/cloudinary-picker";
+import { cn } from "@/lib/utils";
 
 export default function AdManagerPage() {
   const db = useFirestore();
@@ -48,12 +49,7 @@ export default function AdManagerPage() {
     imageUrl: "",
     targetUrl: "",
     description: "",
-    placement: "listing_card",
     isActive: true,
-    sport: "all",
-    area: "all",
-    startDate: new Date().toISOString().split('T')[0],
-    endDate: "",
   });
 
   const adsQuery = useMemoFirebase(() => {
@@ -106,19 +102,20 @@ export default function AdManagerPage() {
       imageUrl: "",
       targetUrl: "",
       description: "",
-      placement: "listing_card",
       isActive: true,
-      sport: "all",
-      area: "all",
-      startDate: new Date().toISOString().split('T')[0],
-      endDate: "",
     });
     setEditingAd(null);
   };
 
   const startEdit = (ad: any) => {
     setEditingAd(ad);
-    setFormData({ ...ad });
+    setFormData({
+      title: ad.title || "",
+      imageUrl: ad.imageUrl || "",
+      targetUrl: ad.targetUrl || "",
+      description: ad.description || "",
+      isActive: ad.isActive ?? true,
+    });
     setShowAddDialog(true);
   };
 
@@ -148,24 +145,15 @@ export default function AdManagerPage() {
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-6 pt-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted">Ad Title</Label>
-                  <Input className="h-12 bg-surface border-border rounded-xl" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} required />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted">Placement</Label>
-                  <Select value={formData.placement} onValueChange={v => setFormData({...formData, placement: v})}>
-                    <SelectTrigger className="h-12 bg-surface border-border rounded-xl">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-card border-border">
-                      <SelectItem value="listing_card">Listing Card (Every 6th)</SelectItem>
-                      <SelectItem value="hero_banner">Hero Banner (Dismissible)</SelectItem>
-                      <SelectItem value="sidebar">Sidebar (Turf Detail)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted">Ad Title</Label>
+                <Input 
+                  placeholder="e.g. Premium Sports Gear Sale"
+                  className="h-12 bg-surface border-border rounded-xl" 
+                  value={formData.title} 
+                  onChange={e => setFormData({...formData, title: e.target.value})} 
+                  required 
+                />
               </div>
 
               <div className="space-y-2">
@@ -174,39 +162,32 @@ export default function AdManagerPage() {
               </div>
 
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-muted">Ad Creative (Cloudinary)</Label>
-                <div className="flex gap-4 items-center">
-                   <Input className="h-12 bg-surface border-border rounded-xl flex-1" value={formData.imageUrl} readOnly placeholder="Select from library..." />
-                   <CloudinaryPicker onSelect={(url) => setFormData({...formData, imageUrl: url})} label="CHOOSE" />
-                </div>
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted">Ad Creative (URL)</Label>
+                <Input 
+                  className="h-12 bg-surface border-border rounded-xl" 
+                  value={formData.imageUrl} 
+                  placeholder="Paste image URL..." 
+                  onChange={e => setFormData({...formData, imageUrl: e.target.value})}
+                  required
+                />
               </div>
 
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-muted">Brief Description</Label>
-                <Input className="h-12 bg-surface border-border rounded-xl" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
+                <Input 
+                  placeholder="Short marketing hook..."
+                  className="h-12 bg-surface border-border rounded-xl" 
+                  value={formData.description} 
+                  onChange={e => setFormData({...formData, description: e.target.value})} 
+                />
               </div>
 
-              <div className="grid grid-cols-2 gap-6">
-                <div className="flex items-center justify-between p-4 bg-surface rounded-xl border border-border">
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-black uppercase">Active Status</p>
-                    <p className="text-[8px] text-muted uppercase tracking-widest">Public discovery</p>
-                  </div>
-                  <Switch checked={formData.isActive} onCheckedChange={v => setFormData({...formData, isActive: v})} />
+              <div className="flex items-center justify-between p-4 bg-surface rounded-xl border border-border">
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black uppercase">Active Status</p>
+                  <p className="text-[8px] text-muted uppercase tracking-widest">Public discovery in feed</p>
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted">Sport Category</Label>
-                  <Select value={formData.sport} onValueChange={v => setFormData({...formData, sport: v})}>
-                    <SelectTrigger className="h-12 bg-surface border-border rounded-xl">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-card border-border">
-                      <SelectItem value="all">All Sports</SelectItem>
-                      <SelectItem value="Football">Football Only</SelectItem>
-                      <SelectItem value="Cricket">Cricket Only</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                <Switch checked={formData.isActive} onCheckedChange={v => setFormData({...formData, isActive: v})} />
               </div>
 
               <DialogFooter className="pt-6">
@@ -229,7 +210,6 @@ export default function AdManagerPage() {
               <TableHeader className="bg-surface/50">
                 <TableRow className="border-border hover:bg-transparent">
                   <TableHead className="p-6 font-black uppercase tracking-widest text-[10px] text-muted">Creative</TableHead>
-                  <TableHead className="font-black uppercase tracking-widest text-[10px] text-muted">Placement</TableHead>
                   <TableHead className="font-black uppercase tracking-widest text-[10px] text-muted text-center">Status</TableHead>
                   <TableHead className="font-black uppercase tracking-widest text-[10px] text-muted text-center">Engagement</TableHead>
                   <TableHead className="text-right p-6 font-black uppercase tracking-widest text-[10px] text-muted">Actions</TableHead>
@@ -248,11 +228,6 @@ export default function AdManagerPage() {
                           <p className="text-[9px] font-bold uppercase tracking-tight text-muted truncate max-w-[200px]">{ad.targetUrl}</p>
                         </div>
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="rounded-lg font-black text-[9px] uppercase border-border text-muted">
-                        {ad.placement.replace('_', ' ')}
-                      </Badge>
                     </TableCell>
                     <TableCell className="text-center">
                       <Badge className={cn("px-3 py-0.5 rounded-lg font-black text-[9px] uppercase border-none", ad.isActive ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500")}>
@@ -277,6 +252,11 @@ export default function AdManagerPage() {
                     </TableCell>
                   </TableRow>
                 ))}
+                {(!ads || ads.length === 0) && (
+                  <TableRow>
+                    <TableCell colSpan={4} className="h-40 text-center text-muted italic text-[10px] font-black uppercase tracking-widest">No ad nodes deployed.</TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </div>

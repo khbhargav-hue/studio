@@ -47,7 +47,6 @@ const SPORTS = [
   { label: "Cricket 🏏", value: "Cricket" },
   { label: "Pickleball 🎾", value: "Pickleball" },
   { label: "Badminton 🏸", value: "Badminton" },
-  { label: "Other", value: "Other" },
 ]
 
 export default function SocialWallPage() {
@@ -57,15 +56,13 @@ export default function SocialWallPage() {
   
   const [posts, setPosts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [isPosting, setIsPosting] = useState(false)
   const [showDialog, setShowDialog] = useState(false)
 
-  const [formData, setFormData] = useState({
-    game: "Football",
-    location: "",
-    description: "",
-    playersNeeded: 1
-  })
+  // Form States
+  const [text, setText] = useState("")
+  const [sport, setSport] = useState("Football")
+  const [location, setLocation] = useState("")
+  const [playersNeeded, setPlayersNeeded] = useState(1)
 
   // Real-time Social Circuit Listener
   useEffect(() => {
@@ -78,39 +75,32 @@ export default function SocialWallPage() {
     return () => unsub();
   }, [db]);
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!user) {
-      toast({ title: "Identification Required", description: "Sign in to join the circuit.", variant: "destructive" })
+      alert("Please sign in first");
       return
     }
     
-    setIsPosting(true)
-    
-    const payload = {
-      game: formData.game,
-      location: formData.location,
-      description: formData.description,
-      playersNeeded: Number(formData.playersNeeded),
+    // Direct Mutation Pipeline
+    addDoc(collection(db, "posts"), {
+      text: text,
+      sport: sport,
+      location: location,
+      playersNeeded: Number(playersNeeded),
       likes: 0,
       postedBy: {
         uid: user.uid,
-        name: user.displayName || "Athlete Node",
-        photoURL: user.photoURL || "",
+        name: user.displayName || "Player",
+        photo: user.photoURL || ""
       },
       createdAt: serverTimestamp()
-    }
-
-    addDoc(collection(db, "posts"), payload)
-      .then(() => {
-        setIsPosting(false)
-        setShowDialog(false)
-        setFormData({ game: "Football", location: "", description: "", playersNeeded: 1 })
-        toast({ title: "Signal Broadcasted 🚀" })
-      })
-      .catch((err) => {
-        setIsPosting(false)
-        toast({ title: "Broadcast Failed", description: err.message, variant: "destructive" })
-      })
+    }).then(() => {
+      setText("");
+      setLocation("");
+      setPlayersNeeded(1);
+      setShowDialog(false);
+      toast({ title: "Signal Broadcasted 🚀" });
+    }).catch(err => alert(err.message));
   }
 
   return (
@@ -118,7 +108,7 @@ export default function SocialWallPage() {
       <Navbar />
       
       <main className="flex-1 pt-24 pb-32 max-w-2xl mx-auto w-full px-4">
-        {/* Post Creation Area */}
+        {/* Post Creation Area (Facebook Style) */}
         <div className="bg-card border border-white/5 rounded-2xl p-6 mb-8 shadow-xl">
           <div className="flex items-center gap-4">
             <div className="h-10 w-10 rounded-full bg-white/5 overflow-hidden flex items-center justify-center border border-white/10 shrink-0">
@@ -131,7 +121,7 @@ export default function SocialWallPage() {
             <Dialog open={showDialog} onOpenChange={setShowDialog}>
               <DialogTrigger asChild>
                 <button className="flex-1 h-12 bg-white/5 border border-white/5 rounded-full px-6 text-left text-white/40 text-sm font-medium hover:bg-white/10 hover:border-primary/20 transition-all">
-                  What's happening on the Mysuru circuit?
+                  Looking for players in Mysuru...
                 </button>
               </DialogTrigger>
               <DialogContent className="bg-card border-white/5 rounded-[2rem] p-8 max-w-lg shadow-2xl">
@@ -144,7 +134,7 @@ export default function SocialWallPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Discipline</Label>
-                      <Select value={formData.game} onValueChange={v => setFormData({...formData, game: v})}>
+                      <Select value={sport} onValueChange={setSport}>
                         <SelectTrigger className="h-12 bg-white/5 border-white/10 text-white">
                           <SelectValue />
                         </SelectTrigger>
@@ -155,19 +145,19 @@ export default function SocialWallPage() {
                     </div>
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Needed</Label>
-                      <Input type="number" className="h-12 bg-white/5 border-white/10 text-white" value={formData.playersNeeded} onChange={e => setFormData({...formData, playersNeeded: Number(e.target.value)})} />
+                      <Input type="number" className="h-12 bg-white/5 border-white/10 text-white" value={playersNeeded} onChange={e => setPlayersNeeded(Number(e.target.value))} />
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Location / Turf</Label>
-                    <Input placeholder="e.g. Bogadi / Matchbox" className="h-12 bg-white/5 border-white/10 text-white" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} />
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Area in Mysuru</Label>
+                    <Input placeholder="e.g. Bogadi / Vijayanagar" className="h-12 bg-white/5 border-white/10 text-white" value={location} onChange={e => setLocation(e.target.value)} />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Description</Label>
-                    <Textarea placeholder="Share your match details..." className="bg-white/5 border-white/10 italic min-h-[100px] text-white" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Message</Label>
+                    <Textarea placeholder="Share your match details..." className="bg-white/5 border-white/10 italic min-h-[100px] text-white" value={text} onChange={e => setText(e.target.value)} />
                   </div>
-                  <Button onClick={handleSubmit} disabled={isPosting} className="w-full h-14 bg-primary text-black font-black uppercase tracking-widest text-xs rounded-xl shadow-lg shadow-primary/20">
-                    {isPosting ? <Loader2 className="h-5 w-5 animate-spin" /> : "BROADCAST TO WALL"}
+                  <Button onClick={handleSubmit} className="w-full h-14 bg-primary text-black font-black uppercase tracking-widest text-xs rounded-xl shadow-lg shadow-primary/20">
+                    ⚡ Post to Circuit
                   </Button>
                 </div>
               </DialogContent>
@@ -233,7 +223,7 @@ function WallCard({ post, currentUser }: { post: any, currentUser: any }) {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-full border-2 border-primary/20 p-0.5 overflow-hidden bg-white/5">
-              <img src={post.postedBy?.photoURL || `https://picsum.photos/seed/${post.postedBy?.uid}/100`} className="h-full w-full object-cover rounded-full" alt="User" />
+              <img src={post.postedBy?.photo || `https://picsum.photos/seed/${post.postedBy?.uid}/100`} className="h-full w-full object-cover rounded-full" alt="User" />
             </div>
             <div>
               <p className="text-sm font-black uppercase italic text-white leading-none">{post.postedBy?.name}</p>
@@ -256,7 +246,7 @@ function WallCard({ post, currentUser }: { post: any, currentUser: any }) {
         <div className="space-y-4 mb-6">
           <div className="flex flex-wrap gap-2">
             <span className="bg-primary/10 text-primary text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border border-primary/20">
-              {post.game}
+              {post.sport}
             </span>
             <span className="bg-white/5 text-white/40 text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border border-white/5 flex items-center gap-1">
               <MapPin className="h-2.5 w-2.5" /> {post.location || "Mysuru"}
@@ -267,7 +257,7 @@ function WallCard({ post, currentUser }: { post: any, currentUser: any }) {
               </span>
             )}
           </div>
-          <p className="text-white/80 text-[15px] leading-relaxed italic font-medium">"{post.description}"</p>
+          <p className="text-white/80 text-[15px] leading-relaxed italic font-medium">"{post.text}"</p>
         </div>
 
         {/* Actions */}

@@ -2,6 +2,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { MobileNav } from "@/components/mobile-nav"
@@ -39,6 +40,7 @@ export default function MatchesPage() {
   const db = useFirestore()
   const { user } = useUser()
   const { toast } = useToast()
+  const router = useRouter()
   const [isPosting, setIsPosting] = useState(false)
   const [showDialog, setShowDialog] = useState(false)
   const [requests, setRequests] = useState<any[]>([])
@@ -83,12 +85,16 @@ export default function MatchesPage() {
 
   const handlePost = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!db || !user) return
+    if (!db || !user) {
+      toast({ title: "Identification Required", description: "Login required" })
+      return
+    }
     
-    console.log("POST_START", newRequest)
-    setIsPosting(true)
     try {
-      const docRef = await addDoc(collection(db, "matches"), {
+      console.log("SUBMIT_START");
+      setIsPosting(true)
+
+      const payload = {
         ...newRequest,
         createdBy: user.uid,
         creatorName: user.displayName || "Athlete",
@@ -96,27 +102,41 @@ export default function MatchesPage() {
         slotsFilled: 1,
         joinedPlayers: [user.uid],
         status: "active",
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      })
-      
-      console.log("POST_SUCCESS", docRef.id)
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+
+      console.log("PAYLOAD", payload);
+
+      const docRef = await Promise.race([
+        addDoc(collection(db, "matches"), payload),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Save timeout")), 10000)
+        )
+      ]) as any;
+
+      console.log("SAVE_SUCCESS", docRef.id);
       
       toast({ 
-        title: "Saved: " + docRef.id, 
-        description: "The circuit is permanently notified." 
+        title: "Posted 🚀", 
+        description: "Saved: " + docRef.id 
       })
       
       setShowDialog(false)
       setNewRequest({ game: "Football", playersNeeded: 2, location: "", matchDate: "", matchTime: "", details: "" })
+      
+      router.push('/')
+      router.refresh()
+
     } catch (err: any) {
-      console.error("POST_ERROR", err.code, err.message)
+      console.error("SAVE_ERROR", err);
       toast({ 
         title: "Transmission Failed", 
         description: err.message,
         variant: "destructive" 
       })
     } finally {
+      console.log("LOADING_STOP");
       setIsPosting(false)
     }
   }

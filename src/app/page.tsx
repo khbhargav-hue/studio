@@ -129,11 +129,11 @@ export default function FeedPage() {
       return
     }
     
-    console.log("POST_START", newPost);
-    setIsPosting(true)
-
     try {
-      const matchData = {
+      console.log("SUBMIT_START");
+      setIsPosting(true)
+
+      const payload = {
         ...newPost,
         createdBy: user.uid,
         creatorName: user.displayName || "Athlete Node",
@@ -143,17 +143,24 @@ export default function FeedPage() {
         status: "active",
         likes: 0,
         comments: 0,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
+        createdAt: new Date(),
+        updatedAt: new Date()
       }
 
-      const docRef = await addDoc(collection(db, "matches"), matchData);
-      
-      console.log("POST_SUCCESS", docRef.id);
+      console.log("PAYLOAD", payload);
+
+      const docRef = await Promise.race([
+        addDoc(collection(db, "matches"), payload),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Save timeout")), 10000)
+        )
+      ]) as any;
+
+      console.log("SAVE_SUCCESS", docRef.id);
       
       toast({ 
-        title: "Saved: " + docRef.id, 
-        description: "Your signal is permanently live on the circuit." 
+        title: "Posted 🚀", 
+        description: "Saved: " + docRef.id 
       })
 
       setNewPost(initialFormState)
@@ -163,13 +170,14 @@ export default function FeedPage() {
       router.refresh()
       
     } catch (err: any) {
-      console.error("POST_ERROR", err.code, err.message);
+      console.error("SAVE_ERROR", err);
       toast({ 
         title: "Transmission Failed", 
         description: err.message,
         variant: "destructive" 
       })
     } finally {
+      console.log("LOADING_STOP");
       setIsPosting(false)
     }
   }

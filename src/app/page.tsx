@@ -5,7 +5,6 @@ import { useState, useEffect, useMemo } from "react"
 import { Footer } from "@/components/footer"
 import { MobileNav } from "@/components/mobile-nav"
 import { Button } from "@/components/ui/button"
-import PostCard from "@/components/PostCard"
 import { PostModal } from "@/components/PostModal"
 import { 
   Zap,
@@ -13,8 +12,7 @@ import {
   ExternalLink
 } from "lucide-react"
 import { useFirestore, useUser } from "@/firebase"
-import { getFirestore, collection, doc, updateDoc, increment, deleteDoc, onSnapshot, getDocs } from "firebase/firestore"
-import { useToast } from "@/hooks/use-toast"
+import { getFirestore, collection, doc, updateDoc, increment, onSnapshot, getDocs } from "firebase/firestore"
 import { cn } from "@/lib/utils"
 import { SkeletonCard } from "@/components/Skeleton"
 
@@ -29,7 +27,6 @@ const SPORTS_FILTERS = [
 export default function SocialWallPage() {
   const db = useFirestore()
   const { user } = useUser()
-  const { toast } = useToast()
   
   const [posts, setPosts] = useState<any[]>([])
   const [ads, setAds] = useState<any[]>([])
@@ -45,7 +42,7 @@ export default function SocialWallPage() {
     }
   }, []);
 
-  // SIMPLEST POST FETCH
+  // SIMPLEST POST FETCH Node
   useEffect(() => {
     const db = getFirestore();
     const unsub = onSnapshot(
@@ -74,13 +71,6 @@ export default function SocialWallPage() {
       setAds(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter((a: any) => a.isActive));
     });
   }, [db]);
-
-  const handleDelete = (postId: string) => {
-    if (!db) return;
-    deleteDoc(doc(db, "posts", postId)).catch(err => {
-      // silenced error
-    });
-  };
 
   const handleLike = (postId: string) => {
     if (!db || likedPosts.includes(postId)) return;
@@ -153,23 +143,27 @@ export default function SocialWallPage() {
           </div>
         </div>
 
-        {/* Real-time Wall Feed */}
+        {/* Real-time Wall Feed with Debug Signals */}
         {loading ? (
           <div className="space-y-3">
             {[...Array(4)].map((_, i) => <SkeletonCard key={i} />)}
           </div>
         ) : feedItems.length > 0 ? (
           <div className="space-y-3">
+            {console.log("Rendering posts count:", posts.length)}
             {feedItems.map((item, idx) => (
               item.type === 'post' ? (
-                <PostCard 
-                  key={item.data.id} 
-                  post={item.data} 
-                  currentUser={user} 
-                  onDelete={() => handleDelete(item.data.id)}
-                  onLike={() => handleLike(item.data.id)}
-                  hasLiked={likedPosts.includes(item.data.id)}
-                />
+                <div key={item.data.id} style={{background:"#111",border:"1px solid #222",
+                  borderRadius:12,padding:16,marginBottom:12,color:"#fff"}}>
+                  <strong>{item.data.postedBy?.name || "Player"}</strong>
+                  <p className="mt-2 text-[#F5F5F5] italic">"{item.data.text}"</p>
+                  <div className="mt-4 flex items-center gap-2">
+                    <span className="bg-primary/10 text-primary text-[10px] font-black uppercase px-2 py-0.5 rounded border border-primary/20">
+                      {item.data.sport}
+                    </span>
+                    <small style={{color:"#888"}}>{item.data.location}</small>
+                  </div>
+                </div>
               ) : (
                 <AdBanner key={`ad-${idx}`} ad={item.data} />
               )

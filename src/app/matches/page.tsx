@@ -1,8 +1,6 @@
-
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { MobileNav } from "@/components/mobile-nav"
@@ -25,21 +23,18 @@ import {
   Users, 
   Loader2, 
   Zap,
-  Activity,
-  ShieldCheck,
   CheckCircle2,
   Trash2,
   Share2,
   Edit2
 } from "lucide-react"
-import { useFirestore, useUser, useDoc, useMemoFirebase, useAuth } from "@/firebase"
-import { collection, query, orderBy, addDoc, doc, serverTimestamp, where, updateDoc, increment, deleteDoc, arrayUnion, onSnapshot } from "firebase/firestore"
+import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/firebase"
+import { collection, query, orderBy, addDoc, doc, serverTimestamp, updateDoc, increment, deleteDoc, arrayUnion, onSnapshot } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 
 export default function MatchesPage() {
   const db = useFirestore()
-  const auth = useAuth()
   const { user } = useUser()
   const { toast } = useToast()
   const [isPosting, setIsPosting] = useState(false)
@@ -92,7 +87,7 @@ export default function MatchesPage() {
     return () => unsubscribe()
   }, [db])
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!user) { alert("Please sign in first"); return; }
     
     setIsPosting(true);
@@ -310,7 +305,7 @@ function MatchCard({ request, isAdmin, onEdit }: { request: any, isAdmin: boolea
     } catch (err) {}
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!db || !canManage) return
     if (!confirm("Retract this match signal?")) return
     const matchRef = doc(db, "matches", request.id);
@@ -346,10 +341,11 @@ function MatchCard({ request, isAdmin, onEdit }: { request: any, isAdmin: boolea
                 <button 
                   onClick={onEdit} 
                   className="p-2 text-white/20 hover:text-primary transition-colors"
+                  title="Edit Signal"
                 >
                   <Edit2 className="h-4 w-4" />
                 </button>
-                <button onClick={handleDelete} className="p-2 text-destructive/20 hover:text-destructive transition-colors">
+                <button onClick={handleDelete} className="p-2 text-destructive/20 hover:text-destructive transition-colors" title="Delete Signal">
                   <Trash2 className="h-4 w-4" />
                 </button>
               </>

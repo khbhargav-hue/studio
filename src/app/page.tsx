@@ -1,8 +1,6 @@
-
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { MobileNav } from "@/components/mobile-nav"
@@ -30,7 +28,6 @@ import {
   MapPin, 
   Clock, 
   Calendar, 
-  Users, 
   Loader2, 
   Zap,
   Heart,
@@ -39,13 +36,11 @@ import {
   MoreVertical,
   Activity,
   UserCircle,
-  Trophy,
-  Target,
   Trash2,
   CheckCircle2,
   Edit2
 } from "lucide-react"
-import { useFirestore, useUser, useDoc, useMemoFirebase, useAuth } from "@/firebase"
+import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/firebase"
 import { collection, query, orderBy, addDoc, doc, serverTimestamp, updateDoc, increment, arrayUnion, deleteDoc, onSnapshot } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
@@ -75,7 +70,6 @@ const TACTICAL_CHIPS = [
 
 export default function FeedPage() {
   const db = useFirestore()
-  const auth = useAuth()
   const { user } = useUser()
   const { toast } = useToast()
   const [isPosting, setIsPosting] = useState(false)
@@ -130,7 +124,7 @@ export default function FeedPage() {
     return () => unsubscribe()
   }, [db])
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!user) { alert("Please sign in first"); return; }
     
     setIsPosting(true);
@@ -432,7 +426,7 @@ function PostCard({ post, isAdmin, onEdit }: { post: any, isAdmin: boolean, onEd
     } catch (err) {}
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!db || !canManage) return
     if (!confirm("Retract this match signal from the circuit?")) return
     const matchRef = doc(db, "matches", post.id);
@@ -449,7 +443,7 @@ function PostCard({ post, isAdmin, onEdit }: { post: any, isAdmin: boolean, onEd
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-full border-2 border-primary/20 p-0.5 overflow-hidden bg-white/5">
-              <img src={post.postedBy?.photoURL || post.postedBy?.photo || `https://picsum.photos/seed/${post.postedBy?.uid || 'anon'}/100`} className="h-full w-full object-cover rounded-full" alt="Creator" />
+              <img src={post.postedBy?.photoURL || `https://picsum.photos/seed/${post.postedBy?.uid || 'anon'}/100`} className="h-full w-full object-cover rounded-full" alt="Creator" />
             </div>
             <div>
               <p className="text-sm font-black uppercase italic text-white leading-none">{post.postedBy?.name || 'Athlete Node'}</p>
@@ -462,12 +456,14 @@ function PostCard({ post, isAdmin, onEdit }: { post: any, isAdmin: boolean, onEd
                 <button 
                   onClick={onEdit} 
                   className="text-white/20 hover:text-primary transition-colors p-2"
+                  title="Edit Signal"
                 >
                   <Edit2 className="h-4 w-4" />
                 </button>
                 <button 
                   onClick={handleDelete} 
                   className="text-destructive/20 hover:text-destructive transition-colors p-2"
+                  title="Delete Signal"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>

@@ -112,11 +112,12 @@ export default function FeedPage() {
           id: doc.id,
           ...doc.data()
         }))
+        console.log("MATCHES_LOADED", data)
         setPosts(data)
         setLoading(false)
       },
       err => {
-        console.error(err)
+        console.error("READ_ERROR", err)
         setLoading(false)
       }
     )
@@ -129,6 +130,7 @@ export default function FeedPage() {
     if (!db || !user || isPosting) return
     
     setIsPosting(true)
+    console.log("POST_START", newPost)
 
     try {
       const payload = {
@@ -145,7 +147,14 @@ export default function FeedPage() {
         updatedAt: serverTimestamp()
       }
 
-      await addDoc(collection(db, "matches"), payload);
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Submit timeout")), 10000)
+      )
+
+      await Promise.race([
+        addDoc(collection(db, "matches"), payload),
+        timeoutPromise
+      ])
 
       toast({ 
         title: "Match posted 🚀", 

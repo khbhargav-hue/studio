@@ -72,11 +72,12 @@ export default function MatchesPage() {
           id: doc.id,
           ...doc.data()
         }))
+        console.log("MATCHES_LOADED", data)
         setRequests(data)
         setLoading(false)
       },
       err => {
-        console.error(err)
+        console.error("READ_ERROR", err)
         setLoading(false)
       }
     )
@@ -92,6 +93,7 @@ export default function MatchesPage() {
     }
     
     setIsPosting(true)
+    console.log("POST_START", newRequest)
 
     try {
       const payload = {
@@ -106,7 +108,14 @@ export default function MatchesPage() {
         updatedAt: serverTimestamp()
       }
 
-      await addDoc(collection(db, "matches"), payload);
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Submit timeout")), 10000)
+      )
+
+      await Promise.race([
+        addDoc(collection(db, "matches"), payload),
+        timeoutPromise
+      ])
 
       toast({ 
         title: "Match posted 🚀", 
@@ -147,9 +156,9 @@ export default function MatchesPage() {
 
           <Dialog open={showDialog} onOpenChange={setShowDialog}>
             <DialogTrigger asChild>
-              <Button className="h-20 px-10 bg-primary text-black font-black uppercase tracking-widest text-sm rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.02] transition-all">
+              <button className="h-20 px-10 bg-primary text-black font-black uppercase tracking-widest text-sm rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.02] transition-all flex items-center justify-center">
                 <Plus className="h-6 w-6 mr-3" /> POST MATCH CLAIM
-              </Button>
+              </button>
             </DialogTrigger>
             <DialogContent className="bg-card border-white/5 rounded-[2.5rem] p-10 max-w-lg">
               <DialogHeader>

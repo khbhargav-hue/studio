@@ -133,7 +133,7 @@ function NewTurfForm() {
   }, [existingTurf]);
 
   const uploadToCloudinary = (file: File): Promise<string | null> => {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       if (!CLOUDINARY_CLOUD_NAME) {
         resolve(null);
         return;
@@ -144,8 +144,6 @@ function NewTurfForm() {
       
       const xhr = new XMLHttpRequest();
       xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, true);
-      
-      // Add a local 8s timeout for the image specifically to keep the 10s total limit
       xhr.timeout = 8000; 
 
       xhr.onload = () => {
@@ -162,13 +160,10 @@ function NewTurfForm() {
     e.preventDefault();
     if (!db) return;
     
-    console.log("STEP_1_FORM_SUBMIT");
     setIsSaving(true);
 
-    // Watchdog Timer to prevent infinite spinner
     const watchdogId = setTimeout(() => {
       if (isSaving) {
-        console.warn("STEP_X_WATCHDOG_TIMEOUT");
         setIsSaving(false);
         toast({ 
           title: "Save timeout", 
@@ -181,29 +176,21 @@ function NewTurfForm() {
     try {
       let finalImageUrl = formData.imageUrl;
 
-      // STEP 2 & 3: Optional Media Sync
       if (pendingFile) {
-        console.log("STEP_2_IMAGE_UPLOAD_START");
         try {
           const url = await uploadToCloudinary(pendingFile);
           if (url) {
             finalImageUrl = url;
-            console.log("STEP_3_IMAGE_UPLOAD_SUCCESS");
-          } else {
-            console.warn("STEP_3_IMAGE_UPLOAD_FALLBACK_TRIGGERED");
           }
         } catch (err) {
-          console.error("STEP_3_IMAGE_UPLOAD_FAILED", err);
+          // silent fail
         }
       }
 
-      // Ensure a fallback image exists
       if (!finalImageUrl && !formData.imageUrl) {
         finalImageUrl = "https://picsum.photos/seed/turf/1200/800";
       }
 
-      // STEP 4: Firestore Sync
-      console.log("STEP_4_FIRESTORE_SAVE_START");
       const id = editId || formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
       const turfRef = doc(db, "turfs", id);
       
@@ -215,26 +202,14 @@ function NewTurfForm() {
         createdAt: existingTurf?.createdAt || serverTimestamp()
       };
 
-      // Non-blocking write to prevent network hanging the UI
       setDoc(turfRef, dataToSave, { merge: true })
         .then(() => {
-          console.log("STEP_5_FIRESTORE_SAVE_SUCCESS");
-          
-          // STEP 6: UI Finalization
           clearTimeout(watchdogId);
-          console.log("STEP_6_RESET_FORM");
           toast({ title: editId ? "Intel Synchronized" : "Arena Deployed" });
-          
-          // STEP 7: Immediate Spinner Stop
           setIsSaving(false);
-          console.log("STEP_7_LOADING_FALSE");
-
-          // STEP 8: Hard Redirect
-          console.log("STEP_8_REDIRECT");
           window.location.href = "/studio";
         })
         .catch(async (err: any) => {
-          console.error("STEP_X_FIRESTORE_FAILED", err);
           clearTimeout(watchdogId);
           setIsSaving(false);
           errorEmitter.emit('permission-error', new FirestorePermissionError({
@@ -246,7 +221,6 @@ function NewTurfForm() {
         });
       
     } catch (err: any) {
-      console.error("STEP_X_FATAL_ERROR", err);
       clearTimeout(watchdogId);
       setIsSaving(false);
       toast({ 
@@ -521,7 +495,7 @@ function NewTurfForm() {
                 >
                   {isSaving && pendingFile && <Loader2 className="h-6 w-6 animate-spin text-primary absolute z-10" />}
                   {(previewUrl || formData.imageUrl) ? (
-                    <img src={previewUrl || formData.imageUrl} className="w-full h-full object-cover group-hover:opacity-50 transition-opacity" alt="Main" />
+                    <img src={previewUrl || formData.imageUrl} className="w-full h-full object-cover group-hover:opacity-50 transition-opacity" alt="Main" loading="lazy" />
                   ) : (
                     <div className="flex flex-col items-center gap-2">
                       <Upload className="h-6 w-6 text-muted-foreground" />

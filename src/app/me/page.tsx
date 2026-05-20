@@ -20,7 +20,6 @@ export default function MePage() {
   const { toast } = useToast();
   const [isSigningIn, setIsSigningIn] = useState(false);
 
-  // My Posts Circuit
   const myPostsQuery = useMemoFirebase(() => {
     if (!db || !user) return null;
     return query(
@@ -40,7 +39,6 @@ export default function MePage() {
       await signInWithPopup(auth, provider);
       toast({ title: "Identity Verified", description: "Welcome back to the Mysuru circuit." });
     } catch (err: any) {
-      console.error(err);
       toast({ title: "Auth Failed", variant: "destructive" });
     } finally {
       setIsSigningIn(false);
@@ -91,13 +89,13 @@ export default function MePage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-[#0A0A0A] selection:bg-primary selection:text-black">
-      <main className="flex-1 pt-12 pb-32 max-w-lg mx-auto w-full px-4">
+      <main className="flex-1 pt-12 pb-20 max-w-lg mx-auto w-full px-4">
         {/* Profile Header */}
         <div className="flex flex-col items-center text-center mb-12">
           <div className="relative mb-6">
             <div className="h-[72px] w-[72px] rounded-full overflow-hidden border-2 border-primary/20 p-0.5 bg-[#111]">
               {user.photoURL ? (
-                <img src={user.photoURL} alt={user.displayName || "Me"} className="h-full w-full object-cover rounded-full" />
+                <img src={user.photoURL} alt={user.displayName || "Me"} className="h-full w-full object-cover rounded-full" loading="lazy" />
               ) : (
                 <UserCircle className="h-full w-full text-white/10" />
               )}

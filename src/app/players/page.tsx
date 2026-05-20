@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
@@ -34,7 +33,6 @@ export default function PlayersPage() {
       setPlayers(data)
       setLoading(false)
     }).catch(err => {
-      console.error("PLAYER_FETCH_FAIL", err)
       setLoading(false)
     })
   }, [db])
@@ -55,7 +53,7 @@ export default function PlayersPage() {
     <div className="flex min-h-screen flex-col bg-[#050505] selection:bg-primary selection:text-black">
       <Navbar />
       
-      <main className="flex-1 pt-24 pb-32 max-w-5xl mx-auto w-full px-4">
+      <main className="flex-1 pt-24 pb-20 max-w-5xl mx-auto w-full px-4">
         <header className="mb-10 space-y-6">
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 border border-primary/20 text-[10px] font-black uppercase tracking-[0.4em] text-primary">
             <Zap className="h-3 w-3" /> MYSURU PLAYER CIRCUIT
@@ -86,7 +84,7 @@ export default function PlayersPage() {
                 <div className="flex items-start gap-4 mb-6">
                   <div className="h-14 w-14 rounded-full bg-[#1A1A1A] border border-[#222] overflow-hidden shrink-0 flex items-center justify-center">
                     {player.photoURL ? (
-                      <img src={player.photoURL} alt={player.displayName} className="h-full w-full object-cover" />
+                      <img src={player.photoURL} alt={player.displayName} className="h-full w-full object-cover" loading="lazy" />
                     ) : (
                       <UserCircle className="h-8 w-8 text-white/10" />
                     )}

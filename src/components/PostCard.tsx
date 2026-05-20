@@ -33,6 +33,7 @@ export default function PostCard({ post, currentUser, onDelete, onLike, hasLiked
               src={post.postedBy?.photo || `https://picsum.photos/seed/${post.postedBy?.uid}/100`} 
               className="h-full w-full object-cover rounded-full" 
               alt="Athlete" 
+              loading="lazy"
             />
           </div>
           <div>

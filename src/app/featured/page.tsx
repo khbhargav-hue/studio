@@ -12,7 +12,6 @@ import { motion } from "framer-motion";
 export default function FeaturedPage() {
   const db = useFirestore();
   
-  // Broadened query to ensure data visibility
   const featuredQuery = useMemoFirebase(() => {
     if (!db) return null;
     return query(collection(db, "turfs"), limit(20));
@@ -20,29 +19,12 @@ export default function FeaturedPage() {
 
   const { data: rawTurfs, loading } = useCollection(featuredQuery);
 
-  // Filter for 'isPremium' or 'featured' on the client side
   const turfs = useMemo(() => {
     if (!rawTurfs) return [];
     return rawTurfs.filter((t: any) => t.isPremium === true || t.featured === true || t.isPopular === true);
   }, [rawTurfs]);
 
-  // If no "featured" fields found, show the last 4 added turfs as a fallback
   const displayTurfs = turfs.length > 0 ? turfs : (rawTurfs?.slice(0, 4) || []);
-
-  // Audit Fetch for Console Debugging
-  useEffect(() => {
-    async function runAudit() {
-      if (!db) return;
-      console.log("FETCH_START: featured");
-      try {
-        const snapshot = await getDocs(collection(db, "turfs"));
-        console.log("FETCH_SUCCESS: featured snapshot", snapshot.docs.length);
-      } catch (err) {
-        console.error("FETCH_ERROR: featured", err);
-      }
-    }
-    runAudit();
-  }, [db]);
 
   return (
     <div className="flex min-h-screen flex-col bg-[#050505] selection:bg-primary selection:text-black">

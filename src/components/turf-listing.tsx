@@ -9,14 +9,12 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FilterSystem } from './filter-system';
 import { Zap, WifiOff, Database } from 'lucide-react';
-import { firebaseConfig } from '@/firebase/config';
 
 const CACHE_KEY = 'turfista_circuit_cache';
 
 export function TurfListing() {
   const db = useFirestore();
   
-  // States
   const [activeSport, setActiveSport] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [areaFilter, setAreaFilter] = useState('all');
@@ -26,7 +24,6 @@ export function TurfListing() {
   const [displayTurfs, setDisplayTurfs] = useState<any[]>([]);
   const [isUsingCache, setIsUsingCache] = useState(false);
 
-  // Broad Discovery Query
   const turfsQuery = useMemoFirebase(() => {
     if (!db) return null;
     return query(collection(db, 'turfs'), limit(pageSize));
@@ -45,26 +42,20 @@ export function TurfListing() {
   const { data: rawTurfs, loading: loadingTurfs, error } = useCollection(turfsQuery);
   const { data: ads } = useCollection(adsQuery);
 
-  // Persistent Cache & Diagnostic Logic
   useEffect(() => {
-    console.log(`[CIRCUIT NODE] Project: ${firebaseConfig.projectId}`);
-    
     if (rawTurfs && rawTurfs.length > 0) {
-      console.log(`[CIRCUIT SYNC] Success: ${rawTurfs.length} nodes active`);
       setDisplayTurfs(rawTurfs);
       localStorage.setItem(CACHE_KEY, JSON.stringify(rawTurfs));
       setIsUsingCache(false);
     } else if (error || (!loadingTurfs && (!rawTurfs || rawTurfs.length === 0))) {
       const cached = localStorage.getItem(CACHE_KEY);
       if (cached) {
-        console.warn("[CIRCUIT OFFLINE] Falling back to local cache");
         setDisplayTurfs(JSON.parse(cached));
         setIsUsingCache(true);
       }
     }
   }, [rawTurfs, loadingTurfs, error]);
 
-  // Client-side filtering for discovery resilience
   const filteredTurfs = useMemo(() => {
     if (!displayTurfs) return [];
     

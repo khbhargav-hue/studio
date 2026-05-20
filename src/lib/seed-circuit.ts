@@ -79,6 +79,5 @@ export const mysuuruTurfs = [
 ];
 
 export async function seedCircuitData() {
-  console.log("[CIRCUIT LOCK] Auto-seeding disabled. Use manual trigger in Studio.");
   return 0;
 }

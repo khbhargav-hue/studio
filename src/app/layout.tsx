@@ -95,7 +95,7 @@ export default function RootLayout({
           <FaviconProvider />
           <div className="flex flex-col min-h-screen">
             <Header />
-            <main className="flex-1 pb-[72px]">
+            <main className="flex-1 pb-20">
               {children}
             </main>
             <BottomNav />

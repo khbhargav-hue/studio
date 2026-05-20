@@ -43,7 +43,6 @@ export default function TurfsPage() {
   const [isAdding, setIsAdding] = useState(false);
   const [showDialog, setShowDialog] = useState(false);
 
-  // Form State
   const [formData, setFormData] = useState({
     name: "",
     area: "Vijayanagar",
@@ -54,7 +53,6 @@ export default function TurfsPage() {
     rating: "4.5"
   });
 
-  // Admin Role Check
   const profileRef = useMemoFirebase(() => {
     if (!db || !user) return null;
     return doc(db, "users", user.uid);
@@ -69,7 +67,7 @@ export default function TurfsPage() {
       const snap = await getDocs(collection(db, "turfs"));
       setTurfs(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     } catch (err) {
-      console.error("DATA_FETCH_FAIL", err);
+      // suppressed
     } finally {
       setLoading(false);
     }
@@ -122,7 +120,7 @@ export default function TurfsPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-[#0A0A0A] selection:bg-primary selection:text-black">
-      <main className="flex-1 py-8 px-4 md:px-8 max-w-7xl mx-auto w-full">
+      <main className="flex-1 py-8 px-4 md:px-8 max-w-7xl mx-auto w-full pb-20">
         <header className="mb-12 space-y-8">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
             <div>

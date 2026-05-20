@@ -10,6 +10,10 @@ export function BottomNav() {
   const pathname = usePathname();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  if (pathname.startsWith('/studio') || pathname.startsWith('/admin')) {
+    return null;
+  }
+
   const navItems = [
     { label: "Feed", href: "/", icon: "🏠" },
     { label: "Turfs", href: "/turfs", icon: "⚽" },

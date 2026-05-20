@@ -37,7 +37,6 @@ export default function SocialWallPage() {
   const [activeFilter, setActiveFilter] = useState("All")
   const [likedPosts, setLikedPosts] = useState<string[]>([])
 
-  // Load liked posts from local storage on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const liked = JSON.parse(localStorage.getItem('turfista_liked_posts') || '[]');
@@ -45,7 +44,6 @@ export default function SocialWallPage() {
     }
   }, []);
 
-  // Real-time Social Circuit Listener
   useEffect(() => {
     if (!db) return
     const q = query(collection(db, "posts"), orderBy("createdAt", "desc"), limit(20));
@@ -54,7 +52,6 @@ export default function SocialWallPage() {
       setLoading(false);
     });
 
-    // Fetch Sponsorship Intelligence
     getDocs(collection(db, "ads")).then(snap => {
       setAds(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter((a: any) => a.isActive));
     });
@@ -64,7 +61,9 @@ export default function SocialWallPage() {
 
   const handleDelete = (postId: string) => {
     if (!db) return;
-    deleteDoc(doc(db, "posts", postId)).catch(err => alert(err.message));
+    deleteDoc(doc(db, "posts", postId)).catch(err => {
+      // silenced error
+    });
   };
 
   const handleLike = (postId: string) => {
@@ -79,7 +78,6 @@ export default function SocialWallPage() {
       });
   };
 
-  // Interleave Filtered Posts with Ads Logic
   const filteredPosts = useMemo(() => {
     if (activeFilter === "All") return posts;
     return posts.filter(p => p.sport === activeFilter);
@@ -89,7 +87,6 @@ export default function SocialWallPage() {
     const items: any[] = [];
     filteredPosts.forEach((post, index) => {
       items.push({ type: 'post', data: post });
-      // Inject ad after every 5 items
       if ((index + 1) % 5 === 0 && ads.length > 0) {
         const adIndex = Math.floor(index / 5) % ads.length;
         items.push({ type: 'ad', data: ads[adIndex] });
@@ -100,7 +97,7 @@ export default function SocialWallPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-[#050505] selection:bg-primary selection:text-black">
-      <main className="flex-1 pt-6 pb-32 max-w-lg mx-auto w-full px-4">
+      <main className="flex-1 pt-6 pb-20 max-w-lg mx-auto w-full px-4">
         
         {/* Story-style Sport Filters */}
         <div className="flex items-center gap-3 overflow-x-auto no-scrollbar mb-8 pb-1">
@@ -126,7 +123,7 @@ export default function SocialWallPage() {
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 rounded-full bg-[#1A1A1A] overflow-hidden flex items-center justify-center border border-[#222] shrink-0">
               {user?.photoURL ? (
-                <img src={user.photoURL} className="h-full w-full object-cover" alt="Me" />
+                <img src={user.photoURL} className="h-full w-full object-cover" alt="Me" loading="lazy" />
               ) : (
                 <UserCircle className="h-5 w-5 text-white/20" />
               )}
@@ -193,7 +190,7 @@ function AdBanner({ ad }: { ad: any }) {
         <span className="text-[9px] font-bold text-white/40 uppercase tracking-widest">Sponsored</span>
       </div>
       <div className="relative w-full h-[120px]" onClick={handleAdClick} style={{ cursor: 'pointer' }}>
-        <img src={ad.imageUrl || "https://picsum.photos/seed/ad/800/200"} className="w-full h-full object-cover opacity-60" alt={ad.title} />
+        <img src={ad.imageUrl || "https://picsum.photos/seed/ad/800/200"} className="w-full h-full object-cover opacity-60" alt={ad.title} loading="lazy" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#111] to-transparent" />
       </div>
       <div className="p-4 pt-0">

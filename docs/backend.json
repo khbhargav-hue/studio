@@ -33,26 +33,25 @@
         "lastActive": { "type": "object" }
       }
     },
-    "MatchRequest": {
-      "title": "MatchRequest",
-      "description": "A social post seeking players or opponents",
+    "Post": {
+      "title": "Post",
+      "description": "A social feed update or match request",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
-        "creatorId": { "type": "string" },
-        "creatorName": { "type": "string" },
-        "creatorPhoto": { "type": "string" },
-        "sport": { "type": "string" },
-        "slotsNeeded": { "type": "number" },
-        "slotsFilled": { "type": "number" },
-        "area": { "type": "string" },
+        "game": { "type": "string" },
         "location": { "type": "string" },
-        "date": { "type": "string" },
-        "time": { "type": "string" },
         "description": { "type": "string" },
-        "status": { "type": "string", "enum": ["open", "filled", "cancelled"] },
+        "playersNeeded": { "type": "number" },
         "likes": { "type": "number" },
-        "joinedUsers": { "type": "array", "items": { "type": "string" } },
+        "postedBy": {
+          "type": "object",
+          "properties": {
+            "uid": { "type": "string" },
+            "name": { "type": "string" },
+            "photoURL": { "type": "string" }
+          }
+        },
         "createdAt": { "type": "object" }
       }
     },
@@ -83,9 +82,9 @@
       "schema": "UserProfile",
       "description": "Athlete profiles"
     },
-    "/matchRequests/{matchId}": {
-      "schema": "MatchRequest",
-      "description": "Social feed posts"
+    "/posts/{postId}": {
+      "schema": "Post",
+      "description": "Social wall posts"
     },
     "/ads/{adId}": {
       "schema": "Ad",

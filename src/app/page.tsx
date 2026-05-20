@@ -12,7 +12,7 @@ import {
   ExternalLink
 } from "lucide-react"
 import { useFirestore, useUser } from "@/firebase"
-import { getFirestore, collection, query, orderBy, doc, updateDoc, increment, deleteDoc, onSnapshot, limit, getDocs } from "firebase/firestore"
+import { getFirestore, collection, doc, updateDoc, increment, deleteDoc, onSnapshot, getDocs } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 import { SkeletonCard } from "@/components/Skeleton"
@@ -44,18 +44,20 @@ export default function SocialWallPage() {
     }
   }, []);
 
-  // NEW FEED FETCHING LOGIC AS PER TACTICAL REQUEST
+  // FEED FETCHING LOGIC: CLIENT-SIDE SORTING TO HANDLE MISSING TIMESTAMPS
   useEffect(() => {
     const db = getFirestore();
-    const q = query(
+    const unsub = onSnapshot(
       collection(db, "posts"),
-      orderBy("createdAt", "desc"),
-      limit(20)
-    );
-    const unsub = onSnapshot(q,
       (snap) => {
+        const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        data.sort((a, b) => {
+          const aTime = a.createdAt?.toDate?.() || new Date(0);
+          const bTime = b.createdAt?.toDate?.() || new Date(0);
+          return bTime.getTime() - aTime.getTime();
+        });
+        setPosts(data);
         setLoading(false);
-        setPosts(snap.docs.map(d => ({ id: d.id, ...d.data() })));
       },
       (err) => {
         console.error("Feed error:", err.code);

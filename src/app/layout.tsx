@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
-import { FirebaseClientProvider } from "@/firebase"
+import { FirebaseClientProvider } from "@/firebase/client-provider"
 import GoogleAnalytics from '@/components/google-analytics';
 import { FaviconProvider } from '@/components/favicon-provider';
 import Script from 'next/script';

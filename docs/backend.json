@@ -1,4 +1,3 @@
-
 {
   "entities": {
     "Turf": {
@@ -22,6 +21,8 @@
         "price": { "type": "string" },
         "rating": { "type": "number" },
         "reviewCount": { "type": "number" },
+        "openTime": { "type": "string" },
+        "closeTime": { "type": "string" },
         "createdAt": { "type": "object" }
       }
     },
@@ -36,11 +37,12 @@
         "bio": { "type": "string" },
         "area": { "type": "string" },
         "skillLevel": { "type": "string", "enum": ["Beginner", "Intermediate", "Advanced", "Pro"] },
-        "favoriteSports": { "type": "array", "items": { "type": "string" } },
+        "favoriteSport": { "type": "string" },
         "playingStyle": { "type": "string" },
         "availability": { "type": "string" },
         "status": { "type": "string", "enum": ["online", "away", "offline", "in_match"] },
         "rewardPoints": { "type": "number" },
+        "referralCode": { "type": "string" },
         "lastActive": { "type": "object" }
       }
     },
@@ -55,10 +57,51 @@
         "sport": { "type": "string" },
         "playersNeeded": { "type": "number" },
         "playersJoined": { "type": "number" },
+        "joinedUsers": { "type": "array", "items": { "type": "string" } },
         "location": { "type": "string" },
         "date": { "type": "string" },
         "time": { "type": "string" },
         "status": { "type": "string", "enum": ["open", "filled", "cancelled"] },
+        "createdAt": { "type": "object" }
+      }
+    },
+    "Team": {
+      "title": "Team",
+      "description": "An athlete squad or group",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "sport": { "type": "string" },
+        "area": { "type": "string" },
+        "skillLevel": { "type": "string" },
+        "description": { "type": "string" },
+        "captain": { "type": "string" },
+        "members": { "type": "array", "items": { "type": "string" } },
+        "maxPlayers": { "type": "number" },
+        "wins": { "type": "number" },
+        "matchesPlayed": { "type": "number" },
+        "needPlayers": { "type": "boolean" },
+        "whatsapp": { "type": "string" },
+        "createdAt": { "type": "object" }
+      }
+    },
+    "Challenge": {
+      "title": "Challenge",
+      "description": "A competitive match claim issued by a team",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "teamId": { "type": "string" },
+        "teamName": { "type": "string" },
+        "sport": { "type": "string" },
+        "format": { "type": "string" },
+        "turf": { "type": "string" },
+        "date": { "type": "string" },
+        "time": { "type": "string" },
+        "entryFee": { "type": "string" },
+        "status": { "type": "string", "enum": ["open", "active", "closed", "completed"] },
         "createdAt": { "type": "object" }
       }
     }
@@ -77,11 +120,19 @@
     },
     "/matchRequests/{matchId}": {
       "schema": "MatchRequest",
-      "description": "Open game requests"
+      "description": "Open game requests for individual recruits"
     },
     "/teams/{teamId}": {
       "schema": "Team",
       "description": "Athlete squads"
+    },
+    "/challenges/{challengeId}": {
+      "schema": "Challenge",
+      "description": "Team-vs-Team match claims"
+    },
+    "/settings/branding": {
+      "schema": "object",
+      "description": "Global visual and SEO configuration"
     }
   }
 }

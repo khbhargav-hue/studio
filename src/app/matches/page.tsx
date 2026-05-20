@@ -87,8 +87,8 @@ export default function MatchesPage() {
 
   const handlePost = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!db || !user) {
-      toast({ title: "Identification Required", description: "Login required" })
+    if (!db || !user || isPosting) {
+      if (!user) toast({ title: "Identification Required", description: "Login required" })
       return
     }
     
@@ -108,26 +108,34 @@ export default function MatchesPage() {
         updatedAt: serverTimestamp()
       }
 
-      const docRef = await addDoc(collection(db, "matches"), payload);
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Submit timeout")), 10000)
+      );
 
-      console.log("POSTED", docRef.id);
+      const docRef = await Promise.race([
+        addDoc(collection(db, "matches"), payload),
+        timeoutPromise
+      ]) as any;
+
+      console.log("POST_SUCCESS", docRef.id);
       
       toast({ 
         title: "Posted 🚀", 
-        description: `Match signal active: ${docRef.id}` 
+        description: `Match signal active.` 
       })
       
       setShowDialog(false)
       setNewRequest({ game: "Football", playersNeeded: 2, location: "", matchDate: "", matchTime: "", details: "" })
       router.refresh()
     } catch (error: any) {
-      console.error("POST_ERROR", error.code, error.message);
+      console.error("SAVE_ERROR", error.code, error.message);
       toast({ 
         title: "Transmission Failed", 
-        description: error.message,
+        description: error.message || "Save timed out.",
         variant: "destructive"
       })
     } finally {
+      console.log("LOADING_STOP");
       setIsPosting(false)
     }
   }

@@ -126,10 +126,7 @@ export default function FeedPage() {
 
   const handlePost = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!db || !user) {
-      toast({ title: "Identification Required", description: "Join the circuit to broadcast signals." })
-      return
-    }
+    if (!db || !user || isPosting) return
     
     console.log("POST_START", newPost);
     setIsPosting(true)
@@ -149,33 +146,36 @@ export default function FeedPage() {
         updatedAt: serverTimestamp()
       }
 
-      const docRef = await addDoc(collection(db, "matches"), payload);
+      // Timeout protection logic
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Submit timeout")), 10000)
+      );
+
+      // Race the addDoc against a 10s timeout
+      const docRef = await Promise.race([
+        addDoc(collection(db, "matches"), payload),
+        timeoutPromise
+      ]) as any;
       
-      console.log("POSTED", docRef.id);
+      console.log("POST_SUCCESS", docRef.id);
       
       toast({ 
         title: "Posted 🚀", 
-        description: `Signal active: ${docRef.id}`
+        description: `Signal active in the circuit.`
       })
 
       setNewPost(initialFormState)
       setShowDialog(false)
       router.refresh()
     } catch (error: any) {
-      console.error("POST_ERROR", error.code, error.message);
+      console.error("SAVE_ERROR", error);
       toast({ 
         title: "Transmission Failed", 
-        description: error.message,
+        description: error.message || "Circuit interrupted.",
         variant: "destructive"
       })
-      
-      errorEmitter.emit('permission-error', new FirestorePermissionError({
-        path: "matches",
-        operation: 'create',
-        requestResourceData: newPost,
-        message: error.message
-      }));
     } finally {
+      console.log("LOADING_STOP");
       setIsPosting(false)
     }
   }

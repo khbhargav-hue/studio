@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { FirebaseClientProvider } from "@/firebase/client-provider"
 import GoogleAnalytics from '@/components/google-analytics';
 import { FaviconProvider } from '@/components/favicon-provider';
+import { BottomNav } from '@/components/BottomNav';
 import Script from 'next/script';
 
 export const viewport: Viewport = {
@@ -92,9 +93,10 @@ export default function RootLayout({
         <FirebaseClientProvider>
           <FaviconProvider />
           <div className="flex flex-col min-h-screen">
-            <main className="flex-1 pb-20 md:pb-0">
+            <main className="flex-1 pb-[72px]">
               {children}
             </main>
+            <BottomNav />
             <Toaster />
           </div>
         </FirebaseClientProvider>

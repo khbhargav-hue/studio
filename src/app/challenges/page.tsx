@@ -31,9 +31,11 @@ import {
   Users
 } from "lucide-react"
 import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase"
-import { collection, query, orderBy, addDoc, serverTimestamp, where } from "firebase/firestore"
+import { collection, query, orderBy, setDoc, doc, serverTimestamp, where } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
+import { errorEmitter } from '@/firebase/error-emitter'
+import { FirestorePermissionError } from '@/firebase/errors'
 
 export default function ChallengesPage() {
   const db = useFirestore()
@@ -72,7 +74,7 @@ export default function ChallengesPage() {
     return rawChallenges
   }, [rawChallenges])
 
-  const handlePostChallenge = async (e: React.FormEvent) => {
+  const handlePostChallenge = (e: React.FormEvent) => {
     e.preventDefault()
     if (!db || !user) return
     if (!myTeams || myTeams.length === 0) {
@@ -81,24 +83,32 @@ export default function ChallengesPage() {
     }
 
     setIsPosting(true)
-    try {
-      const team = myTeams[0]
-      await addDoc(collection(db, "challenges"), {
-        ...newChallenge,
-        teamId: team.id,
-        teamName: team.name,
-        ownerId: user.uid,
-        status: "open",
-        createdAt: serverTimestamp()
-      })
-      toast({ title: "Match Claim Posted", description: "Your challenge is live on the circuit." })
-      setShowPostDialog(false)
-      setNewChallenge({ title: "", sport: "Football", format: "5-a-side", turf: "", area: "", date: "", time: "", entryFee: "0", notes: "" })
-    } catch (err) {
-      toast({ title: "Transmission Failed", variant: "destructive" })
-    } finally {
-      setIsPosting(false)
-    }
+    const team = myTeams[0]
+    const challengeRef = doc(collection(db, "challenges"));
+    const payload = {
+      ...newChallenge,
+      teamId: team.id,
+      teamName: team.name,
+      ownerId: user.uid,
+      status: "open",
+      createdAt: serverTimestamp()
+    };
+
+    setDoc(challengeRef, payload)
+      .catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+          path: challengeRef.path,
+          operation: 'create',
+          requestResourceData: payload,
+          message: serverError.message
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      });
+
+    toast({ title: "Match Claim Posted", description: "Your challenge is broadcasted to the circuit." })
+    setShowPostDialog(false)
+    setNewChallenge({ title: "", sport: "Football", format: "5-a-side", turf: "", area: "", date: "", time: "", entryFee: "0", notes: "" })
+    setIsPosting(false)
   }
 
   return (

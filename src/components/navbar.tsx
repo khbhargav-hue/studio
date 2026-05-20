@@ -1,10 +1,9 @@
-
 "use client"
 
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Menu, X, UserCircle, Search } from "lucide-react"
+import { Menu, X, UserCircle, Search, Bell } from "lucide-react"
 import { useUser } from "@/firebase"
 import { TurfistaLogo } from "./brand-logo"
 import { cn } from "@/lib/utils"
@@ -36,7 +35,7 @@ export function Navbar() {
               href={link.href} 
               className={cn(
                 "text-[10px] font-black uppercase tracking-[0.2em] transition-all hover:text-primary",
-                pathname === link.href ? "text-primary bg-primary/5 px-3 py-1.5 rounded-full" : "text-white/40"
+                pathname === link.href ? "text-primary bg-primary/5 px-4 py-2 rounded-full" : "text-white/40"
               )}
             >
               {link.label}
@@ -45,9 +44,11 @@ export function Navbar() {
         </div>
 
         <div className="flex items-center gap-4">
-          <button className="h-10 w-10 flex items-center justify-center text-white/40 hover:text-primary transition-colors">
-            <Search className="h-5 w-5" />
+          <button className="h-10 w-10 flex items-center justify-center text-white/40 hover:text-primary transition-colors relative">
+            <Bell className="h-5 w-5" />
+            <div className="absolute top-2 right-2 h-2 w-2 bg-primary rounded-full border-2 border-background" />
           </button>
+          
           <Link href="/profile" className="flex items-center gap-3 pl-4 border-l border-white/10 group">
             <div className="text-right hidden sm:block">
               <p className="text-[10px] font-black text-white uppercase italic group-hover:text-primary transition-colors">{user?.displayName?.split(' ')[0] || "Guest"}</p>
@@ -64,8 +65,8 @@ export function Navbar() {
               </div>
             )}
           </Link>
-          <button className="lg:hidden text-white" onClick={() => setIsOpen(!isOpen)}>
-            {isOpen ? <X /> : <Menu />}
+          <button className="lg:hidden text-white ml-2" onClick={() => setIsOpen(!isOpen)}>
+            {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
         </div>
       </div>
@@ -79,7 +80,10 @@ export function Navbar() {
                 key={link.label} 
                 href={link.href} 
                 onClick={() => setIsOpen(false)}
-                className="text-5xl font-black uppercase tracking-tighter italic text-white/20 hover:text-primary hover:translate-x-2 transition-all py-4"
+                className={cn(
+                  "text-5xl font-black uppercase tracking-tighter italic transition-all py-4",
+                  pathname === link.href ? "text-primary" : "text-white/20 hover:text-white"
+                )}
               >
                 {link.label}
               </Link>

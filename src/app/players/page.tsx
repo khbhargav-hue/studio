@@ -1,7 +1,6 @@
-
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo } from "react"
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { MobileNav } from "@/components/mobile-nav"
@@ -15,39 +14,22 @@ import {
   UserPlus, 
   Search, 
   Zap,
-  Filter,
   Loader2,
+  Activity,
   ShieldCheck,
-  Activity
+  Filter
 } from "lucide-react"
 import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase"
-import { collection, query, orderBy, where, doc, updateDoc, serverTimestamp } from "firebase/firestore"
+import { collection, query, orderBy } from "firebase/firestore"
 import { cn } from "@/lib/utils"
 
-const SPORT_FILTERS = ["All", "Football", "Cricket", "Badminton", "Pickleball"]
+const SPORT_FILTERS = ["All", "Football", "Cricket", "Badminton", "Pickleball", "Basketball"]
 
 export default function PlayersPage() {
   const db = useFirestore()
   const { user } = useUser()
   const [activeSport, setActiveSport] = useState("All")
   const [searchQuery, setSearchQuery] = useState("")
-
-  // Presence Heartbeat
-  useEffect(() => {
-    if (db && user) {
-      const userRef = doc(db, "users", user.uid);
-      updateDoc(userRef, {
-        status: "online",
-        lastActive: serverTimestamp()
-      });
-      
-      const interval = setInterval(() => {
-        updateDoc(userRef, { lastActive: serverTimestamp() });
-      }, 60000);
-      
-      return () => clearInterval(interval);
-    }
-  }, [db, user]);
 
   const playersQuery = useMemoFirebase(() => {
     if (!db) return null
@@ -80,7 +62,7 @@ export default function PlayersPage() {
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 border border-primary/20 text-[10px] font-black uppercase tracking-[0.4em] text-primary">
             <Activity className="h-3 w-3" /> MYSURU PLAYER CIRCUIT
           </div>
-          <h1 className="text-6xl md:text-8xl font-black italic tracking-tighter uppercase leading-none">
+          <h1 className="text-5xl md:text-7xl font-black italic tracking-tighter uppercase leading-none">
             Find Your <span className="text-primary text-neon">Recruits.</span>
           </h1>
           <p className="text-muted text-xl font-medium italic max-w-2xl">
@@ -92,7 +74,7 @@ export default function PlayersPage() {
           <div className="relative flex-1">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/20" />
             <Input 
-              placeholder="Search by name or area (Bogadi, Vijayanagar)..." 
+              placeholder="Identify by name or area (Bogadi, Vijayanagar)..." 
               className="h-16 pl-14 bg-white/5 border-white/5 rounded-2xl text-lg italic focus:border-primary/50"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -129,7 +111,7 @@ export default function PlayersPage() {
         ) : (
           <div className="py-40 text-center border border-dashed border-white/10 rounded-[3rem] bg-white/[0.02]">
             <Users className="h-16 w-16 text-white/5 mx-auto mb-6" />
-            <h3 className="text-3xl font-black text-white/10 uppercase italic">No Players Identified</h3>
+            <h3 className="text-3xl font-black text-white/10 uppercase italic">No Nodes Found</h3>
             <p className="text-white/20 mt-4 max-w-xs mx-auto italic">Adjust your discovery filters or invite friends to join the circuit.</p>
           </div>
         )}
@@ -149,15 +131,8 @@ function PlayerCard({ player }: { player: any }) {
     offline: "bg-white/20"
   }
 
-  const statusLabels: Record<string, string> = {
-    online: "Online Now",
-    away: "Away",
-    in_match: "In Match",
-    offline: "Offline"
-  }
-
   return (
-    <div className="group bg-card border border-white/5 rounded-[2rem] p-8 flex flex-col hover:border-primary/30 transition-all duration-300 relative overflow-hidden">
+    <div className="group bg-card border border-white/5 rounded-[2rem] p-8 flex flex-col hover:border-primary/30 transition-all duration-300 relative overflow-hidden shadow-xl">
       <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity">
         <Zap className="h-32 w-32 text-primary" />
       </div>

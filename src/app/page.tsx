@@ -1,8 +1,6 @@
-
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
-import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { MobileNav } from "@/components/mobile-nav"
 import { Button } from "@/components/ui/button"
@@ -42,7 +40,6 @@ import { collection, query, orderBy, addDoc, doc, serverTimestamp, updateDoc, in
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 import { formatDistanceToNow } from "date-fns"
-import Image from "next/image"
 
 const SPORTS = [
   { label: "Football ⚽", value: "Football" },
@@ -85,7 +82,7 @@ export default function SocialWallPage() {
   }, [db]);
 
   const handleSubmit = () => {
-    if (!user) {
+    if (!user || !db) {
       alert("Please sign in first");
       return
     }
@@ -127,9 +124,7 @@ export default function SocialWallPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-[#050505] selection:bg-primary selection:text-black">
-      <Navbar />
-      
-      <main className="flex-1 pt-24 pb-32 max-w-2xl mx-auto w-full px-4">
+      <main className="flex-1 pt-6 pb-32 max-w-2xl mx-auto w-full px-4">
         {/* Post Creation Area */}
         <div className="bg-card border border-white/5 rounded-2xl p-6 mb-8 shadow-xl">
           <div className="flex items-center gap-4">
@@ -213,7 +208,6 @@ export default function SocialWallPage() {
       </main>
 
       <Footer />
-      <MobileNav />
     </div>
   )
 }

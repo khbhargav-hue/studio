@@ -1,13 +1,11 @@
-
-'use client';
+"use client"
 
 import { useState, useEffect, useMemo } from 'react';
-import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
 import { useFirestore, useUser, useDoc, useMemoFirebase } from '@/firebase';
 import { collection, getDocs, addDoc, serverTimestamp, doc } from 'firebase/firestore';
 import Image from 'next/image';
-import { Star, MessageCircle, MapPin, Loader2, Plus, Layout, Settings2, IndianRupee, Phone, Image as ImageIcon } from 'lucide-react';
+import { Star, MessageCircle, MapPin, Loader2, Plus, IndianRupee, Phone, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -18,8 +16,7 @@ import {
   DialogContent, 
   DialogHeader, 
   DialogTitle, 
-  DialogTrigger,
-  DialogFooter
+  DialogTrigger 
 } from '@/components/ui/dialog';
 import {
   Select,
@@ -125,15 +122,13 @@ export default function TurfsPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-[#050505] selection:bg-primary selection:text-black">
-      <Navbar />
-      
-      <main className="flex-1 pt-32 pb-32 px-4 md:px-8 max-w-6xl mx-auto w-full">
+      <main className="flex-1 pt-6 pb-32 px-4 md:px-8 max-w-6xl mx-auto w-full">
         <header className="mb-16 space-y-8">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
             <div>
               <div className="text-[11px] font-black uppercase tracking-[0.4em] text-primary mb-4">ARENA HUB</div>
-              <h1 className="text-5xl md:text-8xl font-black italic tracking-tighter uppercase leading-none text-white">
-                MYSURU <br /><span className="text-primary text-neon">TURFS</span>
+              <h1 className="text-4xl md:text-8xl font-black italic tracking-tighter uppercase leading-none text-white">
+                MYSURU <br /><span className="text-primary">TURFS</span>
               </h1>
             </div>
 

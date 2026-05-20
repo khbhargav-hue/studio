@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
@@ -8,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import PostCard from "@/components/PostCard"
 import { 
   Dialog, 
   DialogContent, 
@@ -24,23 +24,15 @@ import {
 } from "@/components/ui/select"
 import { 
   Plus, 
-  MapPin, 
-  Users, 
   Loader2, 
   Zap,
-  Heart,
-  Share2,
   UserCircle,
-  Trash2,
-  MessageCircle,
-  MoreHorizontal,
   ExternalLink
 } from "lucide-react"
 import { useFirestore, useUser } from "@/firebase"
 import { collection, query, orderBy, addDoc, doc, serverTimestamp, updateDoc, increment, deleteDoc, onSnapshot, limit, getDocs } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
-import { formatDistanceToNow } from "date-fns"
 
 const SPORTS_FILTERS = [
   { label: "All", value: "All", icon: "✨" },
@@ -67,12 +59,15 @@ export default function SocialWallPage() {
   const [loading, setLoading] = useState(true)
   const [showDialog, setShowDialog] = useState(false)
   const [activeFilter, setActiveFilter] = useState("All")
+  const [likedPosts, setLikedPosts] = useState<string[]>([])
 
-  // Form States
-  const [text, setText] = useState("")
-  const [sport, setSport] = useState("Football")
-  const [location, setLocation] = useState("")
-  const [playersNeeded, setPlayersNeeded] = useState(1)
+  // Load liked posts from local storage on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const liked = JSON.parse(localStorage.getItem('turfista_liked_posts') || '[]');
+      setLikedPosts(liked);
+    }
+  }, []);
 
   // Real-time Social Circuit Listener
   useEffect(() => {
@@ -90,6 +85,12 @@ export default function SocialWallPage() {
 
     return () => unsub();
   }, [db]);
+
+  // Form States
+  const [text, setText] = useState("")
+  const [sport, setSport] = useState("Football")
+  const [location, setLocation] = useState("")
+  const [playersNeeded, setPlayersNeeded] = useState(1)
 
   const handleSubmit = () => {
     if (!user || !db) {
@@ -117,6 +118,23 @@ export default function SocialWallPage() {
       toast({ title: "Signal Broadcasted 🚀" });
     }).catch(err => alert(err.message));
   }
+
+  const handleDelete = (postId: string) => {
+    if (!db) return;
+    deleteDoc(doc(db, "posts", postId)).catch(err => alert(err.message));
+  };
+
+  const handleLike = (postId: string) => {
+    if (!db || likedPosts.includes(postId)) return;
+    
+    const postRef = doc(db, "posts", postId);
+    updateDoc(postRef, { likes: increment(1) })
+      .then(() => {
+        const newLiked = [...likedPosts, postId];
+        setLikedPosts(newLiked);
+        localStorage.setItem('turfista_liked_posts', JSON.stringify(newLiked));
+      });
+  };
 
   // Interleave Filtered Posts with Ads Logic
   const filteredPosts = useMemo(() => {
@@ -227,7 +245,14 @@ export default function SocialWallPage() {
           <div className="space-y-3">
             {feedItems.map((item, idx) => (
               item.type === 'post' ? (
-                <WallCard key={item.data.id} post={item.data} currentUser={user} />
+                <PostCard 
+                  key={item.data.id} 
+                  post={item.data} 
+                  currentUser={user} 
+                  onDelete={() => handleDelete(item.data.id)}
+                  onLike={() => handleLike(item.data.id)}
+                  hasLiked={likedPosts.includes(item.data.id)}
+                />
               ) : (
                 <AdBanner key={`ad-${idx}`} ad={item.data} />
               )
@@ -272,124 +297,6 @@ function AdBanner({ ad }: { ad: any }) {
         <Button onClick={handleAdClick} className="w-full h-10 bg-white/5 border border-white/10 text-white font-black uppercase tracking-widest text-[10px] rounded-lg">
           Learn More <ExternalLink className="h-3 w-3 ml-2" />
         </Button>
-      </div>
-    </div>
-  )
-}
-
-function WallCard({ post, currentUser }: { post: any, currentUser: any }) {
-  const db = useFirestore()
-  const { toast } = useToast()
-  const [hasLiked, setHasLiked] = useState(false)
-  
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const likedPosts = JSON.parse(localStorage.getItem('turfista_liked_posts') || '[]');
-      if (likedPosts.includes(post.id)) {
-        setHasLiked(true);
-      }
-    }
-  }, [post.id]);
-
-  const timeAgo = post.createdAt?.seconds 
-    ? formatDistanceToNow(new Date(post.createdAt.seconds * 1000)) + " ago" 
-    : "Recently"
-
-  const isOwner = currentUser?.uid === post.postedBy?.uid
-
-  const handleLike = () => {
-    if (!db || hasLiked) return
-    const postRef = doc(db, "posts", post.id)
-    updateDoc(postRef, { likes: increment(1) })
-      .then(() => {
-        const likedPosts = JSON.parse(localStorage.getItem('turfista_liked_posts') || '[]');
-        likedPosts.push(post.id);
-        localStorage.setItem('turfista_liked_posts', JSON.stringify(likedPosts));
-        setHasLiked(true);
-      });
-  }
-
-  const handleDelete = () => {
-    if (!db || !isOwner) return
-    deleteDoc(doc(db, "posts", post.id)).catch(err => alert(err.message));
-  }
-
-  const handleWhatsAppShare = () => {
-    const text = encodeURIComponent(`Check out this match on Turfista! ${post.sport} in ${post.location}: "${post.text}"`);
-    window.open(`https://wa.me/?text=${text}`, '_blank');
-  };
-
-  return (
-    <div className="bg-[#111] border border-[#222] rounded-xl p-4 mb-3 transition-all hover:border-primary/20">
-      {/* Row 1: Avatar + Info */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-full bg-[#1A1A1A] border border-[#222] p-0.5 overflow-hidden">
-            <img src={post.postedBy?.photo || `https://picsum.photos/seed/${post.postedBy?.uid}/100`} className="h-full w-full object-cover rounded-full" alt="User" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <p className="text-[14px] font-bold text-white uppercase tracking-tight">{post.postedBy?.name}</p>
-              <span className="bg-primary/10 text-primary text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border border-primary/20">
-                {post.sport}
-              </span>
-            </div>
-            <p className="text-[11px] font-medium text-white/40 uppercase tracking-widest mt-0.5">{timeAgo}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-1">
-          {isOwner && (
-            <button onClick={handleDelete} className="p-2 text-destructive/40 hover:text-destructive transition-colors" title="Retract Signal">
-              <Trash2 className="h-4 w-4" />
-            </button>
-          )}
-          <button className="p-2 text-white/20 hover:text-white transition-colors">
-            <MoreHorizontal className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-
-      {/* Row 2: Message */}
-      <div className="mb-4">
-        <p className="text-[#F5F5F5] text-[15px] leading-normal font-medium italic">"{post.text}"</p>
-      </div>
-
-      {/* Row 3 & 4: Meta */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-6">
-        <div className="flex items-center gap-1.5 text-[12px] font-bold text-white/40 uppercase italic">
-          <MapPin className="h-3.5 w-3.5 text-primary" />
-          <span>{post.location || "Mysuru"}</span>
-        </div>
-        {post.playersNeeded > 0 && (
-          <div className="flex items-center gap-1.5 text-[12px] font-black text-primary uppercase tracking-tight italic">
-            <Users className="h-3.5 w-3.5" />
-            <span>{post.playersNeeded} NEEDED</span>
-          </div>
-        )}
-      </div>
-
-      {/* Row 5: Actions */}
-      <div className="flex items-center justify-between border-t border-white/5 pt-4">
-        <div className="flex items-center gap-6">
-          <button 
-            onClick={handleLike} 
-            disabled={hasLiked}
-            className={cn(
-              "flex items-center gap-2 transition-colors group",
-              hasLiked ? "text-red-500" : "text-white/40 hover:text-red-500"
-            )}
-          >
-            <Heart className={cn("h-5 w-5", hasLiked && "fill-current")} />
-            <span className="text-[13px] font-black">{post.likes || 0}</span>
-          </button>
-          <button className="flex items-center gap-2 text-white/40 hover:text-primary transition-colors">
-            <MessageCircle className="h-5 w-5" />
-            <span className="text-[13px] font-black">2</span>
-          </button>
-        </div>
-        <button onClick={handleWhatsAppShare} className="text-white/40 hover:text-[#25D366] transition-colors" title="Share on WhatsApp">
-          <Share2 className="h-5 w-5" />
-        </button>
       </div>
     </div>
   )

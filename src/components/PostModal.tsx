@@ -40,7 +40,7 @@ export function PostModal({ isOpen, onClose }: PostModalProps) {
       return;
     }
 
-    addDoc(collection(db, "posts"), {
+    const postData = {
       text,
       sport,
       location,
@@ -52,13 +52,23 @@ export function PostModal({ isOpen, onClose }: PostModalProps) {
         photo: user.photoURL || ""
       },
       createdAt: serverTimestamp()
-    }).then(() => {
-      setText("");
-      setLocation("");
-      setPlayersNeeded(1);
-      toast({ title: "Signal Broadcasted 🚀" });
-      onClose();
-    }).catch(e => alert(e.message));
+    };
+
+    // DEBUG NODE: Injected as per tactical request
+    addDoc(collection(db, "posts"), postData)
+      .then((docRef) => {
+        console.log("SAVED TO FIRESTORE:", docRef.id);
+        // Reset UI state for next broadcast
+        setText("");
+        setLocation("");
+        setPlayersNeeded(1);
+        toast({ title: "Signal Broadcasted 🚀" });
+        onClose();
+      })
+      .catch((err) => {
+        console.error("FIRESTORE FAILED:", err.code, err.message);
+        alert("Save failed: " + err.code + " - " + err.message);
+      });
   };
 
   return (

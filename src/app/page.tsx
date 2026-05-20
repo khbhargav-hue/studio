@@ -210,10 +210,9 @@ function WallCard({ post, currentUser }: { post: any, currentUser: any }) {
 
   const handleDelete = () => {
     if (!db || !isOwner) return
-    if (!confirm("Retract this signal from the wall?")) return
+    // Direct redaction as requested, no confirmation
     deleteDoc(doc(db, "posts", post.id))
-      .then(() => toast({ title: "Signal Redacted" }))
-      .catch(err => toast({ title: "Redaction Failed", description: err.message, variant: "destructive" }))
+      .catch(err => alert(err.message));
   }
 
   return (
@@ -232,7 +231,7 @@ function WallCard({ post, currentUser }: { post: any, currentUser: any }) {
           </div>
           <div className="flex items-center gap-2">
             {isOwner && (
-              <button onClick={handleDelete} className="p-2 text-destructive/20 hover:text-destructive transition-colors">
+              <button onClick={handleDelete} className="p-2 text-destructive/20 hover:text-destructive transition-colors" title="Retract Signal">
                 <Trash2 className="h-4 w-4" />
               </button>
             )}

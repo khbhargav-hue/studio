@@ -1,3 +1,4 @@
+
 "use client"
 
 import Link from "next/link"
@@ -29,6 +30,7 @@ export function Footer() {
               <Link href="/" className="hover:text-foreground">Browse Arenas</Link>
               <Link href="/featured" className="hover:text-foreground">Featured Venues</Link>
               <Link href="/areas" className="hover:text-foreground">Popular Areas</Link>
+              <Link href="/sponsors" className="hover:text-foreground">Partner Network</Link>
             </nav>
           </div>
 

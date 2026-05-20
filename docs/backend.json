@@ -1,4 +1,3 @@
-
 {
   "entities": {
     "Turf": {
@@ -68,6 +67,20 @@
         "isActive": { "type": "boolean" },
         "clickCount": { "type": "number" }
       }
+    },
+    "Sponsor": {
+      "title": "Sponsor",
+      "description": "Platform partner node",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "logoUrl": { "type": "string" },
+        "website": { "type": "string" },
+        "category": { "type": "string", "enum": ["Sports Brand", "Equipment", "Academy", "Local Business"] },
+        "tier": { "type": "string", "enum": ["Gold", "Silver", "Bronze"] },
+        "isActive": { "type": "boolean" }
+      }
     }
   },
   "auth": {
@@ -89,6 +102,10 @@
     "/ads/{adId}": {
       "schema": "Ad",
       "description": "Sponsored nodes"
+    },
+    "/sponsors/{sponsorId}": {
+      "schema": "Sponsor",
+      "description": "Platform partners"
     },
     "/settings/branding": {
       "schema": "object",

@@ -14,9 +14,10 @@ import { useFirestore, useUser } from "@/firebase"
 import { getFirestore, collection, doc, updateDoc, increment, onSnapshot, getDocs } from "firebase/firestore"
 import { cn } from "@/lib/utils"
 import { SkeletonCard } from "@/components/Skeleton"
+import PostCard from "@/components/PostCard"
 
 const SPORTS_FILTERS = [
-  { label: "All", value: "All", icon: "✨" },
+  { label: "All", value: "all", icon: "✨" },
   { label: "Football", value: "Football", icon: "⚽" },
   { label: "Cricket", value: "Cricket", icon: "🏏" },
   { label: "Pickleball", value: "Pickleball", icon: "🎾" },
@@ -31,7 +32,7 @@ export default function SocialWallPage() {
   const [ads, setAds] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
-  const [activeFilter, setActiveFilter] = useState("All")
+  const [activeFilter, setActiveFilter] = useState("all")
   const [likedPosts, setLikedPosts] = useState<string[]>([])
 
   useEffect(() => {
@@ -45,18 +46,24 @@ export default function SocialWallPage() {
     const unsub = onSnapshot(
       collection(getFirestore(), "posts"),
       (snap) => {
-        setPosts(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+        const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        // Ensure chronological order if timestamps exist
+        list.sort((a: any, b: any) => {
+          const at = a.createdAt?.seconds || 0;
+          const bt = b.createdAt?.seconds || 0;
+          return bt - at;
+        });
+        setPosts(list);
         setLoading(false);
       },
       (err) => {
-        console.error(err);
+        console.error("Transmission error:", err);
         setLoading(false);  
       }
     );
     return () => unsub();
   }, []);
 
-  // SEPARATE FETCH FOR ADS
   useEffect(() => {
     if (!db) return;
     getDocs(collection(db, "ads")).then(snap => {
@@ -77,8 +84,10 @@ export default function SocialWallPage() {
   };
 
   const filteredPosts = useMemo(() => {
-    if (activeFilter === "All") return posts;
-    return posts.filter(p => p.sport === activeFilter);
+    // Applying the user's requested logic for permissive filtering
+    return posts.filter(p => !activeFilter || 
+      activeFilter === "all" || 
+      p.sport === activeFilter);
   }, [posts, activeFilter]);
 
   const feedItems = useMemo(() => {
@@ -135,7 +144,7 @@ export default function SocialWallPage() {
           </div>
         </div>
 
-        {/* Real-time Wall Feed with Debug Signals */}
+        {/* Real-time Wall Feed */}
         {loading ? (
           <div className="space-y-3">
             {[...Array(4)].map((_, i) => <SkeletonCard key={i} />)}
@@ -144,17 +153,14 @@ export default function SocialWallPage() {
           <div className="space-y-3">
             {feedItems.map((item, idx) => (
               item.type === 'post' ? (
-                <div key={item.data.id} style={{background:"#111",border:"1px solid #222",
-                  borderRadius:12,padding:16,marginBottom:12,color:"#fff"}}>
-                  <strong>{item.data.postedBy?.name || "Player"}</strong>
-                  <p className="mt-2 text-[#F5F5F5] italic">"{item.data.text}"</p>
-                  <div className="mt-4 flex items-center gap-2">
-                    <span className="bg-primary/10 text-primary text-[10px] font-black uppercase px-2 py-0.5 rounded border border-primary/20">
-                      {item.data.sport}
-                    </span>
-                    <small style={{color:"#888"}}>{item.data.location}</small>
-                  </div>
-                </div>
+                <PostCard 
+                  key={item.data.id} 
+                  post={item.data} 
+                  currentUser={user}
+                  onDelete={() => {}} // Placeholder for delete action
+                  onLike={() => handleLike(item.data.id)}
+                  hasLiked={likedPosts.includes(item.data.id)}
+                />
               ) : (
                 <AdBanner key={`ad-${idx}`} ad={item.data} />
               )

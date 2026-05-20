@@ -195,7 +195,17 @@ export default function SocialWallPage() {
 function WallCard({ post, currentUser }: { post: any, currentUser: any }) {
   const db = useFirestore()
   const { toast } = useToast()
+  const [hasLiked, setHasLiked] = useState(false)
   
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const likedPosts = JSON.parse(localStorage.getItem('turfista_liked_posts') || '[]');
+      if (likedPosts.includes(post.id)) {
+        setHasLiked(true);
+      }
+    }
+  }, [post.id]);
+
   const timeAgo = post.createdAt?.seconds 
     ? formatDistanceToNow(new Date(post.createdAt.seconds * 1000)) + " ago" 
     : "Recently"
@@ -203,14 +213,20 @@ function WallCard({ post, currentUser }: { post: any, currentUser: any }) {
   const isOwner = currentUser?.uid === post.postedBy?.uid
 
   const handleLike = () => {
-    if (!db) return
+    if (!db || hasLiked) return
+    
     const postRef = doc(db, "posts", post.id)
     updateDoc(postRef, { likes: increment(1) })
+      .then(() => {
+        const likedPosts = JSON.parse(localStorage.getItem('turfista_liked_posts') || '[]');
+        likedPosts.push(post.id);
+        localStorage.setItem('turfista_liked_posts', JSON.stringify(likedPosts));
+        setHasLiked(true);
+      });
   }
 
   const handleDelete = () => {
     if (!db || !isOwner) return
-    // Direct redaction as requested, no confirmation
     deleteDoc(doc(db, "posts", post.id))
       .catch(err => alert(err.message));
   }
@@ -262,8 +278,15 @@ function WallCard({ post, currentUser }: { post: any, currentUser: any }) {
         {/* Actions */}
         <div className="flex items-center justify-between border-t border-white/5 pt-6">
           <div className="flex items-center gap-6">
-            <button onClick={handleLike} className="flex items-center gap-2 text-white/30 hover:text-red-500 transition-colors group">
-              <Heart className={cn("h-5 w-5", post.likes > 0 && "fill-red-500 text-red-500")} />
+            <button 
+              onClick={handleLike} 
+              disabled={hasLiked}
+              className={cn(
+                "flex items-center gap-2 transition-colors group",
+                hasLiked ? "text-red-500" : "text-white/30 hover:text-red-500"
+              )}
+            >
+              <Heart className={cn("h-5 w-5", hasLiked && "fill-current")} />
               <span className="text-xs font-black">{post.likes || 0}</span>
             </button>
             <button className="flex items-center gap-2 text-white/30 hover:text-primary transition-colors">

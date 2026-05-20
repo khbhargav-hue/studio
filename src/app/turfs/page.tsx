@@ -4,35 +4,120 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
-import { useFirestore } from '@/firebase';
-import { collection, getDocs } from 'firebase/firestore';
+import { useFirestore, useUser, useDoc, useMemoFirebase } from '@/firebase';
+import { collection, getDocs, addDoc, serverTimestamp, doc } from 'firebase/firestore';
 import Image from 'next/image';
-import { Star, MessageCircle, MapPin, Loader2 } from 'lucide-react';
+import { Star, MessageCircle, MapPin, Loader2, Plus, Layout, Settings2, IndianRupee, Phone, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger,
+  DialogFooter
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
-const FILTERS = ["All", "Football", "Cricket", "Pickleball", "Swimming"];
+const FILTERS = ["All", "Football", "Cricket", "Pickleball", "Swimming", "Badminton"];
+const AREAS = ["Vijayanagar", "Yadavagiri", "JP Nagar", "Saraswathipuram", "Kuvempunagar", "Bogadi", "Hebbal", "Other"];
+const SPORT_OPTIONS = ["Football", "Cricket", "Pickleball", "Badminton", "Swimming"];
 
 export default function TurfsPage() {
   const db = useFirestore();
+  const { user } = useUser();
+  const { toast } = useToast();
+  
   const [turfs, setTurfs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState("All");
+  const [isAdding, setIsAdding] = useState(false);
+  const [showDialog, setShowDialog] = useState(false);
+
+  // Form State
+  const [formData, setFormData] = useState({
+    name: "",
+    area: "Vijayanagar",
+    sports: [] as string[],
+    price: "",
+    whatsapp: "",
+    imageUrl: "",
+    rating: "4.5"
+  });
+
+  // Admin Role Check
+  const profileRef = useMemoFirebase(() => {
+    if (!db || !user) return null;
+    return doc(db, "users", user.uid);
+  }, [db, user]);
+  const { data: profile } = useDoc(profileRef);
+  const isAdmin = profile?.role === 'admin';
+
+  const fetchTurfs = async () => {
+    if (!db) return;
+    setLoading(true);
+    try {
+      const snap = await getDocs(collection(db, "turfs"));
+      setTurfs(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    } catch (err) {
+      console.error("DATA_FETCH_FAIL", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    if (!db) return;
-    // Direct fetch protocol as requested
-    getDocs(collection(db, "turfs")).then(snap => {
-      setTurfs(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-      setLoading(false);
-    }).catch(err => {
-      console.error("DATA_FETCH_FAIL", err);
-      setLoading(false);
-    });
+    fetchTurfs();
   }, [db]);
 
-  // Client-side filtration for high performance
+  const handleSaveTurf = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!db) return;
+
+    setIsAdding(true);
+    const payload = {
+      ...formData,
+      price: Number(formData.price),
+      rating: Number(formData.rating),
+      isActive: true,
+      isPremium: false,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    };
+
+    try {
+      await addDoc(collection(db, "turfs"), payload);
+      toast({ title: "Arena Deployed", description: `${formData.name} is now live on the circuit.` });
+      setShowDialog(false);
+      setFormData({
+        name: "",
+        area: "Vijayanagar",
+        sports: [],
+        price: "",
+        whatsapp: "",
+        imageUrl: "",
+        rating: "4.5"
+      });
+      fetchTurfs();
+    } catch (err: any) {
+      toast({ title: "Deployment Failed", description: err.message, variant: "destructive" });
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
   const filteredTurfs = useMemo(() => {
     if (activeFilter === "All") return turfs;
     return turfs.filter(t => t.sports && Array.isArray(t.sports) && t.sports.includes(activeFilter));
@@ -44,11 +129,135 @@ export default function TurfsPage() {
       
       <main className="flex-1 pt-32 pb-32 px-4 md:px-8 max-w-6xl mx-auto w-full">
         <header className="mb-16 space-y-8">
-          <div>
-            <div className="text-[11px] font-black uppercase tracking-[0.4em] text-primary mb-4">ARENA HUB</div>
-            <h1 className="text-5xl md:text-8xl font-black italic tracking-tighter uppercase leading-none text-white">
-              MYSURU <br /><span className="text-primary text-neon">TURFS</span>
-            </h1>
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
+            <div>
+              <div className="text-[11px] font-black uppercase tracking-[0.4em] text-primary mb-4">ARENA HUB</div>
+              <h1 className="text-5xl md:text-8xl font-black italic tracking-tighter uppercase leading-none text-white">
+                MYSURU <br /><span className="text-primary text-neon">TURFS</span>
+              </h1>
+            </div>
+
+            {isAdmin && (
+              <Dialog open={showDialog} onOpenChange={setShowDialog}>
+                <DialogTrigger asChild>
+                  <Button className="h-14 px-8 bg-primary text-black font-black uppercase tracking-widest text-[11px] rounded-xl shadow-xl shadow-primary/20 hover:scale-[1.02] transition-all">
+                    <Plus className="mr-2 h-4 w-4" /> Add New Arena
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="bg-card border-white/5 rounded-[2rem] p-10 max-w-2xl shadow-2xl overflow-y-auto max-h-[90vh]">
+                  <DialogHeader>
+                    <DialogTitle className="text-3xl font-black uppercase italic text-white tracking-tighter">
+                      ARENA <span className="text-primary">GENESIS</span>
+                    </DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleSaveTurf} className="space-y-6 pt-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Turf Identity</Label>
+                        <Input 
+                          placeholder="e.g. Matchbox Mysore" 
+                          className="h-12 bg-white/5 border-white/10 text-white" 
+                          value={formData.name}
+                          onChange={e => setFormData({...formData, name: e.target.value})}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Regional Zone</Label>
+                        <Select value={formData.area} onValueChange={v => setFormData({...formData, area: v})}>
+                          <SelectTrigger className="h-12 bg-white/5 border-white/10 text-white">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="bg-[#0A0A0A] border-white/10">
+                            {AREAS.map(a => <SelectItem key={a} value={a} className="text-white">{a}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Discipline Capability</Label>
+                      <div className="flex flex-wrap gap-3">
+                        {SPORT_OPTIONS.map(sport => (
+                          <div key={sport} className="flex items-center gap-2 bg-white/5 px-3 py-2 rounded-lg border border-white/5">
+                            <Checkbox 
+                              id={`add-sport-${sport}`} 
+                              checked={formData.sports.includes(sport)}
+                              onCheckedChange={(checked) => {
+                                const newSports = checked 
+                                  ? [...formData.sports, sport] 
+                                  : formData.sports.filter(s => s !== sport);
+                                setFormData({...formData, sports: newSports});
+                              }}
+                            />
+                            <Label htmlFor={`add-sport-${sport}`} className="text-[10px] font-bold uppercase cursor-pointer text-white">{sport}</Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1 flex items-center gap-2">
+                          <IndianRupee className="h-3 w-3" /> Hourly Rate
+                        </Label>
+                        <Input 
+                          type="number"
+                          placeholder="900" 
+                          className="h-12 bg-white/5 border-white/10 text-white" 
+                          value={formData.price}
+                          onChange={e => setFormData({...formData, price: e.target.value})}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1 flex items-center gap-2">
+                          <Phone className="h-3 w-3" /> WhatsApp Hub
+                        </Label>
+                        <Input 
+                          placeholder="917411..." 
+                          className="h-12 bg-white/5 border-white/10 text-white" 
+                          value={formData.whatsapp}
+                          onChange={e => setFormData({...formData, whatsapp: e.target.value})}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1 flex items-center gap-2">
+                        <ImageIcon className="h-3 w-3" /> Media Intelligence (URL)
+                      </Label>
+                      <Input 
+                        placeholder="Paste Cloudinary or Unsplash URL..." 
+                        className="h-12 bg-white/5 border-white/10 text-white" 
+                        value={formData.imageUrl}
+                        onChange={e => setFormData({...formData, imageUrl: e.target.value})}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1 flex items-center gap-2">
+                        <Star className="h-3 w-3" /> Surface Integrity Rating
+                      </Label>
+                      <Input 
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="5"
+                        className="h-12 bg-white/5 border-white/10 text-white" 
+                        value={formData.rating}
+                        onChange={e => setFormData({...formData, rating: e.target.value})}
+                      />
+                    </div>
+
+                    <Button type="submit" disabled={isAdding} className="w-full h-16 bg-primary text-black font-black uppercase tracking-widest text-xs rounded-xl shadow-lg shadow-primary/20">
+                      {isAdding ? <Loader2 className="h-5 w-5 animate-spin" /> : "Deploy to Circuit Registry"}
+                    </Button>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            )}
           </div>
           
           <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
@@ -84,7 +293,6 @@ export default function TurfsPage() {
                     alt={turf.name}
                     fill
                     className="object-cover group-hover:scale-105 transition-transform duration-700"
-                    data-ai-hint="sports arena"
                   />
                   <div className="absolute top-4 left-4 bg-primary text-black text-[8px] font-black uppercase px-2.5 py-1 rounded-md tracking-widest shadow-lg">
                     VERIFIED
@@ -107,7 +315,7 @@ export default function TurfsPage() {
                     </div>
                     <div className="text-right shrink-0">
                       <p className="text-2xl font-black text-primary italic leading-none">
-                        {turf.price || "₹900"}
+                        ₹{turf.price || "900"}
                       </p>
                       <p className="text-[9px] font-black text-white/20 uppercase tracking-widest mt-1.5">PER HOUR</p>
                     </div>

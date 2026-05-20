@@ -32,7 +32,7 @@ import {
   Share2
 } from "lucide-react"
 import { useFirestore, useUser } from "@/firebase"
-import { collection, query, orderBy, setDoc, doc, serverTimestamp, where, updateDoc, increment, deleteDoc, arrayUnion, onSnapshot } from "firebase/firestore"
+import { collection, query, orderBy, addDoc, doc, serverTimestamp, where, updateDoc, increment, deleteDoc, arrayUnion, onSnapshot } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 import { errorEmitter } from '@/firebase/error-emitter'
@@ -85,58 +85,51 @@ export default function MatchesPage() {
     return () => unsub();
   }, [db]);
 
-  const handlePost = (e: React.FormEvent) => {
+  const handlePost = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!db || !user) {
       toast({ title: "Identification Required", description: "Login required" })
       return
     }
     
-    console.log("SUBMIT_START");
+    console.log("POST_START", newRequest);
     setIsPosting(true)
 
-    const payload = {
-      ...newRequest,
-      createdBy: user.uid,
-      creatorName: user.displayName || "Athlete",
-      creatorPhoto: user.photoURL,
-      slotsFilled: 1,
-      joinedPlayers: [user.uid],
-      status: "active",
-      createdAt: new Date(),
-      updatedAt: new Date()
+    try {
+      const payload = {
+        ...newRequest,
+        createdBy: user.uid,
+        creatorName: user.displayName || "Athlete",
+        creatorPhoto: user.photoURL,
+        slotsFilled: 1,
+        joinedPlayers: [user.uid],
+        status: "active",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      }
+
+      const docRef = await addDoc(collection(db, "matches"), payload);
+
+      console.log("POSTED", docRef.id);
+      
+      toast({ 
+        title: "Posted 🚀", 
+        description: `Match signal active: ${docRef.id}` 
+      })
+      
+      setShowDialog(false)
+      setNewRequest({ game: "Football", playersNeeded: 2, location: "", matchDate: "", matchTime: "", details: "" })
+      router.refresh()
+    } catch (error: any) {
+      console.error("POST_ERROR", error.code, error.message);
+      toast({ 
+        title: "Transmission Failed", 
+        description: error.message,
+        variant: "destructive"
+      })
+    } finally {
+      setIsPosting(false)
     }
-
-    console.log("PAYLOAD", payload);
-
-    // Optimized Optimistic Write: No await on mutation
-    const matchesRef = collection(db, "matches");
-    const newMatchRef = doc(matchesRef);
-
-    setDoc(newMatchRef, payload)
-      .then(() => console.log("SAVE_ACKNOWLEDGED", newMatchRef.id))
-      .catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({
-          path: newMatchRef.path,
-          operation: 'create',
-          requestResourceData: payload,
-          message: serverError.message
-        });
-        errorEmitter.emit('permission-error', permissionError);
-      });
-
-    console.log("SAVE_INITIATED", newMatchRef.id);
-    
-    toast({ 
-      title: "Posted 🚀", 
-      description: "Match request signal broadcasted." 
-    })
-    
-    setShowDialog(false)
-    setNewRequest({ game: "Football", playersNeeded: 2, location: "", matchDate: "", matchTime: "", details: "" })
-    setIsPosting(false)
-    
-    router.refresh()
   }
 
   return (
@@ -215,8 +208,8 @@ export default function MatchesPage() {
         ) : (
           <div className="py-40 text-center border border-dashed border-white/10 rounded-[4rem] bg-white/[0.02]">
             <Zap className="h-16 w-16 text-white/5 mx-auto mb-6" />
-            <h3 className="text-4xl font-black text-white/10 uppercase italic">No active match requests 🚀</h3>
-            <p className="text-white/20 mt-4 max-w-sm mx-auto italic text-lg leading-relaxed">The circuit is silent. Be the first to broadcast a permanent open slot and mobilize the community.</p>
+            <h3 className="text-4xl font-black text-white/10 uppercase italic">No match requests yet 🚀</h3>
+            <p className="text-white/20 mt-4 max-w-sm mx-auto italic text-lg leading-relaxed">The circuit is silent. Be the first to broadcast a permanent match request and mobilize the community.</p>
           </div>
         )}
       </main>

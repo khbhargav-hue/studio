@@ -45,7 +45,7 @@ import {
   CheckCircle2
 } from "lucide-react"
 import { useFirestore, useUser } from "@/firebase"
-import { collection, query, orderBy, setDoc, doc, serverTimestamp, updateDoc, increment, arrayUnion, deleteDoc, onSnapshot } from "firebase/firestore"
+import { collection, query, orderBy, addDoc, doc, serverTimestamp, updateDoc, increment, arrayUnion, deleteDoc, onSnapshot } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 import { formatDistanceToNow } from "date-fns"
@@ -124,60 +124,60 @@ export default function FeedPage() {
     return () => unsub();
   }, [db]);
 
-  const handlePost = (e: React.FormEvent) => {
+  const handlePost = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!db || !user) {
       toast({ title: "Identification Required", description: "Join the circuit to broadcast signals." })
       return
     }
     
-    console.log("SUBMIT_START");
+    console.log("POST_START", newPost);
     setIsPosting(true)
 
-    const payload = {
-      ...newPost,
-      createdBy: user.uid,
-      creatorName: user.displayName || "Athlete Node",
-      creatorPhoto: user.photoURL,
-      joinedPlayers: [user.uid],
-      slotsFilled: 1,
-      status: "active",
-      likes: 0,
-      comments: 0,
-      createdAt: new Date(),
-      updatedAt: new Date()
+    try {
+      const payload = {
+        ...newPost,
+        createdBy: user.uid,
+        creatorName: user.displayName || "Athlete Node",
+        creatorPhoto: user.photoURL,
+        joinedPlayers: [user.uid],
+        slotsFilled: 1,
+        status: "active",
+        likes: 0,
+        comments: 0,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      }
+
+      const docRef = await addDoc(collection(db, "matches"), payload);
+      
+      console.log("POSTED", docRef.id);
+      
+      toast({ 
+        title: "Posted 🚀", 
+        description: `Signal active: ${docRef.id}`
+      })
+
+      setNewPost(initialFormState)
+      setShowDialog(false)
+      router.refresh()
+    } catch (error: any) {
+      console.error("POST_ERROR", error.code, error.message);
+      toast({ 
+        title: "Transmission Failed", 
+        description: error.message,
+        variant: "destructive"
+      })
+      
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: "matches",
+        operation: 'create',
+        requestResourceData: newPost,
+        message: error.message
+      }));
+    } finally {
+      setIsPosting(false)
     }
-
-    console.log("PAYLOAD", payload);
-
-    // Optimized Optimistic Write: No await on mutation
-    const matchesRef = collection(db, "matches");
-    const newMatchRef = doc(matchesRef);
-
-    setDoc(newMatchRef, payload)
-      .then(() => console.log("SAVE_ACKNOWLEDGED", newMatchRef.id))
-      .catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({
-          path: newMatchRef.path,
-          operation: 'create',
-          requestResourceData: payload,
-          message: serverError.message
-        });
-        errorEmitter.emit('permission-error', permissionError);
-      });
-
-    console.log("SAVE_INITIATED", newMatchRef.id);
-    
-    toast({ 
-      title: "Posted 🚀", 
-      description: "Match signal broadcasted to circuit." 
-    })
-
-    setNewPost(initialFormState)
-    setShowDialog(false)
-    setIsPosting(false)
-    
-    router.refresh()
   }
 
   const addChipToDescription = (chip: string) => {
@@ -318,7 +318,7 @@ export default function FeedPage() {
         ) : (
           <div className="py-32 text-center bg-card border border-dashed border-white/5 rounded-3xl">
             <Activity className="h-12 w-12 text-white/5 mx-auto mb-4" />
-            <h3 className="text-xl font-black uppercase italic text-white/10">No active match requests 🚀</h3>
+            <h3 className="text-xl font-black uppercase italic text-white/10">No match requests yet 🚀</h3>
             <p className="text-white/20 text-sm mt-2 italic">Be the first to broadcast a permanent match signal in Mysuru.</p>
           </div>
         )}

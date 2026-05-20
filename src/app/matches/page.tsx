@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { MobileNav } from "@/components/mobile-nav"
@@ -26,10 +26,11 @@ import {
   Zap,
   Activity,
   ShieldCheck,
-  CheckCircle2
+  CheckCircle2,
+  Trash2
 } from "lucide-react"
 import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase"
-import { collection, query, orderBy, addDoc, serverTimestamp, where, doc, updateDoc, increment } from "firebase/firestore"
+import { collection, query, orderBy, addDoc, serverTimestamp, where, doc, updateDoc, increment, deleteDoc, arrayUnion } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 
@@ -41,62 +42,54 @@ export default function MatchesPage() {
   const [showDialog, setShowDialog] = useState(false)
 
   const [newRequest, setNewRequest] = useState({
-    sport: "Football",
+    game: "Football",
     playersNeeded: 2,
     location: "",
-    date: "",
-    time: "",
-    notes: ""
+    matchDate: "",
+    matchTime: "",
+    details: ""
   })
 
   const matchesQuery = useMemoFirebase(() => {
     if (!db) return null
-    return query(collection(db, "matchRequests"), where("status", "==", "open"), orderBy("createdAt", "desc"))
+    return query(collection(db, "matches"), where("status", "==", "active"), orderBy("createdAt", "desc"))
   }, [db])
 
   const { data: requests, loading } = useCollection(matchesQuery)
 
+  useEffect(() => {
+    if (requests) {
+      console.log("READ_SUCCESS", requests.length, "matches active")
+    }
+  }, [requests])
+
   const handlePost = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!db || !user) return
+    
+    console.log("SAVE_START")
     setIsPosting(true)
     try {
-      await addDoc(collection(db, "matchRequests"), {
+      await addDoc(collection(db, "matches"), {
         ...newRequest,
-        creatorId: user.uid,
+        createdBy: user.uid,
         creatorName: user.displayName || "Athlete",
         creatorPhoto: user.photoURL,
-        playersJoined: 1,
-        joinedUsers: [user.uid],
-        status: "open",
-        createdAt: serverTimestamp()
+        slotsFilled: 1,
+        joinedPlayers: [user.uid],
+        status: "active",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
       })
-      toast({ title: "Match Claim Posted 🔥", description: "The circuit is notified." })
+      console.log("SAVE_SUCCESS")
+      toast({ title: "Match Claim Posted 🔥", description: "The circuit is permanently notified." })
       setShowDialog(false)
-    } catch (err) {
+      setNewRequest({ game: "Football", playersNeeded: 2, location: "", matchDate: "", matchTime: "", details: "" })
+    } catch (err: any) {
+      console.log("SAVE_ERROR", err)
       toast({ title: "Transmission Failed", variant: "destructive" })
     } finally {
       setIsPosting(false)
-    }
-  }
-
-  const handleJoin = async (matchId: string, joinedUsers: string[]) => {
-    if (!db || !user) {
-      toast({ title: "Identification Required", description: "Verify identity to join." })
-      return
-    }
-    if (joinedUsers.includes(user.uid)) return
-
-    try {
-      const matchRef = doc(db, "matchRequests", matchId)
-      await updateDoc(matchRef, {
-        playersJoined: increment(1),
-        joinedUsers: [...joinedUsers, user.uid],
-        updatedAt: serverTimestamp()
-      })
-      toast({ title: "Slot Secured ⚡", description: "You are now part of the lineup." })
-    } catch (err) {
-      toast({ title: "Sync Failed", variant: "destructive" })
     }
   }
 
@@ -133,8 +126,8 @@ export default function MatchesPage() {
               <form onSubmit={handlePost} className="space-y-6">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Sport</Label>
-                    <Input className="h-14 bg-white/5" value={newRequest.sport} onChange={e => setNewRequest({...newRequest, sport: e.target.value})} required />
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Game</Label>
+                    <Input className="h-14 bg-white/5" value={newRequest.game} onChange={e => setNewRequest({...newRequest, game: e.target.value})} required />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Need Players</Label>
@@ -147,12 +140,12 @@ export default function MatchesPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Date</Label>
-                    <Input type="date" className="h-14 bg-white/5" value={newRequest.date} onChange={e => setNewRequest({...newRequest, date: e.target.value})} required />
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Match Date</Label>
+                    <Input type="date" className="h-14 bg-white/5" value={newRequest.matchDate} onChange={e => setNewRequest({...newRequest, matchDate: e.target.value})} required />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Time</Label>
-                    <Input type="time" className="h-14 bg-white/5" value={newRequest.time} onChange={e => setNewRequest({...newRequest, time: e.target.value})} required />
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Match Time</Label>
+                    <Input type="time" className="h-14 bg-white/5" value={newRequest.matchTime} onChange={e => setNewRequest({...newRequest, matchTime: e.target.value})} required />
                   </div>
                 </div>
                 <Button type="submit" disabled={isPosting} className="w-full h-16 bg-primary text-black font-black uppercase tracking-widest text-xs rounded-xl">
@@ -170,14 +163,14 @@ export default function MatchesPage() {
         ) : requests && requests.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {requests.map((request: any) => (
-              <MatchCard key={request.id} request={request} onJoin={() => handleJoin(request.id, request.joinedUsers || [])} />
+              <MatchCard key={request.id} request={request} />
             ))}
           </div>
         ) : (
           <div className="py-40 text-center border border-dashed border-white/10 rounded-[4rem] bg-white/[0.02]">
             <Zap className="h-16 w-16 text-white/5 mx-auto mb-6" />
             <h3 className="text-4xl font-black text-white/10 uppercase italic">No Active Claims</h3>
-            <p className="text-white/20 mt-4 max-w-sm mx-auto italic text-lg leading-relaxed">The circuit is silent. Be the first to broadcast an open slot and mobilize the community.</p>
+            <p className="text-white/20 mt-4 max-w-sm mx-auto italic text-lg leading-relaxed">The circuit is silent. Be the first to broadcast a permanent open slot and mobilize the community.</p>
           </div>
         )}
       </main>
@@ -188,13 +181,48 @@ export default function MatchesPage() {
   )
 }
 
-function MatchCard({ request, onJoin }: { request: any, onJoin: () => void }) {
+function MatchCard({ request }: { request: any }) {
+  const db = useFirestore()
   const { user } = useUser()
-  const isMember = user && request.joinedUsers?.includes(user.uid)
-  const isFull = (request.playersJoined || 0) >= ((request.playersNeeded || 0) + 1)
+  const { toast } = useToast()
+  
+  const isJoined = user && request.joinedPlayers?.includes(user.uid)
+  const isFull = (request.slotsFilled || 0) >= ((request.playersNeeded || 0) + 1)
+  const canManage = user && (request.createdBy === user.uid || (user as any).role === "admin")
 
-  const playersJoined = Math.max(0, request.playersJoined || 0);
+  const playersJoined = Math.max(0, request.slotsFilled || 0);
   const avatarCount = Math.min(playersJoined, 3);
+
+  const handleJoin = async () => {
+    if (!db || !user) {
+      toast({ title: "Identification Required", description: "Verify identity to join." })
+      return
+    }
+    if (isJoined || isFull) return
+
+    try {
+      const matchRef = doc(db, "matches", request.id)
+      await updateDoc(matchRef, {
+        slotsFilled: increment(1),
+        joinedPlayers: arrayUnion(user.uid),
+        updatedAt: serverTimestamp()
+      })
+      toast({ title: "Slot Secured ⚡", description: "You are now part of the lineup." })
+    } catch (err) {
+      toast({ title: "Sync Failed", variant: "destructive" })
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!db || !canManage) return
+    if (!confirm("Retract this match signal?")) return
+    try {
+      await deleteDoc(doc(db, "matches", request.id))
+      toast({ title: "Signal Redacted" })
+    } catch (e) {
+      toast({ title: "Redaction Failed", variant: "destructive" })
+    }
+  }
 
   return (
     <div className="bg-card border border-white/5 rounded-[2.5rem] p-10 flex flex-col hover:border-primary/40 transition-all group relative overflow-hidden">
@@ -205,11 +233,18 @@ function MatchCard({ request, onJoin }: { request: any, onJoin: () => void }) {
       <div className="flex justify-between items-start mb-10 relative z-10">
         <div>
           <p className="text-[10px] font-black text-primary uppercase tracking-[0.4em] mb-2">URGENT REQUIREMENT</p>
-          <h3 className="text-3xl font-black uppercase italic tracking-tighter text-white">{request.sport}</h3>
+          <h3 className="text-3xl font-black uppercase italic tracking-tighter text-white">{request.game || request.sport}</h3>
         </div>
-        <div className="h-14 w-14 rounded-2xl bg-white/5 border border-white/10 flex flex-col items-center justify-center">
-          <p className="text-xl font-black text-primary leading-none">{Math.max(0, (request.playersNeeded || 0) - (playersJoined - 1))}</p>
-          <p className="text-[8px] font-bold text-white/40 uppercase tracking-widest mt-1">Needed</p>
+        <div className="flex flex-col items-end gap-2">
+          <div className="h-14 w-14 rounded-2xl bg-white/5 border border-white/10 flex flex-col items-center justify-center">
+            <p className="text-xl font-black text-primary leading-none">{Math.max(0, (request.playersNeeded || 0) + 1 - (request.slotsFilled || 1))}</p>
+            <p className="text-[8px] font-bold text-white/40 uppercase tracking-widest mt-1">Needed</p>
+          </div>
+          {canManage && (
+            <button onClick={handleDelete} className="p-2 text-destructive/40 hover:text-destructive transition-colors">
+              <Trash2 className="h-4 w-4" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -220,7 +255,7 @@ function MatchCard({ request, onJoin }: { request: any, onJoin: () => void }) {
         </div>
         <div className="flex items-center gap-4 text-white/60 font-bold uppercase italic text-sm">
           <Calendar className="h-5 w-5 text-primary" />
-          <span>{request.date} • {request.time}</span>
+          <span>{request.matchDate || request.date} • {request.matchTime || request.time}</span>
         </div>
         <div className="flex items-center gap-4 text-white/60 font-bold uppercase italic text-sm">
           <Users className="h-5 w-5 text-primary" />
@@ -242,13 +277,13 @@ function MatchCard({ request, onJoin }: { request: any, onJoin: () => void }) {
           )}
         </div>
 
-        {isMember ? (
+        {isJoined ? (
           <Button disabled className="h-14 px-8 bg-green-500/10 text-green-500 border border-green-500/20 font-black uppercase tracking-widest text-[10px] rounded-xl">
             <CheckCircle2 className="h-4 w-4 mr-2" /> CLAIMED
           </Button>
         ) : (
           <Button 
-            onClick={onJoin}
+            onClick={handleJoin}
             disabled={isFull}
             className={cn(
               "h-14 px-8 font-black uppercase tracking-widest text-[10px] rounded-xl transition-all",

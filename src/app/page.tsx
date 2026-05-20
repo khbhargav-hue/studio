@@ -1,6 +1,7 @@
+
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
@@ -39,10 +40,11 @@ import {
   Activity,
   UserCircle,
   Trophy,
-  Target
+  Target,
+  Trash2
 } from "lucide-react"
 import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase"
-import { collection, query, orderBy, addDoc, serverTimestamp, updateDoc, doc, increment, arrayUnion } from "firebase/firestore"
+import { collection, query, orderBy, addDoc, serverTimestamp, updateDoc, doc, increment, arrayUnion, deleteDoc } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 import { formatDistanceToNow } from "date-fns"
@@ -78,13 +80,13 @@ export default function FeedPage() {
   const [showDialog, setShowDialog] = useState(false)
 
   const initialFormState = {
-    sport: "Football",
-    slotsNeeded: 1,
+    game: "Football",
+    playersNeeded: 1,
     location: "",
-    date: "",
-    time: "",
-    description: "",
-    gender: "Anyone",
+    matchDate: "",
+    matchTime: "",
+    details: "",
+    genderPreference: "Anyone",
     skillLevel: "Intermediate"
   }
 
@@ -92,10 +94,16 @@ export default function FeedPage() {
 
   const feedQuery = useMemoFirebase(() => {
     if (!db) return null
-    return query(collection(db, "matchRequests"), orderBy("createdAt", "desc"))
+    return query(collection(db, "matches"), orderBy("createdAt", "desc"))
   }, [db])
 
   const { data: posts, loading } = useCollection(feedQuery)
+
+  useEffect(() => {
+    if (posts) {
+      console.log("READ_SUCCESS", posts.length, "signals active")
+    }
+  }, [posts])
 
   const handlePost = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -104,54 +112,57 @@ export default function FeedPage() {
       return
     }
     
+    console.log("SAVE_START")
     setIsPosting(true)
 
-    // Safety Watchdog: Prevent infinite loading
     const watchdogId = setTimeout(() => {
       if (isPosting) {
         setIsPosting(false)
         toast({ 
           title: "Transmission Delayed", 
-          description: "Network is slow. Signal may be pending. Check feed in a moment.",
+          description: "Network is slow. Signal may be pending.",
           variant: "destructive"
         })
       }
     }, 10000)
 
     try {
-      await addDoc(collection(db, "matchRequests"), {
+      const matchData = {
         ...newPost,
-        creatorId: user.uid,
+        createdBy: user.uid,
         creatorName: user.displayName || "Athlete Node",
         creatorPhoto: user.photoURL,
+        joinedPlayers: [user.uid],
         slotsFilled: 1,
-        joinedUsers: [user.uid],
-        status: "open",
+        status: "active",
         likes: 0,
-        createdAt: serverTimestamp()
-      })
+        comments: 0,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      }
+
+      await addDoc(collection(db, "matches"), matchData)
+      console.log("SAVE_SUCCESS")
 
       clearTimeout(watchdogId)
       
       toast({ 
         title: "Match request posted 🚀", 
-        description: "Your signal is live on the circuit." 
+        description: "Your signal is permanently live on the circuit." 
       })
 
-      // UI Cleanup
       setNewPost(initialFormState)
       setShowDialog(false)
       
-      // Forced Feed Sync
       router.push('/')
       router.refresh()
       
     } catch (err: any) {
-      console.error("POST_ERROR", err)
+      console.log("SAVE_ERROR", err)
       clearTimeout(watchdogId)
       toast({ 
         title: "Transmission Failed", 
-        description: err.message || "Circuit interrupted. Check your link.",
+        description: err.message || "Circuit interrupted.",
         variant: "destructive" 
       })
     } finally {
@@ -162,7 +173,7 @@ export default function FeedPage() {
   const addChipToDescription = (chip: string) => {
     setNewPost(prev => ({
       ...prev,
-      description: prev.description ? `${prev.description} #${chip}` : `#${chip}`
+      details: prev.details ? `${prev.details} #${chip}` : `#${chip}`
     }))
   }
 
@@ -171,7 +182,6 @@ export default function FeedPage() {
       <Navbar />
       
       <main className="flex-1 pt-24 pb-32 max-w-2xl mx-auto w-full px-4">
-        {/* Post Creation Hub */}
         <div className="bg-card border border-white/5 rounded-2xl p-6 mb-8 flex items-center gap-4 shadow-xl">
           <div className="h-10 w-10 rounded-full bg-white/5 overflow-hidden flex items-center justify-center border border-white/10">
             {user?.photoURL ? (
@@ -196,7 +206,7 @@ export default function FeedPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Game</Label>
-                    <Select value={newPost.sport} onValueChange={v => setNewPost({...newPost, sport: v})}>
+                    <Select value={newPost.game} onValueChange={v => setNewPost({...newPost, game: v})}>
                       <SelectTrigger className="h-12 bg-white/5 border-white/10 text-white">
                         <SelectValue placeholder="Select Game" />
                       </SelectTrigger>
@@ -211,7 +221,7 @@ export default function FeedPage() {
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Players Needed</Label>
-                    <Input type="number" className="h-12 bg-white/5 border-white/10" value={newPost.slotsNeeded} onChange={e => setNewPost({...newPost, slotsNeeded: Number(e.target.value)})} required />
+                    <Input type="number" className="h-12 bg-white/5 border-white/10" value={newPost.playersNeeded} onChange={e => setNewPost({...newPost, playersNeeded: Number(e.target.value)})} required />
                   </div>
                 </div>
 
@@ -223,18 +233,18 @@ export default function FeedPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Match Date</Label>
-                    <Input type="date" className="h-12 bg-white/5 border-white/10" value={newPost.date} onChange={e => setNewPost({...newPost, date: e.target.value})} required />
+                    <Input type="date" className="h-12 bg-white/5 border-white/10" value={newPost.matchDate} onChange={e => setNewPost({...newPost, matchDate: e.target.value})} required />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Match Time</Label>
-                    <Input type="time" className="h-12 bg-white/5 border-white/10" value={newPost.time} onChange={e => setNewPost({...newPost, time: e.target.value})} required />
+                    <Input type="time" className="h-12 bg-white/5 border-white/10" value={newPost.matchTime} onChange={e => setNewPost({...newPost, matchTime: e.target.value})} required />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Gender Preference</Label>
-                    <Select value={newPost.gender} onValueChange={v => setNewPost({...newPost, gender: v})}>
+                    <Select value={newPost.genderPreference} onValueChange={v => setNewPost({...newPost, genderPreference: v})}>
                       <SelectTrigger className="h-12 bg-white/5 border-white/10 text-white">
                         <SelectValue />
                       </SelectTrigger>
@@ -273,8 +283,8 @@ export default function FeedPage() {
                   <Textarea 
                     placeholder={`Examples:\nNeed 1 badminton player this Sunday 7 PM.\nIntermediate level.\nFriendly match.\nBogadi area.`} 
                     className="bg-white/5 border-white/10 italic min-h-[100px]" 
-                    value={newPost.description} 
-                    onChange={e => setNewPost({...newPost, description: e.target.value})} 
+                    value={newPost.details} 
+                    onChange={e => setNewPost({...newPost, details: e.target.value})} 
                   />
                 </div>
 
@@ -286,7 +296,6 @@ export default function FeedPage() {
           </Dialog>
         </div>
 
-        {/* Dynamic Feed */}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <Loader2 className="h-10 w-10 animate-spin text-primary opacity-20" />
@@ -300,7 +309,7 @@ export default function FeedPage() {
           <div className="py-32 text-center bg-card border border-dashed border-white/5 rounded-3xl">
             <Activity className="h-12 w-12 text-white/5 mx-auto mb-4" />
             <h3 className="text-xl font-black uppercase italic text-white/10">Circuit Silent</h3>
-            <p className="text-white/20 text-sm mt-2 italic">Be the first to broadcast a match signal in Mysuru.</p>
+            <p className="text-white/20 text-sm mt-2 italic">Be the first to broadcast a permanent match signal in Mysuru.</p>
           </div>
         )}
       </main>
@@ -316,9 +325,11 @@ function PostCard({ post }: { post: any }) {
   const { user } = useUser()
   const { toast } = useToast()
   
-  const isJoined = user && post.joinedUsers?.includes(user.uid)
-  const isFull = post.slotsFilled >= (post.slotsNeeded + 1)
+  const isJoined = user && post.joinedPlayers?.includes(user.uid)
+  const isFull = (post.slotsFilled || 0) >= ((post.playersNeeded || 0) + 1)
   const [likes, setLikes] = useState(post.likes || 0)
+
+  const canManage = user && (post.createdBy === user.uid || (user as any).role === "admin")
 
   const createdAt = post.createdAt?.seconds 
     ? formatDistanceToNow(new Date(post.createdAt.seconds * 1000)) + " ago" 
@@ -332,9 +343,10 @@ function PostCard({ post }: { post: any }) {
     if (isJoined || isFull) return
 
     try {
-      await updateDoc(doc(db, "matchRequests", post.id), {
-        joinedUsers: arrayUnion(user.uid),
-        slotsFilled: increment(1)
+      await updateDoc(doc(db, "matches", post.id), {
+        joinedPlayers: arrayUnion(user.uid),
+        slotsFilled: increment(1),
+        updatedAt: serverTimestamp()
       })
       toast({ title: "Slot Secured ⚡", description: "You are now part of the roster." })
     } catch (err) {
@@ -346,10 +358,21 @@ function PostCard({ post }: { post: any }) {
     if (!db) return
     setLikes(prev => prev + 1)
     try {
-      await updateDoc(doc(db, "matchRequests", post.id), {
+      await updateDoc(doc(db, "matches", post.id), {
         likes: increment(1)
       })
     } catch (e) {}
+  }
+
+  const handleDelete = async () => {
+    if (!db || !canManage) return
+    if (!confirm("Are you sure you want to retract this match signal?")) return
+    try {
+      await deleteDoc(doc(db, "matches", post.id))
+      toast({ title: "Signal Retracted" })
+    } catch (e) {
+      toast({ title: "Redaction Failed", variant: "destructive" })
+    }
   }
 
   return (
@@ -358,33 +381,40 @@ function PostCard({ post }: { post: any }) {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-full border-2 border-primary/20 p-0.5 overflow-hidden bg-white/5">
-              <img src={post.creatorPhoto || `https://picsum.photos/seed/${post.creatorId}/100`} className="h-full w-full object-cover rounded-full" alt="Creator" />
+              <img src={post.creatorPhoto || `https://picsum.photos/seed/${post.createdBy}/100`} className="h-full w-full object-cover rounded-full" alt="Creator" />
             </div>
             <div>
               <p className="text-sm font-black uppercase italic text-white leading-none">{post.creatorName}</p>
               <p className="text-[9px] font-bold text-white/20 uppercase tracking-widest mt-1.5">{createdAt}</p>
             </div>
           </div>
-          <button className="text-white/10 hover:text-white transition-colors"><MoreVertical className="h-5 w-5" /></button>
+          <div className="flex items-center gap-2">
+            {canManage && (
+              <button onClick={handleDelete} className="text-destructive/40 hover:text-destructive transition-colors p-2">
+                <Trash2 className="h-4 w-4" />
+              </button>
+            )}
+            <button className="text-white/10 hover:text-white transition-colors"><MoreVertical className="h-5 w-5" /></button>
+          </div>
         </div>
 
         <div className="space-y-4 mb-6">
           <div className="flex flex-wrap gap-2">
-            <span className="bg-primary/10 text-primary text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border border-primary/20">{post.sport}</span>
+            <span className="bg-primary/10 text-primary text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border border-primary/20">{post.game || post.sport}</span>
             <span className="bg-white/5 text-white/40 text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border border-white/5">{post.location?.split('/')[0] || "Mysuru"}</span>
             {post.skillLevel && <span className="bg-white/5 text-white/40 text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border border-white/5">{post.skillLevel}</span>}
           </div>
-          <p className="text-white/80 text-[15px] leading-relaxed italic font-medium">"{post.description || "Assembling a squad for a friendly match. Hit the join signal to secure your slot."}"</p>
+          <p className="text-white/80 text-[15px] leading-relaxed italic font-medium">"{post.details || post.description || "Assembling a squad for a friendly match. Hit the join signal to secure your slot."}"</p>
         </div>
 
         <div className="grid grid-cols-2 gap-3 p-4 bg-white/[0.02] rounded-xl border border-white/5 mb-6">
           <div className="flex items-center gap-2.5 text-white/50">
             <Calendar className="h-3.5 w-3.5 text-primary" />
-            <span className="text-[10px] font-black uppercase italic">{post.date}</span>
+            <span className="text-[10px] font-black uppercase italic">{post.matchDate || post.date}</span>
           </div>
           <div className="flex items-center gap-2.5 text-white/50">
             <Clock className="h-3.5 w-3.5 text-primary" />
-            <span className="text-[10px] font-black uppercase italic">{post.time}</span>
+            <span className="text-[10px] font-black uppercase italic">{post.matchTime || post.time}</span>
           </div>
           <div className="flex items-center gap-2.5 text-white/50 col-span-2">
             <MapPin className="h-3.5 w-3.5 text-primary shrink-0" />
@@ -400,9 +430,9 @@ function PostCard({ post }: { post: any }) {
             </button>
             <button className="flex items-center gap-2 text-white/30 hover:text-primary transition-colors">
               <MessageCircle className="h-5 w-5" />
-              <span className="text-xs font-black">2</span>
+              <span className="text-xs font-black">{post.comments || 0}</span>
             </button>
-            <button className="flex items-center gap-2 text-white/30 hover:text-white transition-colors" onClick={() => navigator.share({ title: post.sport, url: window.location.href })}>
+            <button className="flex items-center gap-2 text-white/30 hover:text-white transition-colors" onClick={() => navigator.share({ title: post.game, url: window.location.href })}>
               <Share2 className="h-5 w-5" />
             </button>
           </div>
@@ -418,7 +448,7 @@ function PostCard({ post }: { post: any }) {
                 isFull ? "bg-white/5 text-white/10" : "bg-primary text-black hover:scale-105 shadow-lg shadow-primary/10"
               )}
             >
-              {isFull ? "SIGNAL FILLED" : `JOIN (${(post.slotsNeeded + 1) - post.slotsFilled} SLOTS)`}
+              {isFull ? "SIGNAL FILLED" : `JOIN (${((post.playersNeeded || 0) + 1) - (post.slotsFilled || 1)} SLOTS)`}
             </Button>
           )}
         </div>

@@ -45,7 +45,7 @@ import {
   CheckCircle2,
   Edit2
 } from "lucide-react"
-import { useFirestore, useUser } from "@/firebase"
+import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/firebase"
 import { collection, query, orderBy, addDoc, doc, serverTimestamp, updateDoc, increment, arrayUnion, deleteDoc, onSnapshot } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
@@ -75,17 +75,15 @@ const TACTICAL_CHIPS = [
   { label: "Advanced", icon: "⚡" },
 ]
 
-const ADMIN_EMAIL = 'khbhargav@gmail.com';
-
 export default function FeedPage() {
   const db = useFirestore()
-  const router = useRouter()
   const { user } = useUser()
   const { toast } = useToast()
   const [isPosting, setIsPosting] = useState(false)
   const [showDialog, setShowDialog] = useState(false)
   const [posts, setPosts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [editingPost, setEditingPost] = useState<any>(null)
 
   const initialFormState = {
     game: "Football",
@@ -99,6 +97,13 @@ export default function FeedPage() {
   }
 
   const [newPost, setNewPost] = useState(initialFormState)
+
+  // Fetch Admin Role
+  const profileRef = useMemoFirebase(() => {
+    if (!db || !user) return null;
+    return doc(db, "users", user.uid);
+  }, [db, user]);
+  const { data: profile } = useDoc(profileRef);
 
   useEffect(() => {
     if (!db) return;
@@ -115,7 +120,6 @@ export default function FeedPage() {
           id: doc.id,
           ...doc.data()
         }))
-        console.log("MATCHES_LOADED", data)
         setPosts(data)
         setLoading(false)
       },
@@ -126,52 +130,69 @@ export default function FeedPage() {
     )
 
     return () => unsubscribe()
-  }, [])
+  }, [db])
 
   const handlePost = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!db || !user || isPosting) return
     
     setIsPosting(true)
-    console.log("POST_START", newPost)
 
     try {
-      const payload = {
-        ...newPost,
-        postedBy: {
-          uid: user.uid,
-          name: user.displayName || "Athlete Node",
-          photo: user.photoURL
-        },
-        joinedPlayers: [user.uid],
-        slotsFilled: 1,
-        status: "active",
-        likes: 0,
-        comments: 0,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
+      if (editingPost) {
+        const postRef = doc(db, "matches", editingPost.id);
+        await updateDoc(postRef, {
+          ...newPost,
+          updatedAt: serverTimestamp()
+        });
+        toast({ title: "Signal Updated ⚡" });
+      } else {
+        const payload = {
+          ...newPost,
+          postedBy: {
+            uid: user.uid,
+            name: user.displayName || "Athlete Node",
+            photo: user.photoURL
+          },
+          joinedPlayers: [user.uid],
+          slotsFilled: 1,
+          status: "active",
+          likes: 0,
+          comments: 0,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        }
+        await addDoc(collection(db, "matches"), payload);
+        toast({ title: "Match posted 🚀", description: "Signal broadcast successful." });
       }
-
-      const docRef = await addDoc(collection(db, "matches"), payload);
-      console.log("POST_SUCCESS", docRef.id);
-
-      toast({ 
-        title: "Match posted 🚀", 
-        description: "Signal broadcast successful."
-      })
       
       setShowDialog(false)
       setNewPost(initialFormState)
+      setEditingPost(null)
     } catch (error: any) {
-      console.error("SAVE_ERROR", error.code, error.message);
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message || "Failed to post match"
+        description: error.message || "Failed to broadcast signal"
       })
     } finally {
       setIsPosting(false)
     }
+  }
+
+  const handleEdit = (post: any) => {
+    setEditingPost(post);
+    setNewPost({
+      game: post.game || "Football",
+      playersNeeded: post.playersNeeded || 1,
+      location: post.location || "",
+      matchDate: post.matchDate || "",
+      matchTime: post.matchTime || "",
+      details: post.details || "",
+      genderPreference: post.genderPreference || "Anyone",
+      skillLevel: post.skillLevel || "Intermediate"
+    });
+    setShowDialog(true);
   }
 
   const addChipToDescription = (chip: string) => {
@@ -194,7 +215,13 @@ export default function FeedPage() {
               <UserCircle className="h-6 w-6 text-white/20" />
             )}
           </div>
-          <Dialog open={showDialog} onOpenChange={setShowDialog}>
+          <Dialog open={showDialog} onOpenChange={(open) => {
+            setShowDialog(open);
+            if (!open) {
+              setEditingPost(null);
+              setNewPost(initialFormState);
+            }
+          }}>
             <DialogTrigger asChild>
               <button className="flex-1 h-12 bg-white/5 border border-white/5 rounded-full px-6 text-left text-white/40 text-sm font-medium hover:bg-white/10 hover:border-primary/20 transition-all">
                 Broadcast a match signal to the circuit...
@@ -203,7 +230,7 @@ export default function FeedPage() {
             <DialogContent className="bg-card border-white/5 rounded-[2rem] p-8 max-w-lg shadow-2xl overflow-y-auto max-h-[90vh] no-scrollbar">
               <DialogHeader>
                 <DialogTitle className="text-3xl font-black uppercase italic text-white tracking-tighter">
-                  New <span className="text-primary">Match Signal</span>
+                  {editingPost ? "Modify" : "New"} <span className="text-primary">Match Signal</span>
                 </DialogTitle>
               </DialogHeader>
               <form onSubmit={handlePost} className="space-y-6 pt-4">
@@ -293,7 +320,7 @@ export default function FeedPage() {
                 </div>
 
                 <Button type="submit" disabled={isPosting} className="w-full h-14 bg-primary text-black font-black uppercase tracking-widest text-xs rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.01] transition-all">
-                  {isPosting ? <Loader2 className="h-5 w-5 animate-spin" /> : "POST MATCH REQUEST 🚀"}
+                  {isPosting ? <Loader2 className="h-5 w-5 animate-spin" /> : editingPost ? "UPDATE MATCH SIGNAL ⚡" : "POST MATCH REQUEST 🚀"}
                 </Button>
               </form>
             </DialogContent>
@@ -307,7 +334,14 @@ export default function FeedPage() {
           </div>
         ) : posts && posts.length > 0 ? (
           <div className="space-y-6">
-            {posts.map((post: any) => <PostCard key={post.id} post={post} />)}
+            {posts.map((post: any) => (
+              <PostCard 
+                key={post.id} 
+                post={post} 
+                isAdmin={profile?.role === 'admin'}
+                onEdit={() => handleEdit(post)}
+              />
+            ))}
           </div>
         ) : (
           <div className="py-32 text-center bg-card border border-dashed border-white/5 rounded-3xl">
@@ -324,7 +358,7 @@ export default function FeedPage() {
   )
 }
 
-function PostCard({ post }: { post: any }) {
+function PostCard({ post, isAdmin, onEdit }: { post: any, isAdmin: boolean, onEdit: () => void }) {
   const db = useFirestore()
   const { user } = useUser()
   const { toast } = useToast()
@@ -335,7 +369,7 @@ function PostCard({ post }: { post: any }) {
 
   const canManage = user && (
     post.postedBy?.uid === user.uid || 
-    user.email === ADMIN_EMAIL
+    isAdmin
   )
 
   const createdAt = post.createdAt?.seconds 
@@ -350,40 +384,22 @@ function PostCard({ post }: { post: any }) {
     if (isJoined || isFull) return
 
     const matchRef = doc(db, "matches", post.id);
-    const updateData = {
+    updateDoc(matchRef, {
       joinedPlayers: arrayUnion(user.uid),
       slotsFilled: increment(1),
       updatedAt: serverTimestamp()
-    };
-
-    updateDoc(matchRef, updateData)
-      .then(() => {
-        toast({ title: "Slot Secured ⚡", description: "You are now part of the roster." })
-      })
-      .catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({
-          path: matchRef.path,
-          operation: 'update',
-          requestResourceData: updateData,
-          message: serverError.message
-        });
-        errorEmitter.emit('permission-error', permissionError);
-      });
+    }).then(() => {
+      toast({ title: "Slot Secured ⚡", description: "You are now part of the roster." })
+    }).catch(err => {
+      toast({ variant: "destructive", title: "Action Failed", description: err.message });
+    });
   }
 
   const handleLike = () => {
     if (!db) return
     setLikes(prev => prev + 1)
-    const matchRef = doc(db, "matches", post.id);
-    updateDoc(matchRef, {
+    updateDoc(doc(db, "matches", post.id), {
       likes: increment(1)
-    }).catch(async (serverError) => {
-      const permissionError = new FirestorePermissionError({
-        path: matchRef.path,
-        operation: 'update',
-        message: serverError.message
-      });
-      errorEmitter.emit('permission-error', permissionError);
     });
   }
 
@@ -394,43 +410,25 @@ function PostCard({ post }: { post: any }) {
       url: window.location.href,
     };
 
-    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
-      try {
+    try {
+      if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
         await navigator.share(shareData);
-      } catch (err) {
-        if ((err as Error).name !== 'AbortError') {
-          console.log('Share failed:', err);
-        }
-      }
-    } else {
-      try {
+      } else {
         await navigator.clipboard.writeText(window.location.href);
-        toast({ 
-          title: "Link Copied 🔗", 
-          description: "Match signal link copied to clipboard." 
-        });
-      } catch (err) {
-        toast({ 
-          title: "Sharing Unavailable", 
-          description: "Your browser doesn't support sharing nodes." 
-        });
+        toast({ title: "Link Copied 🔗" });
       }
-    }
+    } catch (err) {}
   };
 
   const handleDelete = async () => {
     if (!db || !canManage) return
-    if (!confirm("Are you sure you want to retract this match signal?")) return
+    if (!confirm("Retract this match signal from the circuit?")) return
     const matchRef = doc(db, "matches", post.id);
-    deleteDoc(matchRef).catch(async (serverError) => {
-      const permissionError = new FirestorePermissionError({
-        path: matchRef.path,
-        operation: 'delete',
-        message: serverError.message
-      });
-      errorEmitter.emit('permission-error', permissionError);
+    deleteDoc(matchRef).then(() => {
+      toast({ title: "Signal Redacted" })
+    }).catch(err => {
+      toast({ variant: "destructive", title: "Deletion Failed", description: err.message });
     });
-    toast({ title: "Signal Redacted" })
   }
 
   return (
@@ -450,7 +448,7 @@ function PostCard({ post }: { post: any }) {
             {canManage && (
               <>
                 <button 
-                  onClick={() => toast({ title: "Edit Protocol", description: "Edit functionality coming to the circuit soon." })} 
+                  onClick={onEdit} 
                   className="text-white/20 hover:text-primary transition-colors p-2"
                 >
                   <Edit2 className="h-4 w-4" />

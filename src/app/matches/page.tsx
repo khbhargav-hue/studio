@@ -32,33 +32,38 @@ import {
   Share2,
   Edit2
 } from "lucide-react"
-import { useFirestore, useUser } from "@/firebase"
+import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/firebase"
 import { collection, query, orderBy, addDoc, doc, serverTimestamp, where, updateDoc, increment, deleteDoc, arrayUnion, onSnapshot } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
-import { errorEmitter } from '@/firebase/error-emitter'
-import { FirestorePermissionError } from '@/firebase/errors'
-
-const ADMIN_EMAIL = 'khbhargav@gmail.com';
 
 export default function MatchesPage() {
   const db = useFirestore()
   const { user } = useUser()
   const { toast } = useToast()
-  const router = useRouter()
   const [isPosting, setIsPosting] = useState(false)
   const [showDialog, setShowDialog] = useState(false)
   const [requests, setRequests] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [editingMatch, setEditingMatch] = useState<any>(null)
 
-  const [newRequest, setNewRequest] = useState({
+  const initialFormState = {
     game: "Football",
     playersNeeded: 2,
     location: "",
     matchDate: "",
     matchTime: "",
     details: ""
-  })
+  }
+
+  const [newRequest, setNewRequest] = useState(initialFormState)
+
+  // Fetch Admin Role
+  const profileRef = useMemoFirebase(() => {
+    if (!db || !user) return null;
+    return doc(db, "users", user.uid);
+  }, [db, user]);
+  const { data: profile } = useDoc(profileRef);
 
   useEffect(() => {
     if (!db) return;
@@ -75,7 +80,6 @@ export default function MatchesPage() {
           id: doc.id,
           ...doc.data()
         }))
-        console.log("MATCHES_LOADED", data)
         setRequests(data)
         setLoading(false)
       },
@@ -86,45 +90,44 @@ export default function MatchesPage() {
     )
 
     return () => unsubscribe()
-  }, [])
+  }, [db])
 
   const handlePost = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!db || !user || isPosting) {
-      if (!user) toast({ title: "Identification Required", description: "Login required" })
-      return
-    }
+    if (!db || !user || isPosting) return
     
     setIsPosting(true)
-    console.log("POST_START", newRequest)
 
     try {
-      const payload = {
-        ...newRequest,
-        postedBy: {
-          uid: user.uid,
-          name: user.displayName || "Athlete",
-          photo: user.photoURL,
-        },
-        slotsFilled: 1,
-        joinedPlayers: [user.uid],
-        status: "active",
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
+      if (editingMatch) {
+        const matchRef = doc(db, "matches", editingMatch.id);
+        await updateDoc(matchRef, {
+          ...newRequest,
+          updatedAt: serverTimestamp()
+        });
+        toast({ title: "Signal Updated ⚡" });
+      } else {
+        const payload = {
+          ...newRequest,
+          postedBy: {
+            uid: user.uid,
+            name: user.displayName || "Athlete",
+            photo: user.photoURL,
+          },
+          slotsFilled: 1,
+          joinedPlayers: [user.uid],
+          status: "active",
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        }
+        await addDoc(collection(db, "matches"), payload);
+        toast({ title: "Match posted 🚀" });
       }
-
-      const docRef = await addDoc(collection(db, "matches"), payload);
-      console.log("POST_SUCCESS", docRef.id);
-
-      toast({ 
-        title: "Match posted 🚀", 
-        description: "Signal Transmitted successfully."
-      })
       
       setShowDialog(false)
-      setNewRequest({ game: "Football", playersNeeded: 2, location: "", matchDate: "", matchTime: "", details: "" })
+      setNewRequest(initialFormState)
+      setEditingMatch(null)
     } catch (error: any) {
-      console.error("SAVE_ERROR", error.code, error.message);
       toast({
         variant: "destructive",
         title: "Error",
@@ -133,6 +136,19 @@ export default function MatchesPage() {
     } finally {
       setIsPosting(false)
     }
+  }
+
+  const handleEdit = (match: any) => {
+    setEditingMatch(match);
+    setNewRequest({
+      game: match.game || "Football",
+      playersNeeded: match.playersNeeded || 2,
+      location: match.location || "",
+      matchDate: match.matchDate || "",
+      matchTime: match.matchTime || "",
+      details: match.details || ""
+    });
+    setShowDialog(true);
   }
 
   return (
@@ -153,7 +169,13 @@ export default function MatchesPage() {
             </p>
           </div>
 
-          <Dialog open={showDialog} onOpenChange={setShowDialog}>
+          <Dialog open={showDialog} onOpenChange={(open) => {
+            setShowDialog(open);
+            if (!open) {
+              setEditingMatch(null);
+              setNewRequest(initialFormState);
+            }
+          }}>
             <DialogTrigger asChild>
               <button className="h-20 px-10 bg-primary text-black font-black uppercase tracking-widest text-sm rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.02] transition-all flex items-center justify-center">
                 <Plus className="h-6 w-6 mr-3" /> POST MATCH CLAIM
@@ -162,7 +184,7 @@ export default function MatchesPage() {
             <DialogContent className="bg-card border-white/5 rounded-[2.5rem] p-10 max-w-lg">
               <DialogHeader>
                 <DialogTitle className="text-3xl font-black uppercase italic tracking-tighter mb-8">
-                  Broadcast <span className="text-primary">Claim</span>
+                  {editingMatch ? "Modify" : "Broadcast"} <span className="text-primary">Signal</span>
                 </DialogTitle>
               </DialogHeader>
               <form onSubmit={handlePost} className="space-y-6">
@@ -191,7 +213,7 @@ export default function MatchesPage() {
                   </div>
                 </div>
                 <Button type="submit" disabled={isPosting} className="w-full h-16 bg-primary text-black font-black uppercase tracking-widest text-xs rounded-xl">
-                  {isPosting ? <Loader2 className="h-5 w-5 animate-spin" /> : "POST MATCH REQUEST 🚀"}
+                  {isPosting ? <Loader2 className="h-5 w-5 animate-spin" /> : editingMatch ? "SYNC CHANGES ⚡" : "POST MATCH REQUEST 🚀"}
                 </Button>
               </form>
             </DialogContent>
@@ -205,7 +227,12 @@ export default function MatchesPage() {
         ) : requests && requests.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {requests.map((request: any) => (
-              <MatchCard key={request.id} request={request} />
+              <MatchCard 
+                key={request.id} 
+                request={request} 
+                isAdmin={profile?.role === 'admin'}
+                onEdit={() => handleEdit(request)}
+              />
             ))}
           </div>
         ) : (
@@ -223,7 +250,7 @@ export default function MatchesPage() {
   )
 }
 
-function MatchCard({ request }: { request: any }) {
+function MatchCard({ request, isAdmin, onEdit }: { request: any, isAdmin: boolean, onEdit: () => void }) {
   const db = useFirestore()
   const { user } = useUser()
   const { toast } = useToast()
@@ -233,7 +260,7 @@ function MatchCard({ request }: { request: any }) {
   
   const canManage = user && (
     request.postedBy?.uid === user.uid || 
-    user.email === ADMIN_EMAIL
+    isAdmin
   )
 
   const playersJoined = Math.max(0, request.slotsFilled || 0);
@@ -247,25 +274,15 @@ function MatchCard({ request }: { request: any }) {
     if (isJoined || isFull) return
 
     const matchRef = doc(db, "matches", request.id)
-    const updateData = {
+    updateDoc(matchRef, {
       slotsFilled: increment(1),
       joinedPlayers: arrayUnion(user.uid),
       updatedAt: serverTimestamp()
-    };
-
-    updateDoc(matchRef, updateData)
-      .then(() => {
-        toast({ title: "Slot Secured ⚡", description: "You are now part of the lineup." })
-      })
-      .catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({
-          path: matchRef.path,
-          operation: 'update',
-          requestResourceData: updateData,
-          message: serverError.message
-        });
-        errorEmitter.emit('permission-error', permissionError);
-      });
+    }).then(() => {
+      toast({ title: "Slot Secured ⚡", description: "You are now part of the lineup." })
+    }).catch(err => {
+      toast({ variant: "destructive", title: "Join Failed", description: err.message });
+    });
   }
 
   const handleShare = async () => {
@@ -275,37 +292,25 @@ function MatchCard({ request }: { request: any }) {
       url: window.location.href,
     };
 
-    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
-      try {
+    try {
+      if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
         await navigator.share(shareData);
-      } catch (err) {
-        if ((err as Error).name !== 'AbortError') {
-          console.log('Share error:', err);
-        }
-      }
-    } else {
-      try {
+      } else {
         await navigator.clipboard.writeText(window.location.href);
-        toast({ title: "Link Copied", description: "Match link saved to clipboard." });
-      } catch (err) {
-        toast({ title: "Sharing Error", variant: "destructive" });
+        toast({ title: "Link Copied 🔗" });
       }
-    }
+    } catch (err) {}
   };
 
   const handleDelete = async () => {
     if (!db || !canManage) return
     if (!confirm("Retract this match signal?")) return
     const matchRef = doc(db, "matches", request.id);
-    deleteDoc(matchRef).catch(async (serverError) => {
-      const permissionError = new FirestorePermissionError({
-        path: matchRef.path,
-        operation: 'delete',
-        message: serverError.message
-      });
-      errorEmitter.emit('permission-error', permissionError);
+    deleteDoc(matchRef).then(() => {
+      toast({ title: "Signal Redacted" })
+    }).catch(err => {
+      toast({ variant: "destructive", title: "Deletion Failed", description: err.message });
     });
-    toast({ title: "Signal Redacted" })
   }
 
   return (
@@ -331,7 +336,7 @@ function MatchCard({ request }: { request: any }) {
             {canManage && (
               <>
                 <button 
-                  onClick={() => toast({ title: "Edit Protocol", description: "Edit functionality coming to the circuit soon." })} 
+                  onClick={onEdit} 
                   className="p-2 text-white/20 hover:text-primary transition-colors"
                 >
                   <Edit2 className="h-4 w-4" />

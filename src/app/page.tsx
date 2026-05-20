@@ -15,6 +15,13 @@ import {
   DialogTitle, 
   DialogTrigger 
 } from "@/components/ui/dialog"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { 
   Plus, 
   Swords, 
@@ -29,13 +36,37 @@ import {
   MessageCircle,
   MoreVertical,
   Activity,
-  UserCircle
+  UserCircle,
+  Trophy,
+  Target
 } from "lucide-react"
 import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase"
 import { collection, query, orderBy, addDoc, serverTimestamp, updateDoc, doc, increment, arrayUnion } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 import { formatDistanceToNow } from "date-fns"
+
+const SPORTS = [
+  { label: "Football ⚽", value: "Football" },
+  { label: "Cricket 🏏", value: "Cricket" },
+  { label: "Badminton 🏸", value: "Badminton" },
+  { label: "Pickleball 🎾", value: "Pickleball" },
+  { label: "Basketball 🏀", value: "Basketball" },
+  { label: "Volleyball 🏐", value: "Volleyball" },
+  { label: "Table Tennis 🏓", value: "Table Tennis" },
+  { label: "Swimming 🏊", value: "Swimming" },
+  { label: "Running 🏃", value: "Running" },
+  { label: "Other", value: "Other" },
+]
+
+const TACTICAL_CHIPS = [
+  { label: "Competitive", icon: "🔥" },
+  { label: "Friendly", icon: "😎" },
+  { label: "Tournament", icon: "🏆" },
+  { label: "Beginner", icon: "👶" },
+  { label: "Intermediate", icon: "💪" },
+  { label: "Advanced", icon: "⚡" },
+]
 
 export default function FeedPage() {
   const db = useFirestore()
@@ -50,7 +81,9 @@ export default function FeedPage() {
     location: "",
     date: "",
     time: "",
-    description: ""
+    description: "",
+    gender: "Anyone",
+    skillLevel: "Intermediate"
   })
 
   const feedQuery = useMemoFirebase(() => {
@@ -80,14 +113,21 @@ export default function FeedPage() {
         likes: 0,
         createdAt: serverTimestamp()
       })
-      toast({ title: "Signal Transmitted ⚡", description: "Your match request is live on the Mysuru circuit." })
+      toast({ title: "Match request posted successfully", description: "Your signal is live on the circuit." })
       setShowDialog(false)
-      setNewPost({ sport: "Football", slotsNeeded: 1, location: "", date: "", time: "", description: "" })
+      setNewPost({ sport: "Football", slotsNeeded: 1, location: "", date: "", time: "", description: "", gender: "Anyone", skillLevel: "Intermediate" })
     } catch (err) {
       toast({ title: "Transmission Failed", variant: "destructive" })
     } finally {
       setIsPosting(false)
     }
+  }
+
+  const addChipToDescription = (chip: string) => {
+    setNewPost(prev => ({
+      ...prev,
+      description: prev.description ? `${prev.description} #${chip}` : `#${chip}`
+    }))
   }
 
   return (
@@ -110,7 +150,7 @@ export default function FeedPage() {
                 Broadcast a match signal to the circuit...
               </button>
             </DialogTrigger>
-            <DialogContent className="bg-card border-white/5 rounded-[2rem] p-8 max-w-lg shadow-2xl">
+            <DialogContent className="bg-card border-white/5 rounded-[2rem] p-8 max-w-lg shadow-2xl overflow-y-auto max-h-[90vh] no-scrollbar">
               <DialogHeader>
                 <DialogTitle className="text-3xl font-black uppercase italic text-white tracking-tighter">
                   New <span className="text-primary">Match Signal</span>
@@ -119,34 +159,91 @@ export default function FeedPage() {
               <form onSubmit={handlePost} className="space-y-6 pt-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Discipline</Label>
-                    <Input className="h-12 bg-white/5 border-white/10" value={newPost.sport} onChange={e => setNewPost({...newPost, sport: e.target.value})} required />
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Game</Label>
+                    <Select value={newPost.sport} onValueChange={v => setNewPost({...newPost, sport: v})}>
+                      <SelectTrigger className="h-12 bg-white/5 border-white/10 text-white">
+                        <SelectValue placeholder="Select Game" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-card border-white/10">
+                        {SPORTS.map(s => (
+                          <SelectItem key={s.value} value={s.value} className="text-white hover:bg-white/10">
+                            {s.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Athletes Needed</Label>
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Players Needed</Label>
                     <Input type="number" className="h-12 bg-white/5 border-white/10" value={newPost.slotsNeeded} onChange={e => setNewPost({...newPost, slotsNeeded: Number(e.target.value)})} required />
                   </div>
                 </div>
+
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Arena Location</Label>
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Location / Turf</Label>
                   <Input placeholder="e.g. Bogadi / Matchbox Mysore" className="h-12 bg-white/5 border-white/10" value={newPost.location} onChange={e => setNewPost({...newPost, location: e.target.value})} required />
                 </div>
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Tactical Date</Label>
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Match Date</Label>
                     <Input type="date" className="h-12 bg-white/5 border-white/10" value={newPost.date} onChange={e => setNewPost({...newPost, date: e.target.value})} required />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Kickoff Time</Label>
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Match Time</Label>
                     <Input type="time" className="h-12 bg-white/5 border-white/10" value={newPost.time} onChange={e => setNewPost({...newPost, time: e.target.value})} required />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Briefing</Label>
-                  <Textarea placeholder="Describe skill level or match type..." className="bg-white/5 border-white/10 italic min-h-[100px]" value={newPost.description} onChange={e => setNewPost({...newPost, description: e.target.value})} />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Gender Preference</Label>
+                    <Select value={newPost.gender} onValueChange={v => setNewPost({...newPost, gender: v})}>
+                      <SelectTrigger className="h-12 bg-white/5 border-white/10 text-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-card border-white/10">
+                        {["Anyone", "Men", "Women", "Mixed"].map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Skill Level</Label>
+                    <Select value={newPost.skillLevel} onValueChange={v => setNewPost({...newPost, skillLevel: v})}>
+                      <SelectTrigger className="h-12 bg-white/5 border-white/10 text-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-card border-white/10">
+                        {["Beginner", "Intermediate", "Advanced", "Professional"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                <Button type="submit" disabled={isPosting} className="w-full h-14 bg-primary text-black font-black uppercase tracking-widest text-xs rounded-xl shadow-lg shadow-primary/20">
-                  {isPosting ? <Loader2 className="h-5 w-5 animate-spin" /> : "TRANSMIT TO CIRCUIT"}
+
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Match Details</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {TACTICAL_CHIPS.map(chip => (
+                      <button
+                        key={chip.label}
+                        type="button"
+                        onClick={() => addChipToDescription(chip.label)}
+                        className="px-3 py-1 bg-white/5 hover:bg-primary/20 border border-white/10 rounded-full text-[10px] font-bold text-white/40 hover:text-primary transition-all active:scale-95"
+                      >
+                        {chip.icon} {chip.label}
+                      </button>
+                    ))}
+                  </div>
+                  <Textarea 
+                    placeholder="Examples: Need 1 badminton player this Sunday 7 PM. Intermediate level. Friendly match. Bogadi area." 
+                    className="bg-white/5 border-white/10 italic min-h-[100px]" 
+                    value={newPost.description} 
+                    onChange={e => setNewPost({...newPost, description: e.target.value})} 
+                  />
+                </div>
+
+                <Button type="submit" disabled={isPosting} className="w-full h-14 bg-primary text-black font-black uppercase tracking-widest text-xs rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.01] transition-all">
+                  {isPosting ? <Loader2 className="h-5 w-5 animate-spin" /> : "POST MATCH REQUEST 🚀"}
                 </Button>
               </form>
             </DialogContent>
@@ -239,6 +336,7 @@ function PostCard({ post }: { post: any }) {
           <div className="flex flex-wrap gap-2">
             <span className="bg-primary/10 text-primary text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border border-primary/20">{post.sport}</span>
             <span className="bg-white/5 text-white/40 text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border border-white/5">{post.location?.split('/')[0] || "Mysuru"}</span>
+            {post.skillLevel && <span className="bg-white/5 text-white/40 text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border border-white/5">{post.skillLevel}</span>}
           </div>
           <p className="text-white/80 text-[15px] leading-relaxed italic font-medium">"{post.description || "Assembling a squad for a friendly match. Hit the join signal to secure your slot."}"</p>
         </div>

@@ -4,17 +4,16 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Menu, X, UserCircle, Trophy, Users, Swords, Search } from "lucide-react"
+import { Menu, X, UserCircle, Search } from "lucide-react"
 import { useUser } from "@/firebase"
 import { TurfistaLogo } from "./brand-logo"
 import { cn } from "@/lib/utils"
 
 const LINKS = [
   { label: "Feed", href: "/" },
-  { label: "Arenas", href: "/#turfs" },
   { label: "Players", href: "/players" },
+  { label: "Arenas", href: "/arenas" },
   { label: "Matches", href: "/matches" },
-  { label: "Squads", href: "/teams" },
   { label: "Rankings", href: "/leaderboard" },
 ]
 

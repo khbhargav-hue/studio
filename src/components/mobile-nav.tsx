@@ -3,14 +3,14 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, MapPinned, Users, Trophy, UserCircle, Swords, Zap } from "lucide-react"
+import { Home, Users, Database, Swords, UserCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const ITEMS = [
   { icon: Home, label: "Feed", href: "/" },
-  { icon: Zap, label: "Players", href: "/players" },
-  { icon: Swords, label: "Match", href: "/matches" },
-  { icon: Trophy, label: "Legends", href: "/leaderboard" },
+  { icon: Users, label: "Players", href: "/players" },
+  { icon: Database, label: "Arenas", href: "/arenas" },
+  { icon: Swords, label: "Matches", href: "/matches" },
   { icon: UserCircle, label: "Me", href: "/profile" },
 ]
 

@@ -1,3 +1,4 @@
+
 import { MetadataRoute } from 'next';
 
 export default function robots(): MetadataRoute.Robots {
@@ -5,15 +6,8 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: '*',
       allow: '/',
-      disallow: [
-        '/studio/', 
-        '/login/', 
-        '/admin/', 
-        '/_next/', 
-        '/api/'
-      ],
+      disallow: ['/studio/', '/login/'],
     },
     sitemap: 'https://turfista.in/sitemap.xml',
-    host: 'https://turfista.in'
   };
 }

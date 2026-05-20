@@ -1,108 +1,73 @@
+
 {
   "entities": {
     "Turf": {
       "title": "Turf",
-      "description": "A comprehensive sports turf venue listing with detailed facilities and pricing",
+      "description": "A sports venue listing",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
         "name": { "type": "string" },
-        "description": { "type": "string" },
-        "whatsapp": { "type": "string" },
-        "phone": { "type": "string" },
-        "imageUrl": { "type": "string" },
-        "images": { "type": "array", "items": { "type": "string" } },
-        "isActive": { "type": "boolean" },
-        "isPremium": { "type": "boolean" },
-        "address": { "type": "string" },
         "area": { "type": "string" },
-        "city": { "type": "string" },
         "sports": { "type": "array", "items": { "type": "string" } },
+        "imageUrl": { "type": "string" },
+        "whatsapp": { "type": "string" },
+        "isActive": { "type": "boolean" },
         "price": { "type": "string" },
-        "rating": { "type": "number" },
-        "reviewCount": { "type": "number" },
-        "openTime": { "type": "string" },
-        "closeTime": { "type": "string" },
-        "createdAt": { "type": "object" }
+        "rating": { "type": "number" }
       }
     },
     "UserProfile": {
       "title": "UserProfile",
-      "description": "Extended athlete data including rewards, social stats, and tactical info",
+      "description": "Athlete identity data",
       "type": "object",
       "properties": {
         "uid": { "type": "string" },
         "displayName": { "type": "string" },
         "photoURL": { "type": "string" },
-        "bio": { "type": "string" },
         "area": { "type": "string" },
-        "skillLevel": { "type": "string", "enum": ["Beginner", "Intermediate", "Advanced", "Pro"] },
-        "favoriteSport": { "type": "string" },
-        "playingStyle": { "type": "string" },
-        "availability": { "type": "string" },
+        "skillLevel": { "type": "string" },
+        "favoriteSports": { "type": "array", "items": { "type": "string" } },
         "status": { "type": "string", "enum": ["online", "away", "offline", "in_match"] },
         "rewardPoints": { "type": "number" },
-        "referralCode": { "type": "string" },
         "lastActive": { "type": "object" }
       }
     },
     "MatchRequest": {
       "title": "MatchRequest",
-      "description": "A public request for players to join a match",
+      "description": "A social post seeking players or opponents",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
         "creatorId": { "type": "string" },
         "creatorName": { "type": "string" },
+        "creatorPhoto": { "type": "string" },
         "sport": { "type": "string" },
-        "playersNeeded": { "type": "number" },
-        "playersJoined": { "type": "number" },
-        "joinedUsers": { "type": "array", "items": { "type": "string" } },
+        "slotsNeeded": { "type": "number" },
+        "slotsFilled": { "type": "number" },
+        "area": { "type": "string" },
         "location": { "type": "string" },
         "date": { "type": "string" },
         "time": { "type": "string" },
-        "status": { "type": "string", "enum": ["open", "filled", "cancelled"] },
-        "createdAt": { "type": "object" }
-      }
-    },
-    "Team": {
-      "title": "Team",
-      "description": "An athlete squad or group",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "name": { "type": "string" },
-        "sport": { "type": "string" },
-        "area": { "type": "string" },
-        "skillLevel": { "type": "string" },
         "description": { "type": "string" },
-        "captain": { "type": "string" },
-        "members": { "type": "array", "items": { "type": "string" } },
-        "maxPlayers": { "type": "number" },
-        "wins": { "type": "number" },
-        "matchesPlayed": { "type": "number" },
-        "needPlayers": { "type": "boolean" },
-        "whatsapp": { "type": "string" },
+        "status": { "type": "string", "enum": ["open", "filled", "cancelled"] },
+        "likes": { "type": "number" },
+        "joinedUsers": { "type": "array", "items": { "type": "string" } },
         "createdAt": { "type": "object" }
       }
     },
-    "Challenge": {
-      "title": "Challenge",
-      "description": "A competitive match claim issued by a team",
+    "Ad": {
+      "title": "Ad",
+      "description": "Sponsored content node",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
         "title": { "type": "string" },
-        "teamId": { "type": "string" },
-        "teamName": { "type": "string" },
-        "sport": { "type": "string" },
-        "format": { "type": "string" },
-        "turf": { "type": "string" },
-        "date": { "type": "string" },
-        "time": { "type": "string" },
-        "entryFee": { "type": "string" },
-        "status": { "type": "string", "enum": ["open", "active", "closed", "completed"] },
-        "createdAt": { "type": "object" }
+        "imageUrl": { "type": "string" },
+        "targetUrl": { "type": "string" },
+        "placement": { "type": "string" },
+        "isActive": { "type": "boolean" },
+        "clickCount": { "type": "number" }
       }
     }
   },
@@ -112,27 +77,23 @@
   "firestore": {
     "/turfs/{turfId}": {
       "schema": "Turf",
-      "description": "Collection of sports arenas"
+      "description": "Venue listings"
     },
     "/users/{userId}": {
       "schema": "UserProfile",
-      "description": "Athlete profiles and presence"
+      "description": "Athlete profiles"
     },
     "/matchRequests/{matchId}": {
       "schema": "MatchRequest",
-      "description": "Open game requests for individual recruits"
+      "description": "Social feed posts"
     },
-    "/teams/{teamId}": {
-      "schema": "Team",
-      "description": "Athlete squads"
-    },
-    "/challenges/{challengeId}": {
-      "schema": "Challenge",
-      "description": "Team-vs-Team match claims"
+    "/ads/{adId}": {
+      "schema": "Ad",
+      "description": "Sponsored nodes"
     },
     "/settings/branding": {
       "schema": "object",
-      "description": "Global visual and SEO configuration"
+      "description": "Platform global config"
     }
   }
 }

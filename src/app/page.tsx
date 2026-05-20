@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import PostCard from "@/components/PostCard"
 import { PostModal } from "@/components/PostModal"
 import { 
-  Loader2, 
   Zap,
   UserCircle,
   ExternalLink
@@ -16,6 +15,7 @@ import { useFirestore, useUser } from "@/firebase"
 import { collection, query, orderBy, doc, updateDoc, increment, deleteDoc, onSnapshot, limit, getDocs } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
+import { SkeletonCard } from "@/components/Skeleton"
 
 const SPORTS_FILTERS = [
   { label: "All", value: "All", icon: "✨" },
@@ -142,9 +142,8 @@ export default function SocialWallPage() {
 
         {/* Real-time Wall Feed */}
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <Loader2 className="h-10 w-10 animate-spin text-primary opacity-20" />
-            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/30">Syncing Circuit...</p>
+          <div className="space-y-3">
+            {[...Array(4)].map((_, i) => <SkeletonCard key={i} />)}
           </div>
         ) : feedItems.length > 0 ? (
           <div className="space-y-3">

@@ -1,11 +1,10 @@
-
 "use client"
 
 import { useState, useEffect, useMemo } from 'react';
 import { Footer } from '@/components/footer';
 import { useFirestore, useUser, useDoc, useMemoFirebase } from '@/firebase';
 import { collection, getDocs, addDoc, serverTimestamp, doc } from 'firebase/firestore';
-import { Star, MessageCircle, MapPin, Loader2, Plus, IndianRupee, Phone, Image as ImageIcon } from 'lucide-react';
+import { Star, MessageCircle, MapPin, Plus, IndianRupee, Phone, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -27,6 +26,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { SkeletonCard } from '@/components/Skeleton';
 
 const FILTERS = ["All", "Football", "Cricket", "Pickleball", "Swimming", "Badminton"];
 const AREAS = ["Vijayanagar", "Yadavagiri", "JP Nagar", "Saraswathipuram", "Kuvempunagar", "Bogadi", "Hebbal", "Other"];
@@ -273,9 +273,8 @@ export default function TurfsPage() {
         </header>
 
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-40 gap-4">
-            <Loader2 className="h-12 w-12 animate-spin text-primary opacity-20" />
-            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/30">Syncing Registry...</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[12px]">
+            {[...Array(3)].map((_, i) => <SkeletonCard key={i} />)}
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[12px]">

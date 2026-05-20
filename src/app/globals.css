@@ -65,3 +65,8 @@ body { background: var(--bg); color: var(--text); font-family: var(--font); }
 
 /* Touch Targets */
 button, a { min-height: 44px; }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}

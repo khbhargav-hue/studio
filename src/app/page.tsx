@@ -124,60 +124,53 @@ export default function FeedPage() {
     return () => unsub();
   }, [db]);
 
-  const handlePost = async (e: React.FormEvent) => {
+  const handlePost = (e: React.FormEvent) => {
     e.preventDefault()
     if (!db || !user || isPosting) return
     
-    console.log("POST_START", newPost);
     setIsPosting(true)
 
-    try {
-      const payload = {
-        ...newPost,
-        createdBy: user.uid,
-        creatorName: user.displayName || "Athlete Node",
-        creatorPhoto: user.photoURL,
-        joinedPlayers: [user.uid],
-        slotsFilled: 1,
-        status: "active",
-        likes: 0,
-        comments: 0,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      }
-
-      // Timeout protection logic
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Submit timeout")), 10000)
-      );
-
-      // Race the addDoc against a 10s timeout
-      const docRef = await Promise.race([
-        addDoc(collection(db, "matches"), payload),
-        timeoutPromise
-      ]) as any;
-      
-      console.log("POST_SUCCESS", docRef.id);
-      
-      toast({ 
-        title: "Posted 🚀", 
-        description: `Signal active in the circuit.`
-      })
-
-      setNewPost(initialFormState)
-      setShowDialog(false)
-      router.refresh()
-    } catch (error: any) {
-      console.error("SAVE_ERROR", error);
-      toast({ 
-        title: "Transmission Failed", 
-        description: error.message || "Circuit interrupted.",
-        variant: "destructive"
-      })
-    } finally {
-      console.log("LOADING_STOP");
-      setIsPosting(false)
+    const payload = {
+      ...newPost,
+      createdBy: user.uid,
+      creatorName: user.displayName || "Athlete Node",
+      creatorPhoto: user.photoURL,
+      joinedPlayers: [user.uid],
+      slotsFilled: 1,
+      status: "active",
+      likes: 0,
+      comments: 0,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
     }
+
+    // OPTIMISTIC UI: Perform local actions immediately
+    toast({ 
+      title: "Signal Transmitted 🚀", 
+      description: `Broadcasting to the circuit nodes.`
+    })
+    setNewPost(initialFormState)
+    setShowDialog(false)
+    router.refresh()
+
+    // Firestore mutation (Non-blocking)
+    addDoc(collection(db, "matches"), payload)
+      .then((docRef) => {
+        console.log("POST_SUCCESS", docRef.id);
+      })
+      .catch(async (error: any) => {
+        console.error("SAVE_ERROR", error);
+        const permissionError = new FirestorePermissionError({
+          path: 'matches',
+          operation: 'create',
+          requestResourceData: payload,
+          message: error.message
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      })
+      .finally(() => {
+        setIsPosting(false)
+      })
   }
 
   const addChipToDescription = (chip: string) => {
@@ -352,44 +345,42 @@ function PostCard({ post }: { post: any }) {
     }
     if (isJoined || isFull) return
 
-    try {
-      const matchRef = doc(db, "matches", post.id);
-      updateDoc(matchRef, {
-        joinedPlayers: arrayUnion(user.uid),
-        slotsFilled: increment(1),
-        updatedAt: serverTimestamp()
-      }).catch(async (serverError) => {
+    const matchRef = doc(db, "matches", post.id);
+    const updateData = {
+      joinedPlayers: arrayUnion(user.uid),
+      slotsFilled: increment(1),
+      updatedAt: serverTimestamp()
+    };
+
+    updateDoc(matchRef, updateData)
+      .then(() => {
+        toast({ title: "Slot Secured ⚡", description: "You are now part of the roster." })
+      })
+      .catch(async (serverError) => {
         const permissionError = new FirestorePermissionError({
           path: matchRef.path,
           operation: 'update',
-          requestResourceData: { joinedPlayers: arrayUnion(user.uid), slotsFilled: increment(1) },
+          requestResourceData: updateData,
           message: serverError.message
         });
         errorEmitter.emit('permission-error', permissionError);
       });
-      
-      toast({ title: "Slot Secured ⚡", description: "You are now part of the roster." })
-    } catch (err) {
-      toast({ title: "Sync Failed", variant: "destructive" })
-    }
   }
 
-  const handleLike = async () => {
+  const handleLike = () => {
     if (!db) return
     setLikes(prev => prev + 1)
-    try {
-      const matchRef = doc(db, "matches", post.id);
-      updateDoc(matchRef, {
-        likes: increment(1)
-      }).catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({
-          path: matchRef.path,
-          operation: 'update',
-          message: serverError.message
-        });
-        errorEmitter.emit('permission-error', permissionError);
+    const matchRef = doc(db, "matches", post.id);
+    updateDoc(matchRef, {
+      likes: increment(1)
+    }).catch(async (serverError) => {
+      const permissionError = new FirestorePermissionError({
+        path: matchRef.path,
+        operation: 'update',
+        message: serverError.message
       });
-    } catch (e) {}
+      errorEmitter.emit('permission-error', permissionError);
+    });
   }
 
   const handleShare = async () => {
@@ -426,20 +417,16 @@ function PostCard({ post }: { post: any }) {
   const handleDelete = async () => {
     if (!db || !canManage) return
     if (!confirm("Are you sure you want to retract this match signal?")) return
-    try {
-      const matchRef = doc(db, "matches", post.id);
-      deleteDoc(matchRef).catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({
-          path: matchRef.path,
-          operation: 'delete',
-          message: serverError.message
-        });
-        errorEmitter.emit('permission-error', permissionError);
+    const matchRef = doc(db, "matches", post.id);
+    deleteDoc(matchRef).catch(async (serverError) => {
+      const permissionError = new FirestorePermissionError({
+        path: matchRef.path,
+        operation: 'delete',
+        message: serverError.message
       });
-      toast({ title: "Signal Retracted" })
-    } catch (e) {
-      toast({ title: "Redaction Failed", variant: "destructive" })
-    }
+      errorEmitter.emit('permission-error', permissionError);
+    });
+    toast({ title: "Signal Redacted" })
   }
 
   return (

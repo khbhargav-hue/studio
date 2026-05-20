@@ -85,59 +85,54 @@ export default function MatchesPage() {
     return () => unsub();
   }, [db]);
 
-  const handlePost = async (e: React.FormEvent) => {
+  const handlePost = (e: React.FormEvent) => {
     e.preventDefault()
     if (!db || !user || isPosting) {
       if (!user) toast({ title: "Identification Required", description: "Login required" })
       return
     }
     
-    console.log("POST_START", newRequest);
     setIsPosting(true)
 
-    try {
-      const payload = {
-        ...newRequest,
-        createdBy: user.uid,
-        creatorName: user.displayName || "Athlete",
-        creatorPhoto: user.photoURL,
-        slotsFilled: 1,
-        joinedPlayers: [user.uid],
-        status: "active",
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      }
-
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Submit timeout")), 10000)
-      );
-
-      const docRef = await Promise.race([
-        addDoc(collection(db, "matches"), payload),
-        timeoutPromise
-      ]) as any;
-
-      console.log("POST_SUCCESS", docRef.id);
-      
-      toast({ 
-        title: "Posted 🚀", 
-        description: `Match signal active.` 
-      })
-      
-      setShowDialog(false)
-      setNewRequest({ game: "Football", playersNeeded: 2, location: "", matchDate: "", matchTime: "", details: "" })
-      router.refresh()
-    } catch (error: any) {
-      console.error("SAVE_ERROR", error.code, error.message);
-      toast({ 
-        title: "Transmission Failed", 
-        description: error.message || "Save timed out.",
-        variant: "destructive"
-      })
-    } finally {
-      console.log("LOADING_STOP");
-      setIsPosting(false)
+    const payload = {
+      ...newRequest,
+      createdBy: user.uid,
+      creatorName: user.displayName || "Athlete",
+      creatorPhoto: user.photoURL,
+      slotsFilled: 1,
+      joinedPlayers: [user.uid],
+      status: "active",
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
     }
+
+    // OPTIMISTIC UI: Perform local feedback immediately
+    toast({ 
+      title: "Posted 🚀", 
+      description: `Match signal active.` 
+    })
+    setShowDialog(false)
+    setNewRequest({ game: "Football", playersNeeded: 2, location: "", matchDate: "", matchTime: "", details: "" })
+    router.refresh()
+
+    // Firestore mutation (Non-blocking)
+    addDoc(collection(db, "matches"), payload)
+      .then((docRef) => {
+        console.log("POST_SUCCESS", docRef.id);
+      })
+      .catch((error: any) => {
+        console.error("SAVE_ERROR", error.code, error.message);
+        const permissionError = new FirestorePermissionError({
+          path: 'matches',
+          operation: 'create',
+          requestResourceData: payload,
+          message: error.message
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      })
+      .finally(() => {
+        setIsPosting(false)
+      })
   }
 
   return (
@@ -247,25 +242,26 @@ function MatchCard({ request }: { request: any }) {
     }
     if (isJoined || isFull) return
 
-    try {
-      const matchRef = doc(db, "matches", request.id)
-      updateDoc(matchRef, {
-        slotsFilled: increment(1),
-        joinedPlayers: arrayUnion(user.uid),
-        updatedAt: serverTimestamp()
-      }).catch(async (serverError) => {
+    const matchRef = doc(db, "matches", request.id)
+    const updateData = {
+      slotsFilled: increment(1),
+      joinedPlayers: arrayUnion(user.uid),
+      updatedAt: serverTimestamp()
+    };
+
+    updateDoc(matchRef, updateData)
+      .then(() => {
+        toast({ title: "Slot Secured ⚡", description: "You are now part of the lineup." })
+      })
+      .catch(async (serverError) => {
         const permissionError = new FirestorePermissionError({
           path: matchRef.path,
           operation: 'update',
-          requestResourceData: { slotsFilled: increment(1), joinedPlayers: arrayUnion(user.uid) },
+          requestResourceData: updateData,
           message: serverError.message
         });
         errorEmitter.emit('permission-error', permissionError);
       });
-      toast({ title: "Slot Secured ⚡", description: "You are now part of the lineup." })
-    } catch (err) {
-      toast({ title: "Sync Failed", variant: "destructive" })
-    }
   }
 
   const handleShare = async () => {
@@ -296,20 +292,16 @@ function MatchCard({ request }: { request: any }) {
   const handleDelete = async () => {
     if (!db || !canManage) return
     if (!confirm("Retract this match signal?")) return
-    try {
-      const matchRef = doc(db, "matches", request.id);
-      deleteDoc(matchRef).catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({
-          path: matchRef.path,
-          operation: 'delete',
-          message: serverError.message
-        });
-        errorEmitter.emit('permission-error', permissionError);
+    const matchRef = doc(db, "matches", request.id);
+    deleteDoc(matchRef).catch(async (serverError) => {
+      const permissionError = new FirestorePermissionError({
+        path: matchRef.path,
+        operation: 'delete',
+        message: serverError.message
       });
-      toast({ title: "Signal Redacted" })
-    } catch (e) {
-      toast({ title: "Redaction Failed", variant: "destructive" })
-    }
+      errorEmitter.emit('permission-error', permissionError);
+    });
+    toast({ title: "Signal Redacted" })
   }
 
   return (

@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect } from "react"
@@ -32,13 +31,14 @@ import {
   Share2,
   Edit2
 } from "lucide-react"
-import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/firebase"
+import { useFirestore, useUser, useDoc, useMemoFirebase, useAuth } from "@/firebase"
 import { collection, query, orderBy, addDoc, doc, serverTimestamp, where, updateDoc, increment, deleteDoc, arrayUnion, onSnapshot } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 
 export default function MatchesPage() {
   const db = useFirestore()
+  const auth = useAuth()
   const { user } = useUser()
   const { toast } = useToast()
   const [isPosting, setIsPosting] = useState(false)
@@ -58,7 +58,6 @@ export default function MatchesPage() {
 
   const [newRequest, setNewRequest] = useState(initialFormState)
 
-  // Fetch Admin Role
   const profileRef = useMemoFirebase(() => {
     if (!db || !user) return null;
     return doc(db, "users", user.uid);
@@ -92,51 +91,38 @@ export default function MatchesPage() {
     return () => unsubscribe()
   }, [db])
 
-  const handlePost = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!db || !user || isPosting) return
+  const handleSubmit = async () => {
+    const user = auth.currentUser;
+    if (!user) { alert("Please sign in first"); return; }
     
-    setIsPosting(true)
-
-    try {
-      if (editingMatch) {
-        const matchRef = doc(db, "matches", editingMatch.id);
-        await updateDoc(matchRef, {
-          ...newRequest,
-          updatedAt: serverTimestamp()
-        });
-        toast({ title: "Signal Updated ⚡" });
-      } else {
-        const payload = {
-          ...newRequest,
-          postedBy: {
-            uid: user.uid,
-            name: user.displayName || "Athlete",
-            photo: user.photoURL,
-          },
-          slotsFilled: 1,
-          joinedPlayers: [user.uid],
-          status: "active",
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp()
-        }
-        await addDoc(collection(db, "matches"), payload);
-        toast({ title: "Match posted 🚀" });
-      }
-      
-      setShowDialog(false)
-      setNewRequest(initialFormState)
-      setEditingMatch(null)
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message || "Failed to post match"
-      })
-    } finally {
-      setIsPosting(false)
-    }
-  }
+    setIsPosting(true);
+    
+    addDoc(collection(db, "matches"), {
+      game: newRequest.game || "Football",
+      location: newRequest.location || "",
+      matchDate: newRequest.matchDate || "",
+      matchTime: newRequest.matchTime || "",
+      playersNeeded: Number(newRequest.playersNeeded) || 1,
+      description: newRequest.details || "",
+      postedBy: {
+        uid: user.uid,
+        name: user.displayName || user.email || "Player",
+        photoURL: user.photoURL || "",
+      },
+      status: "open",
+      createdAt: serverTimestamp(),
+    })
+    .then(() => {
+      setIsPosting(false);
+      setShowDialog(false);
+      setNewRequest(initialFormState);
+      setEditingMatch(null);
+    })
+    .catch((err) => {
+      setIsPosting(false);
+      alert("Failed: " + err.message);
+    });
+  };
 
   const handleEdit = (match: any) => {
     setEditingMatch(match);
@@ -146,7 +132,7 @@ export default function MatchesPage() {
       location: match.location || "",
       matchDate: match.matchDate || "",
       matchTime: match.matchTime || "",
-      details: match.details || ""
+      details: match.details || match.description || ""
     });
     setShowDialog(true);
   }
@@ -187,7 +173,7 @@ export default function MatchesPage() {
                   {editingMatch ? "Modify" : "Broadcast"} <span className="text-primary">Signal</span>
                 </DialogTitle>
               </DialogHeader>
-              <form onSubmit={handlePost} className="space-y-6">
+              <div className="space-y-6">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Game</Label>
@@ -212,10 +198,10 @@ export default function MatchesPage() {
                     <Input type="time" className="h-14 bg-white/5 text-white" value={newRequest.matchTime} onChange={e => setNewRequest({...newRequest, matchTime: e.target.value})} required />
                   </div>
                 </div>
-                <Button type="submit" disabled={isPosting} className="w-full h-16 bg-primary text-black font-black uppercase tracking-widest text-xs rounded-xl">
+                <Button type="button" onClick={handleSubmit} disabled={isPosting} className="w-full h-16 bg-primary text-black font-black uppercase tracking-widest text-xs rounded-xl">
                   {isPosting ? <Loader2 className="h-5 w-5 animate-spin" /> : editingMatch ? "SYNC CHANGES ⚡" : "POST MATCH REQUEST 🚀"}
                 </Button>
-              </form>
+              </div>
             </DialogContent>
           </Dialog>
         </div>
@@ -259,7 +245,7 @@ function MatchCard({ request, isAdmin, onEdit }: { request: any, isAdmin: boolea
   const isFull = (request.slotsFilled || 0) >= ((request.playersNeeded || 0) + 1)
   
   const canManage = user && (
-    request.postedBy?.uid === user.uid || 
+    (request.postedBy?.uid === user.uid) || 
     isAdmin
   )
 

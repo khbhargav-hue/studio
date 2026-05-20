@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect } from "react"
@@ -45,13 +44,11 @@ import {
   CheckCircle2,
   Edit2
 } from "lucide-react"
-import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/firebase"
+import { useFirestore, useUser, useDoc, useMemoFirebase, useAuth } from "@/firebase"
 import { collection, query, orderBy, addDoc, doc, serverTimestamp, updateDoc, increment, arrayUnion, deleteDoc, onSnapshot } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 import { formatDistanceToNow } from "date-fns"
-import { errorEmitter } from '@/firebase/error-emitter'
-import { FirestorePermissionError } from '@/firebase/errors'
 
 const SPORTS = [
   { label: "Football ⚽", value: "Football" },
@@ -77,6 +74,7 @@ const TACTICAL_CHIPS = [
 
 export default function FeedPage() {
   const db = useFirestore()
+  const auth = useAuth()
   const { user } = useUser()
   const { toast } = useToast()
   const [isPosting, setIsPosting] = useState(false)
@@ -98,7 +96,6 @@ export default function FeedPage() {
 
   const [newPost, setNewPost] = useState(initialFormState)
 
-  // Fetch Admin Role
   const profileRef = useMemoFirebase(() => {
     if (!db || !user) return null;
     return doc(db, "users", user.uid);
@@ -132,53 +129,40 @@ export default function FeedPage() {
     return () => unsubscribe()
   }, [db])
 
-  const handlePost = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!db || !user || isPosting) return
+  const handleSubmit = async () => {
+    const user = auth.currentUser;
+    if (!user) { alert("Please sign in first"); return; }
     
-    setIsPosting(true)
-
-    try {
-      if (editingPost) {
-        const postRef = doc(db, "matches", editingPost.id);
-        await updateDoc(postRef, {
-          ...newPost,
-          updatedAt: serverTimestamp()
-        });
-        toast({ title: "Signal Updated ⚡" });
-      } else {
-        const payload = {
-          ...newPost,
-          postedBy: {
-            uid: user.uid,
-            name: user.displayName || "Athlete Node",
-            photo: user.photoURL
-          },
-          joinedPlayers: [user.uid],
-          slotsFilled: 1,
-          status: "active",
-          likes: 0,
-          comments: 0,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp()
-        }
-        await addDoc(collection(db, "matches"), payload);
-        toast({ title: "Match posted 🚀", description: "Signal broadcast successful." });
-      }
-      
-      setShowDialog(false)
-      setNewPost(initialFormState)
-      setEditingPost(null)
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message || "Failed to broadcast signal"
-      })
-    } finally {
-      setIsPosting(false)
-    }
-  }
+    setIsPosting(true);
+    
+    addDoc(collection(db, "matches"), {
+      game: newPost.game || "Football",
+      location: newPost.location || "",
+      matchDate: newPost.matchDate || "",
+      matchTime: newPost.matchTime || "",
+      genderPreference: newPost.genderPreference || "Anyone",
+      skillLevel: newPost.skillLevel || "Intermediate",
+      description: newPost.details || "",
+      playersNeeded: Number(newPost.playersNeeded) || 1,
+      postedBy: {
+        uid: user.uid,
+        name: user.displayName || user.email || "Player",
+        photoURL: user.photoURL || "",
+      },
+      status: "open",
+      createdAt: serverTimestamp(),
+    })
+    .then(() => {
+      setIsPosting(false);
+      setShowDialog(false);
+      setNewPost(initialFormState);
+      setEditingPost(null);
+    })
+    .catch((err) => {
+      setIsPosting(false);
+      alert("Failed: " + err.message);
+    });
+  };
 
   const handleEdit = (post: any) => {
     setEditingPost(post);
@@ -188,7 +172,7 @@ export default function FeedPage() {
       location: post.location || "",
       matchDate: post.matchDate || "",
       matchTime: post.matchTime || "",
-      details: post.details || "",
+      details: post.details || post.description || "",
       genderPreference: post.genderPreference || "Anyone",
       skillLevel: post.skillLevel || "Intermediate"
     });
@@ -233,7 +217,7 @@ export default function FeedPage() {
                   {editingPost ? "Modify" : "New"} <span className="text-primary">Match Signal</span>
                 </DialogTitle>
               </DialogHeader>
-              <form onSubmit={handlePost} className="space-y-6 pt-4">
+              <div className="space-y-6 pt-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Game</Label>
@@ -319,10 +303,15 @@ export default function FeedPage() {
                   />
                 </div>
 
-                <Button type="submit" disabled={isPosting} className="w-full h-14 bg-primary text-black font-black uppercase tracking-widest text-xs rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.01] transition-all">
+                <Button 
+                  type="button" 
+                  onClick={handleSubmit} 
+                  disabled={isPosting} 
+                  className="w-full h-14 bg-primary text-black font-black uppercase tracking-widest text-xs rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.01] transition-all"
+                >
                   {isPosting ? <Loader2 className="h-5 w-5 animate-spin" /> : editingPost ? "UPDATE MATCH SIGNAL ⚡" : "POST MATCH REQUEST 🚀"}
                 </Button>
-              </form>
+              </div>
             </DialogContent>
           </Dialog>
         </div>
@@ -368,7 +357,7 @@ function PostCard({ post, isAdmin, onEdit }: { post: any, isAdmin: boolean, onEd
   const [likes, setLikes] = useState(post.likes || 0)
 
   const canManage = user && (
-    post.postedBy?.uid === user.uid || 
+    (post.postedBy?.uid === user.uid) || 
     isAdmin
   )
 
@@ -437,7 +426,7 @@ function PostCard({ post, isAdmin, onEdit }: { post: any, isAdmin: boolean, onEd
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-full border-2 border-primary/20 p-0.5 overflow-hidden bg-white/5">
-              <img src={post.postedBy?.photo || `https://picsum.photos/seed/${post.postedBy?.uid || 'anon'}/100`} className="h-full w-full object-cover rounded-full" alt="Creator" />
+              <img src={post.postedBy?.photoURL || post.postedBy?.photo || `https://picsum.photos/seed/${post.postedBy?.uid || 'anon'}/100`} className="h-full w-full object-cover rounded-full" alt="Creator" />
             </div>
             <div>
               <p className="text-sm font-black uppercase italic text-white leading-none">{post.postedBy?.name || 'Athlete Node'}</p>

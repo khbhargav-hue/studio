@@ -33,7 +33,7 @@ export function Header() {
         {loading ? (
           <div className="h-8 w-8 rounded-full bg-[#111111] animate-pulse border border-[#222222]" />
         ) : user ? (
-          <Link href="/profile" className="h-8 w-8 rounded-full border border-[#AAFF00]/20 p-0.5 overflow-hidden group hover:border-[#AAFF00] transition-all">
+          <Link href="/me" className="h-8 w-8 rounded-full border border-[#AAFF00]/20 p-0.5 overflow-hidden group hover:border-[#AAFF00] transition-all">
             {user.photoURL ? (
               <img src={user.photoURL} alt={user.displayName || "Athlete"} className="h-full w-full object-cover rounded-full" />
             ) : (

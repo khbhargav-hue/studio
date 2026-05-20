@@ -13,8 +13,9 @@ export function BottomNav() {
   const navItems = [
     { label: "Feed", href: "/", icon: "🏠" },
     { label: "Turfs", href: "/turfs", icon: "⚽" },
+    { label: "Post", href: "#", icon: "➕" },
     { label: "Players", href: "/players", icon: "👥" },
-    { label: "Me", href: "/profile", icon: "👤" },
+    { label: "Me", href: "/me", icon: "👤" },
   ];
 
   return (
@@ -44,15 +45,15 @@ export function BottomNav() {
         </div>
 
         {/* Players Tab */}
-        <Link href={navItems[2].href} className={cn("flex flex-col items-center gap-1 transition-colors", pathname === navItems[2].href ? "text-[#AAFF00]" : "text-[#888888]")}>
-          <span className="text-[20px]">{navItems[2].icon}</span>
-          <span className="text-[11px] font-black uppercase tracking-widest">{navItems[2].label}</span>
-        </Link>
-        
-        {/* Me Tab */}
         <Link href={navItems[3].href} className={cn("flex flex-col items-center gap-1 transition-colors", pathname === navItems[3].href ? "text-[#AAFF00]" : "text-[#888888]")}>
           <span className="text-[20px]">{navItems[3].icon}</span>
           <span className="text-[11px] font-black uppercase tracking-widest">{navItems[3].label}</span>
+        </Link>
+        
+        {/* Me Tab */}
+        <Link href={navItems[4].href} className={cn("flex flex-col items-center gap-1 transition-colors", pathname === navItems[4].href ? "text-[#AAFF00]" : "text-[#888888]")}>
+          <span className="text-[20px]">{navItems[4].icon}</span>
+          <span className="text-[11px] font-black uppercase tracking-widest">{navItems[4].label}</span>
         </Link>
       </nav>
 

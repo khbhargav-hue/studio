@@ -1,10 +1,10 @@
+
 "use client"
 
 import { useState, useEffect, useMemo } from 'react';
 import { Footer } from '@/components/footer';
 import { useFirestore, useUser, useDoc, useMemoFirebase } from '@/firebase';
 import { collection, getDocs, addDoc, serverTimestamp, doc } from 'firebase/firestore';
-import Image from 'next/image';
 import { Star, MessageCircle, MapPin, Loader2, Plus, IndianRupee, Phone, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -86,7 +86,7 @@ export default function TurfsPage() {
     setIsAdding(true);
     const payload = {
       ...formData,
-      price: Number(formData.price),
+      price: formData.price,
       rating: Number(formData.rating),
       isActive: true,
       isPremium: false,
@@ -117,26 +117,26 @@ export default function TurfsPage() {
 
   const filteredTurfs = useMemo(() => {
     if (activeFilter === "All") return turfs;
-    return turfs.filter(t => t.sports && Array.isArray(t.sports) && t.sports.includes(activeFilter));
+    return turfs.filter(t => t.sports && Array.isArray(t.sports) && (t.sports as string[]).some(s => s.toLowerCase() === activeFilter.toLowerCase()));
   }, [turfs, activeFilter]);
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#050505] selection:bg-primary selection:text-black">
-      <main className="flex-1 pt-6 pb-32 px-4 md:px-8 max-w-6xl mx-auto w-full">
-        <header className="mb-16 space-y-8">
+    <div className="flex min-h-screen flex-col bg-[#0A0A0A] selection:bg-primary selection:text-black">
+      <main className="flex-1 py-8 px-4 md:px-8 max-w-7xl mx-auto w-full">
+        <header className="mb-12 space-y-8">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
             <div>
-              <div className="text-[11px] font-black uppercase tracking-[0.4em] text-primary mb-4">ARENA HUB</div>
-              <h1 className="text-4xl md:text-8xl font-black italic tracking-tighter uppercase leading-none text-white">
-                MYSURU <br /><span className="text-primary">TURFS</span>
+              <div className="text-[11px] font-black uppercase tracking-[0.4em] text-primary mb-2">ARENA REGISTRY</div>
+              <h1 className="text-4xl md:text-7xl font-black italic tracking-tighter uppercase leading-none text-white">
+                MYSURU <br /><span className="text-primary">CIRCUIT</span>
               </h1>
             </div>
 
             {isAdmin && (
               <Dialog open={showDialog} onOpenChange={setShowDialog}>
                 <DialogTrigger asChild>
-                  <Button className="h-14 px-8 bg-primary text-black font-black uppercase tracking-widest text-[11px] rounded-xl shadow-xl shadow-primary/20 hover:scale-[1.02] transition-all">
-                    <Plus className="mr-2 h-4 w-4" /> Add New Arena
+                  <Button className="h-14 px-8 bg-primary text-black font-black uppercase tracking-widest text-[11px] rounded-xl">
+                    <Plus className="mr-2 h-4 w-4" /> Add Arena Node
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="bg-card border-white/5 rounded-[2rem] p-10 max-w-2xl shadow-2xl overflow-y-auto max-h-[90vh]">
@@ -194,11 +194,10 @@ export default function TurfsPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-2">
                         <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1 flex items-center gap-2">
-                          <IndianRupee className="h-3 w-3" /> Hourly Rate
+                          <IndianRupee className="h-3 w-3" /> Hourly Rate (Text)
                         </Label>
                         <Input 
-                          type="number"
-                          placeholder="900" 
+                          placeholder="₹900/hr" 
                           className="h-12 bg-white/5 border-white/10 text-white" 
                           value={formData.price}
                           onChange={e => setFormData({...formData, price: e.target.value})}
@@ -224,7 +223,7 @@ export default function TurfsPage() {
                         <ImageIcon className="h-3 w-3" /> Media Intelligence (URL)
                       </Label>
                       <Input 
-                        placeholder="Paste Cloudinary or Unsplash URL..." 
+                        placeholder="Paste image URL..." 
                         className="h-12 bg-white/5 border-white/10 text-white" 
                         value={formData.imageUrl}
                         onChange={e => setFormData({...formData, imageUrl: e.target.value})}
@@ -233,7 +232,7 @@ export default function TurfsPage() {
 
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1 flex items-center gap-2">
-                        <Star className="h-3 w-3" /> Surface Integrity Rating
+                        <Star className="h-3 w-3" /> Rating
                       </Label>
                       <Input 
                         type="number"
@@ -246,8 +245,8 @@ export default function TurfsPage() {
                       />
                     </div>
 
-                    <Button type="submit" disabled={isAdding} className="w-full h-16 bg-primary text-black font-black uppercase tracking-widest text-xs rounded-xl shadow-lg shadow-primary/20">
-                      {isAdding ? <Loader2 className="h-5 w-5 animate-spin" /> : "Deploy to Circuit Registry"}
+                    <Button type="submit" disabled={isAdding} className="w-full h-16 bg-primary text-black font-black uppercase tracking-widest text-xs rounded-xl">
+                      {isAdding ? <Loader2 className="h-5 w-5 animate-spin" /> : "Deploy to Circuit"}
                     </Button>
                   </form>
                 </DialogContent>
@@ -261,10 +260,10 @@ export default function TurfsPage() {
                 key={f}
                 onClick={() => setActiveFilter(f)}
                 className={cn(
-                  "h-12 px-8 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all shrink-0 active:scale-95",
+                  "h-10 px-6 rounded-full text-[11px] font-black uppercase tracking-widest border transition-all shrink-0 active:scale-95",
                   activeFilter === f 
-                    ? "bg-primary text-black border-primary shadow-[0_0_20px_rgba(170,255,0,0.2)]" 
-                    : "bg-white/5 border-white/10 text-white/40 hover:border-primary/40 hover:text-white"
+                    ? "bg-primary text-black border-primary" 
+                    : "bg-white/5 border-white/10 text-white/40 hover:border-primary/40"
                 )}
               >
                 {f}
@@ -276,67 +275,70 @@ export default function TurfsPage() {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-40 gap-4">
             <Loader2 className="h-12 w-12 animate-spin text-primary opacity-20" />
-            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/30">Synchronizing Arenas...</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/30">Syncing Registry...</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[12px]">
             {filteredTurfs.map(turf => (
-              <div key={turf.id} className="group bg-card border border-white/5 rounded-[2rem] overflow-hidden flex flex-col hover:border-primary/30 transition-all duration-300 shadow-2xl shadow-black">
-                <div className="relative aspect-[16/10] w-full bg-black/40">
-                  <Image
-                    src={turf.imageUrl || "https://picsum.photos/seed/turf/800/500"}
+              <div key={turf.id} className="bg-[#111] border border-[#222] rounded-[12px] overflow-hidden mb-[12px] flex flex-col h-full group">
+                <div className="relative h-[160px] w-full bg-[#1A1A1A] overflow-hidden">
+                  <img
+                    src={turf.imageUrl || ""}
                     alt={turf.name}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-700"
+                    loading="lazy"
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      const placeholder = e.currentTarget.nextElementSibling;
+                      if (placeholder) {
+                        placeholder.classList.remove('hidden');
+                        placeholder.classList.add('flex');
+                      }
+                    }}
                   />
-                  <div className="absolute top-4 left-4 bg-primary text-black text-[8px] font-black uppercase px-2.5 py-1 rounded-md tracking-widest shadow-lg">
-                    VERIFIED
-                  </div>
-                  <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur-xl px-3 py-1.5 rounded-xl flex items-center gap-1.5 border border-white/10">
-                    <Star className="h-3.5 w-3.5 text-primary fill-current" />
-                    <span className="text-[13px] font-black text-white">{turf.rating || 4.8}</span>
+                  <div className="hidden absolute inset-0 items-center justify-center text-[40px] flex-col bg-[#1A1A1A]">
+                    <span>⚽</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-white/10 mt-2">No Image</span>
                   </div>
                 </div>
 
-                <div className="p-8 flex flex-col flex-1">
-                  <div className="flex justify-between items-start mb-6 gap-4">
-                    <div>
-                      <h3 className="text-3xl font-black uppercase italic tracking-tighter text-white group-hover:text-primary transition-colors leading-tight">
-                        {turf.name}
-                      </h3>
-                      <p className="flex items-center gap-1.5 text-[11px] font-bold text-white/40 uppercase tracking-widest mt-2">
-                        <MapPin className="h-3.5 w-3.5 text-primary" /> {turf.area}, Mysuru
-                      </p>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <p className="text-2xl font-black text-primary italic leading-none">
-                        ₹{turf.price || "900"}
-                      </p>
-                      <p className="text-[9px] font-black text-white/20 uppercase tracking-widest mt-1.5">PER HOUR</p>
-                    </div>
+                <div className="p-[14px] flex-1 flex flex-col">
+                  <h3 className="text-[15px] font-bold text-white mb-1 line-clamp-1 group-hover:text-primary transition-colors">{turf.name}</h3>
+                  <div className="flex items-center gap-1.5 text-[13px] text-[#888] mb-3 italic">
+                    <MapPin className="h-3 w-3 text-primary" /> {turf.area}
                   </div>
-
-                  <div className="flex flex-wrap gap-2 mb-10">
+                  
+                  <div className="flex flex-wrap gap-1.5 mb-4">
                     {turf.sports?.map((s: string) => (
-                      <Badge key={s} variant="outline" className="bg-white/5 border-white/10 text-[9px] font-black uppercase tracking-widest rounded-lg px-3 py-1 text-white/60">
+                      <span key={s} className="bg-[#1A1A1A] border border-[#333] px-2 py-0.5 rounded-[4px] text-[9px] font-black text-white/40 uppercase tracking-widest">
                         {s}
-                      </Badge>
+                      </span>
                     ))}
                   </div>
 
-                  <Button asChild className="mt-auto h-16 bg-primary text-black font-black uppercase tracking-widest text-[11px] rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-primary/10">
-                    <a href={`https://wa.me/${turf.whatsapp}?text=Hi! I found ${turf.name} on Turfista and want to ask availability.`} target="_blank" rel="noopener noreferrer">
-                      <MessageCircle className="h-5 w-5 mr-3" /> Book via WhatsApp
-                    </a>
-                  </Button>
+                  <div className="mt-auto flex items-center justify-between pt-4 border-t border-white/5">
+                    <span className="text-[15px] font-black text-[#AAFF00] italic leading-none">
+                      {turf.pricePerHour ? `₹${turf.pricePerHour}/hr` : (turf.price || "Price on Request")}
+                    </span>
+                    <div className="flex items-center gap-1 text-[13px] text-yellow-500 font-black italic">
+                      <Star className="h-3 w-3 fill-current" /> {turf.rating || "4.5"}
+                    </div>
+                  </div>
                 </div>
+
+                <button
+                  onClick={() => window.open("https://wa.me/" + turf.whatsapp + "?text=" + encodeURIComponent("Hi! I found " + turf.name + " on Turfista and want to ask availability."), "_blank")}
+                  className="w-full bg-[#25D366] text-white py-[14px] text-[14px] font-black uppercase tracking-widest transition-all active:scale-[0.98] hover:bg-[#20ba5a] flex items-center justify-center gap-2"
+                >
+                  <MessageCircle className="h-4 w-4" /> Book on WhatsApp
+                </button>
               </div>
             ))}
           </div>
         )}
 
         {!loading && filteredTurfs.length === 0 && (
-          <div className="py-40 text-center border border-dashed border-white/5 rounded-[3rem] bg-white/[0.01]">
+          <div className="py-40 text-center border border-dashed border-white/5 rounded-[2rem] bg-white/[0.01]">
             <p className="text-white/20 font-black uppercase tracking-[0.4em] italic text-sm">No arenas identified in this discipline.</p>
           </div>
         )}

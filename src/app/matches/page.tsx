@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect } from "react"
@@ -92,12 +93,11 @@ export default function MatchesPage() {
   }, [db])
 
   const handleSubmit = async () => {
-    const user = auth.currentUser;
     if (!user) { alert("Please sign in first"); return; }
     
     setIsPosting(true);
     
-    addDoc(collection(db, "matches"), {
+    const payload = {
       game: newRequest.game || "Football",
       location: newRequest.location || "",
       matchDate: newRequest.matchDate || "",
@@ -110,18 +110,40 @@ export default function MatchesPage() {
         photoURL: user.photoURL || "",
       },
       status: "open",
-      createdAt: serverTimestamp(),
-    })
-    .then(() => {
-      setIsPosting(false);
-      setShowDialog(false);
-      setNewRequest(initialFormState);
-      setEditingMatch(null);
-    })
-    .catch((err) => {
-      setIsPosting(false);
-      alert("Failed: " + err.message);
-    });
+      updatedAt: serverTimestamp(),
+    };
+
+    if (editingMatch) {
+      updateDoc(doc(db, "matches", editingMatch.id), payload)
+        .then(() => {
+          setIsPosting(false);
+          setShowDialog(false);
+          setNewRequest(initialFormState);
+          setEditingMatch(null);
+          toast({ title: "Signal Updated ⚡" });
+        })
+        .catch((err) => {
+          setIsPosting(false);
+          alert("Update Failed: " + err.message);
+        });
+    } else {
+      addDoc(collection(db, "matches"), {
+        ...payload,
+        createdAt: serverTimestamp(),
+        slotsFilled: 1,
+        joinedPlayers: [user.uid]
+      })
+      .then(() => {
+        setIsPosting(false);
+        setShowDialog(false);
+        setNewRequest(initialFormState);
+        toast({ title: "Signal Broadcasted 🚀" });
+      })
+      .catch((err) => {
+        setIsPosting(false);
+        alert("Broadcast Failed: " + err.message);
+      });
+    }
   };
 
   const handleEdit = (match: any) => {

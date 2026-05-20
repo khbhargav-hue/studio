@@ -60,7 +60,7 @@ export default function MatchesPage() {
 
   useEffect(() => {
     if (requests) {
-      console.log("READ_SUCCESS", requests.length, "matches active")
+      console.log("READ_SUCCESS: MATCHES_FROM_FIRESTORE (Circuit View)", requests)
     }
   }, [requests])
 
@@ -128,25 +128,25 @@ export default function MatchesPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Game</Label>
-                    <Input className="h-14 bg-white/5" value={newRequest.game} onChange={e => setNewRequest({...newRequest, game: e.target.value})} required />
+                    <Input className="h-14 bg-white/5 text-white" value={newRequest.game} onChange={e => setNewRequest({...newRequest, game: e.target.value})} required />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Need Players</Label>
-                    <Input type="number" className="h-14 bg-white/5" value={newRequest.playersNeeded} onChange={e => setNewRequest({...newRequest, playersNeeded: Number(e.target.value)})} required />
+                    <Input type="number" className="h-14 bg-white/5 text-white" value={newRequest.playersNeeded} onChange={e => setNewRequest({...newRequest, playersNeeded: Number(e.target.value)})} required />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Arena Location</Label>
-                  <Input placeholder="e.g. Matchbox Mysore" className="h-14 bg-white/5" value={newRequest.location} onChange={e => setNewRequest({...newRequest, location: e.target.value})} required />
+                  <Input placeholder="e.g. Matchbox Mysore" className="h-14 bg-white/5 text-white" value={newRequest.location} onChange={e => setNewRequest({...newRequest, location: e.target.value})} required />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Match Date</Label>
-                    <Input type="date" className="h-14 bg-white/5" value={newRequest.matchDate} onChange={e => setNewRequest({...newRequest, matchDate: e.target.value})} required />
+                    <Input type="date" className="h-14 bg-white/5 text-white" value={newRequest.matchDate} onChange={e => setNewRequest({...newRequest, matchDate: e.target.value})} required />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Match Time</Label>
-                    <Input type="time" className="h-14 bg-white/5" value={newRequest.matchTime} onChange={e => setNewRequest({...newRequest, matchTime: e.target.value})} required />
+                    <Input type="time" className="h-14 bg-white/5 text-white" value={newRequest.matchTime} onChange={e => setNewRequest({...newRequest, matchTime: e.target.value})} required />
                   </div>
                 </div>
                 <Button type="submit" disabled={isPosting} className="w-full h-16 bg-primary text-black font-black uppercase tracking-widest text-xs rounded-xl">
@@ -170,7 +170,7 @@ export default function MatchesPage() {
         ) : (
           <div className="py-40 text-center border border-dashed border-white/10 rounded-[4rem] bg-white/[0.02]">
             <Zap className="h-16 w-16 text-white/5 mx-auto mb-6" />
-            <h3 className="text-4xl font-black text-white/10 uppercase italic">No Active Claims</h3>
+            <h3 className="text-4xl font-black text-white/10 uppercase italic">No active claims found 🚀</h3>
             <p className="text-white/20 mt-4 max-w-sm mx-auto italic text-lg leading-relaxed">The circuit is silent. Be the first to broadcast a permanent open slot and mobilize the community.</p>
           </div>
         )}

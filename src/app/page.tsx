@@ -41,7 +41,8 @@ import {
   UserCircle,
   Trophy,
   Target,
-  Trash2
+  Trash2,
+  CheckCircle2
 } from "lucide-react"
 import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase"
 import { collection, query, orderBy, addDoc, serverTimestamp, updateDoc, doc, increment, arrayUnion, deleteDoc } from "firebase/firestore"
@@ -101,7 +102,7 @@ export default function FeedPage() {
 
   useEffect(() => {
     if (posts) {
-      console.log("READ_SUCCESS", posts.length, "signals active")
+      console.log("READ_SUCCESS: MATCHES_FROM_FIRESTORE", posts)
     }
   }, [posts])
 
@@ -120,7 +121,7 @@ export default function FeedPage() {
         setIsPosting(false)
         toast({ 
           title: "Transmission Delayed", 
-          description: "Network is slow. Signal may be pending.",
+          description: "Network slow. Signal may be pending.",
           variant: "destructive"
         })
       }
@@ -221,23 +222,23 @@ export default function FeedPage() {
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Players Needed</Label>
-                    <Input type="number" className="h-12 bg-white/5 border-white/10" value={newPost.playersNeeded} onChange={e => setNewPost({...newPost, playersNeeded: Number(e.target.value)})} required />
+                    <Input type="number" className="h-12 bg-white/5 border-white/10 text-white" value={newPost.playersNeeded} onChange={e => setNewPost({...newPost, playersNeeded: Number(e.target.value)})} required />
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Location / Turf</Label>
-                  <Input placeholder="e.g. Bogadi / Matchbox Mysore" className="h-12 bg-white/5 border-white/10" value={newPost.location} onChange={e => setNewPost({...newPost, location: e.target.value})} required />
+                  <Input placeholder="e.g. Bogadi / Matchbox Mysore" className="h-12 bg-white/5 border-white/10 text-white" value={newPost.location} onChange={e => setNewPost({...newPost, location: e.target.value})} required />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Match Date</Label>
-                    <Input type="date" className="h-12 bg-white/5 border-white/10" value={newPost.matchDate} onChange={e => setNewPost({...newPost, matchDate: e.target.value})} required />
+                    <Input type="date" className="h-12 bg-white/5 border-white/10 text-white" value={newPost.matchDate} onChange={e => setNewPost({...newPost, matchDate: e.target.value})} required />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Match Time</Label>
-                    <Input type="time" className="h-12 bg-white/5 border-white/10" value={newPost.matchTime} onChange={e => setNewPost({...newPost, matchTime: e.target.value})} required />
+                    <Input type="time" className="h-12 bg-white/5 border-white/10 text-white" value={newPost.matchTime} onChange={e => setNewPost({...newPost, matchTime: e.target.value})} required />
                   </div>
                 </div>
 
@@ -282,7 +283,7 @@ export default function FeedPage() {
                   </div>
                   <Textarea 
                     placeholder={`Examples:\nNeed 1 badminton player this Sunday 7 PM.\nIntermediate level.\nFriendly match.\nBogadi area.`} 
-                    className="bg-white/5 border-white/10 italic min-h-[100px]" 
+                    className="bg-white/5 border-white/10 italic min-h-[100px] text-white" 
                     value={newPost.details} 
                     onChange={e => setNewPost({...newPost, details: e.target.value})} 
                   />
@@ -308,7 +309,7 @@ export default function FeedPage() {
         ) : (
           <div className="py-32 text-center bg-card border border-dashed border-white/5 rounded-3xl">
             <Activity className="h-12 w-12 text-white/5 mx-auto mb-4" />
-            <h3 className="text-xl font-black uppercase italic text-white/10">Circuit Silent</h3>
+            <h3 className="text-xl font-black uppercase italic text-white/10">No match requests yet 🚀</h3>
             <p className="text-white/20 text-sm mt-2 italic">Be the first to broadcast a permanent match signal in Mysuru.</p>
           </div>
         )}
@@ -375,13 +376,11 @@ function PostCard({ post }: { post: any }) {
       try {
         await navigator.share(shareData);
       } catch (err) {
-        // Only log non-abort errors
         if ((err as Error).name !== 'AbortError') {
           console.log('Share failed:', err);
         }
       }
     } else {
-      // Fallback: Copy to clipboard
       try {
         await navigator.clipboard.writeText(window.location.href);
         toast({ 

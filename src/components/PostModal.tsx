@@ -54,7 +54,6 @@ export function PostModal({ isOpen, onClose }: PostModalProps) {
       createdAt: serverTimestamp()
     };
 
-    // DEBUG NODE: Injected as per tactical request
     addDoc(collection(db, "posts"), postData)
       .then((docRef) => {
         console.log("SAVED TO FIRESTORE:", docRef.id);

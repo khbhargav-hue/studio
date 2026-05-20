@@ -86,7 +86,7 @@ export default function MatchesPage() {
     )
 
     return () => unsubscribe()
-  }, [db])
+  }, [])
 
   const handlePost = async (e: React.FormEvent) => {
     e.preventDefault()

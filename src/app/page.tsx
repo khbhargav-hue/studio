@@ -126,7 +126,7 @@ export default function FeedPage() {
     )
 
     return () => unsubscribe()
-  }, [db])
+  }, [])
 
   const handlePost = async (e: React.FormEvent) => {
     e.preventDefault()

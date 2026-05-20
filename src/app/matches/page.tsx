@@ -113,7 +113,8 @@ export default function MatchesPage() {
         updatedAt: serverTimestamp()
       }
 
-      await addDoc(collection(db, "matches"), payload);
+      const docRef = await addDoc(collection(db, "matches"), payload);
+      console.log("POST_SUCCESS", docRef.id);
 
       toast({ 
         title: "Match posted 🚀", 
@@ -123,7 +124,7 @@ export default function MatchesPage() {
       setShowDialog(false)
       setNewRequest({ game: "Football", playersNeeded: 2, location: "", matchDate: "", matchTime: "", details: "" })
     } catch (error: any) {
-      console.error("SAVE_ERROR", error);
+      console.error("SAVE_ERROR", error.code, error.message);
       toast({
         variant: "destructive",
         title: "Error",

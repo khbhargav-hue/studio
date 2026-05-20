@@ -152,7 +152,8 @@ export default function FeedPage() {
         updatedAt: serverTimestamp()
       }
 
-      await addDoc(collection(db, "matches"), payload);
+      const docRef = await addDoc(collection(db, "matches"), payload);
+      console.log("POST_SUCCESS", docRef.id);
 
       toast({ 
         title: "Match posted 🚀", 
@@ -162,7 +163,7 @@ export default function FeedPage() {
       setShowDialog(false)
       setNewPost(initialFormState)
     } catch (error: any) {
-      console.error("SAVE_ERROR", error);
+      console.error("SAVE_ERROR", error.code, error.message);
       toast({
         variant: "destructive",
         title: "Error",

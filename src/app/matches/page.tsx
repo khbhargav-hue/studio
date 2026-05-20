@@ -30,8 +30,8 @@ import {
   Trash2,
   Share2
 } from "lucide-react"
-import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase"
-import { collection, query, orderBy, addDoc, serverTimestamp, where, doc, updateDoc, increment, deleteDoc, arrayUnion } from "firebase/firestore"
+import { useFirestore, useUser } from "@/firebase"
+import { collection, query, orderBy, addDoc, serverTimestamp, where, doc, updateDoc, increment, deleteDoc, arrayUnion, onSnapshot } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 
@@ -41,6 +41,8 @@ export default function MatchesPage() {
   const { toast } = useToast()
   const [isPosting, setIsPosting] = useState(false)
   const [showDialog, setShowDialog] = useState(false)
+  const [requests, setRequests] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
   const [newRequest, setNewRequest] = useState({
     game: "Football",
@@ -51,18 +53,33 @@ export default function MatchesPage() {
     details: ""
   })
 
-  const matchesQuery = useMemoFirebase(() => {
-    if (!db) return null
-    return query(collection(db, "matches"), where("status", "==", "active"), orderBy("createdAt", "desc"))
-  }, [db])
-
-  const { data: requests, loading } = useCollection(matchesQuery)
-
   useEffect(() => {
-    if (requests) {
-      console.log("READ_SUCCESS: MATCHES_FROM_FIRESTORE (Circuit View)", requests)
-    }
-  }, [requests])
+    if (!db) return;
+
+    console.log("MATCHES_INIT: Connecting to circuit telemetry...");
+
+    const q = query(
+      collection(db, "matches"), 
+      where("status", "==", "active"), 
+      orderBy("createdAt", "desc")
+    );
+
+    const unsub = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      console.log("MATCHES_LOADED", data);
+      setRequests(data);
+      setLoading(false);
+    }, (error) => {
+      console.error("MATCH_READ_ERROR", error);
+      setLoading(false);
+    });
+
+    return () => unsub();
+  }, [db]);
 
   const handlePost = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -170,7 +187,7 @@ export default function MatchesPage() {
         ) : (
           <div className="py-40 text-center border border-dashed border-white/10 rounded-[4rem] bg-white/[0.02]">
             <Zap className="h-16 w-16 text-white/5 mx-auto mb-6" />
-            <h3 className="text-4xl font-black text-white/10 uppercase italic">No active claims found 🚀</h3>
+            <h3 className="text-4xl font-black text-white/10 uppercase italic">No active match requests 🚀</h3>
             <p className="text-white/20 mt-4 max-w-sm mx-auto italic text-lg leading-relaxed">The circuit is silent. Be the first to broadcast a permanent open slot and mobilize the community.</p>
           </div>
         )}

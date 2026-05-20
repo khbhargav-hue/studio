@@ -44,8 +44,8 @@ import {
   Trash2,
   CheckCircle2
 } from "lucide-react"
-import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase"
-import { collection, query, orderBy, addDoc, serverTimestamp, updateDoc, doc, increment, arrayUnion, deleteDoc } from "firebase/firestore"
+import { useFirestore, useUser } from "@/firebase"
+import { collection, query, orderBy, addDoc, serverTimestamp, updateDoc, doc, increment, arrayUnion, deleteDoc, onSnapshot } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 import { formatDistanceToNow } from "date-fns"
@@ -79,6 +79,8 @@ export default function FeedPage() {
   const { toast } = useToast()
   const [isPosting, setIsPosting] = useState(false)
   const [showDialog, setShowDialog] = useState(false)
+  const [posts, setPosts] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
   const initialFormState = {
     game: "Football",
@@ -93,18 +95,32 @@ export default function FeedPage() {
 
   const [newPost, setNewPost] = useState(initialFormState)
 
-  const feedQuery = useMemoFirebase(() => {
-    if (!db) return null
-    return query(collection(db, "matches"), orderBy("createdAt", "desc"))
-  }, [db])
-
-  const { data: posts, loading } = useCollection(feedQuery)
-
   useEffect(() => {
-    if (posts) {
-      console.log("READ_SUCCESS: MATCHES_FROM_FIRESTORE", posts)
-    }
-  }, [posts])
+    if (!db) return;
+
+    console.log("FEED_INIT: Establishing real-time connection to matches...");
+    
+    const q = query(
+      collection(db, "matches"),
+      orderBy("createdAt", "desc")
+    );
+
+    const unsub = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      console.log("MATCHES_LOADED", data);
+      setPosts(data);
+      setLoading(false);
+    }, (error) => {
+      console.error("MATCH_READ_ERROR", error);
+      setLoading(false);
+    });
+
+    return () => unsub();
+  }, [db]);
 
   const handlePost = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -155,7 +171,6 @@ export default function FeedPage() {
       setNewPost(initialFormState)
       setShowDialog(false)
       
-      router.push('/')
       router.refresh()
       
     } catch (err: any) {
@@ -309,7 +324,7 @@ export default function FeedPage() {
         ) : (
           <div className="py-32 text-center bg-card border border-dashed border-white/5 rounded-3xl">
             <Activity className="h-12 w-12 text-white/5 mx-auto mb-4" />
-            <h3 className="text-xl font-black uppercase italic text-white/10">No match requests yet 🚀</h3>
+            <h3 className="text-xl font-black uppercase italic text-white/10">No active match requests 🚀</h3>
             <p className="text-white/20 text-sm mt-2 italic">Be the first to broadcast a permanent match signal in Mysuru.</p>
           </div>
         )}

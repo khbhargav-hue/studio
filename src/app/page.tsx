@@ -12,7 +12,7 @@ import {
   ExternalLink
 } from "lucide-react"
 import { useFirestore, useUser } from "@/firebase"
-import { collection, query, orderBy, doc, updateDoc, increment, deleteDoc, onSnapshot, limit, getDocs } from "firebase/firestore"
+import { getFirestore, collection, query, orderBy, doc, updateDoc, increment, deleteDoc, onSnapshot, limit, getDocs } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 import { SkeletonCard } from "@/components/Skeleton"
@@ -44,19 +44,33 @@ export default function SocialWallPage() {
     }
   }, []);
 
+  // NEW FEED FETCHING LOGIC AS PER TACTICAL REQUEST
   useEffect(() => {
-    if (!db) return
-    const q = query(collection(db, "posts"), orderBy("createdAt", "desc"), limit(20));
-    const unsub = onSnapshot(q, snap => {
-      setPosts(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-      setLoading(false);
-    });
+    const db = getFirestore();
+    const q = query(
+      collection(db, "posts"),
+      orderBy("createdAt", "desc"),
+      limit(20)
+    );
+    const unsub = onSnapshot(q,
+      (snap) => {
+        setLoading(false);
+        setPosts(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      },
+      (err) => {
+        console.error("Feed error:", err.code);
+        setLoading(false);
+      }
+    );
+    return () => unsub();
+  }, []);
 
+  // SEPARATE FETCH FOR ADS
+  useEffect(() => {
+    if (!db) return;
     getDocs(collection(db, "ads")).then(snap => {
       setAds(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter((a: any) => a.isActive));
     });
-
-    return () => unsub();
   }, [db]);
 
   const handleDelete = (postId: string) => {

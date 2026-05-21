@@ -1,9 +1,9 @@
 
 'use client';
 
-import { useState, useMemo } from "react";
-import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, query, orderBy, doc, deleteDoc, updateDoc, addDoc, serverTimestamp } from "firebase/firestore";
+import { useState, useMemo, useEffect } from "react";
+import { useCollection, useFirestore, useMemoFirebase, useDoc } from "@/firebase";
+import { collection, query, orderBy, doc, deleteDoc, updateDoc, addDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { 
   Table, 
   TableBody, 
@@ -24,7 +24,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
-import { Trash2, Loader2, MousePointer2, Megaphone, Target, DollarSign, Building2 } from "lucide-react";
+import { Trash2, Loader2, MousePointer2, Megaphone, Target, DollarSign, Building2, Save, Wallet } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const SPORT_TARGETS = ["All", "Football", "Cricket", "Pickleball", "Swimming", "Badminton"];
@@ -37,6 +37,7 @@ export default function AdsManagerPage() {
   const db = useFirestore();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingRevenue, setIsSavingRevenue] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -48,23 +49,46 @@ export default function AdsManagerPage() {
     isActive: true,
   });
 
+  // Revenue State
+  const [revenueData, setRevenueData] = useState({
+    featuredTurfs: 0,
+    adRevenue: 0,
+    sponsorships: 0
+  });
+
   const adsQuery = useMemoFirebase(() => {
     if (!db) return null;
     return query(collection(db, "ads"), orderBy("createdAt", "desc"));
   }, [db]);
 
-  const { data: ads, loading } = useCollection(adsQuery);
+  const revenueRef = useMemoFirebase(() => {
+    if (!db) return null;
+    return doc(db, "settings", "revenue");
+  }, [db]);
 
-  // Section 1: Stats Calculation
+  const { data: ads, loading } = useCollection(adsQuery);
+  const { data: savedRevenue } = useDoc(revenueRef);
+
+  useEffect(() => {
+    if (savedRevenue) {
+      setRevenueData({
+        featuredTurfs: savedRevenue.featuredTurfs || 0,
+        adRevenue: savedRevenue.adRevenue || 0,
+        sponsorships: savedRevenue.sponsorships || 0
+      });
+    }
+  }, [savedRevenue]);
+
   const stats = useMemo(() => {
     if (!ads) return { active: 0, clicks: 0, earned: 0, sponsors: 0 };
     const active = ads.filter((a: any) => a.isActive).length;
     const clicks = ads.reduce((acc: number, a: any) => acc + (a.clickCount || 0), 0);
     const uniqueSponsors = new Set(ads.map((a: any) => a.businessName)).size;
-    // Symbolic calculation: 10 INR per click
     const earned = clicks * 10; 
     return { active, clicks, earned, sponsors: uniqueSponsors };
   }, [ads]);
+
+  const totalRevenue = Number(revenueData.featuredTurfs) + Number(revenueData.adRevenue) + Number(revenueData.sponsorships);
 
   const handleSaveAd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,6 +119,29 @@ export default function AdsManagerPage() {
     }
   };
 
+  const handleSaveRevenue = async () => {
+    if (!db) return;
+    setIsSavingRevenue(true);
+
+    const monthStr = new Date().toISOString().slice(0, 7); // e.g. "2025-12"
+
+    try {
+      await setDoc(doc(db, "settings", "revenue"), {
+        featuredTurfs: Number(revenueData.featuredTurfs),
+        adRevenue: Number(revenueData.adRevenue),
+        sponsorships: Number(revenueData.sponsorships),
+        month: monthStr,
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+
+      toast({ title: "Revenue Intel Locked", description: "Monthly figures synchronized with Firestore." });
+    } catch (err) {
+      toast({ title: "Sync Failed", variant: "destructive" });
+    } finally {
+      setIsSavingRevenue(false);
+    }
+  };
+
   const toggleAdStatus = async (adId: string, currentStatus: boolean) => {
     if (!db) return;
     updateDoc(doc(db, "ads", adId), { 
@@ -118,7 +165,7 @@ export default function AdsManagerPage() {
   );
 
   return (
-    <div className="max-w-6xl mx-auto space-y-12">
+    <div className="max-w-6xl mx-auto space-y-12 pb-32">
       <header>
         <h1 className="text-3xl font-bold flex items-center gap-3">
           <Megaphone className="h-8 w-8 text-primary" />
@@ -255,7 +302,9 @@ export default function AdsManagerPage() {
                         src={ad.imageUrl} 
                         className="h-full w-full object-cover" 
                         alt={ad.businessName}
-                        onError={(e) => { (e.target as any).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='%231A1A1A'/%3E%3C/svg%3E" }}
+                        loading="lazy"
+                        decoding="async"
+                        onError={(e) => { (e.target as any).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='200'%3E%3Crect width='400' height='200' fill='%231A1A1A'/%3E%3Ctext x='50%25' y='50%25' fill='%23444' text-anchor='middle' font-size='40'%3E⚽%3C/text%3E%3C/svg%3E" }}
                       />
                     </div>
                   </TableCell>
@@ -294,6 +343,57 @@ export default function AdsManagerPage() {
               )}
             </TableBody>
           </Table>
+        </div>
+      </div>
+
+      {/* SECTION 4 — Revenue Tracker */}
+      <div className="space-y-8 pt-12 border-t border-[#222]">
+        <header className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-bold flex items-center gap-2">
+              <Wallet className="h-6 w-6 text-primary" />
+              Revenue Tracker
+            </h2>
+            <p className="text-xs text-muted mt-1 italic">Manual entry for monthly circuit earnings</p>
+          </div>
+          <Button 
+            onClick={handleSaveRevenue} 
+            disabled={isSavingRevenue}
+            className="bg-primary text-black font-black uppercase tracking-widest text-[10px] h-10 px-6 rounded-lg"
+          >
+            {isSavingRevenue ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Save className="h-4 w-4 mr-2" /> Sync Revenue</>}
+          </Button>
+        </header>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[
+            { id: "featuredTurfs", label: "Featured Turfs", placeholder: "Paid listings count" },
+            { id: "adRevenue", label: "Ad Revenue", placeholder: "Total ads collected" },
+            { id: "sponsorships", label: "Sponsorships", placeholder: "Monthly sponsors" }
+          ].map((field) => (
+            <div key={field.id} className="bg-[#111] border border-[#222] p-6 rounded-xl space-y-4">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-muted">{field.label}</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-primary font-bold">₹</span>
+                <Input 
+                  type="number"
+                  placeholder="0"
+                  className="bg-[#1A1A1A] border-[#333] pl-8 h-12 text-lg font-bold"
+                  value={(revenueData as any)[field.id]}
+                  onChange={e => setRevenueData({...revenueData, [field.id]: e.target.value})}
+                />
+              </div>
+              <p className="text-[9px] text-white/20 italic">{field.placeholder}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="bg-primary/5 border border-primary/20 p-8 rounded-2xl flex flex-col items-center text-center">
+          <p className="text-[11px] font-black uppercase tracking-[0.4em] text-white/40 mb-2">TOTAL CIRCUIT REVENUE</p>
+          <div className="text-6xl font-black italic tracking-tighter text-primary">
+            ₹{totalRevenue.toLocaleString()}
+          </div>
+          <p className="text-[10px] font-bold text-white/20 uppercase tracking-widest mt-4">Calculated based on manual administrative input</p>
         </div>
       </div>
     </div>

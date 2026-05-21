@@ -34,13 +34,12 @@ export function FirebaseProvider({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (authUser) => {
-      console.log("AUTH_STATE", authUser?.uid || "NO_USER");
-      setUser(authUser);
+    const unsub = onAuthStateChanged(auth, (user) => {
+      setUser(user || null);
       setLoading(false);
     });
-    return () => unsubscribe();
-  }, [auth]);
+    return () => unsub();
+  }, []);
 
   return (
     <FirebaseContext.Provider value={{ app, firestore, auth, storage, user, loading }}>

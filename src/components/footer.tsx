@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { TurfistaLogo } from "./brand-logo"
-import { Twitter, Instagram, Facebook, MessageCircle } from "lucide-react"
+import { Twitter, Instagram, Facebook } from "lucide-react"
 
 export function Footer() {
   return (
@@ -43,14 +43,43 @@ export function Footer() {
 
           <div className="space-y-6">
             <h4 className="label-caps text-primary">Support</h4>
-            <div className="flex items-center gap-3 text-muted">
-              <div className="h-10 w-10 bg-[#25D366]/10 rounded-[10px] flex items-center justify-center text-[#25D366]">
-                <MessageCircle className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="label-caps text-[9px]">WhatsApp</p>
-                <p className="text-[14px] font-bold text-foreground">+91 74113 22492</p>
-              </div>
+            <div className="flex items-center gap-3">
+              <a 
+                href="https://wa.me/917411322492" 
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: "50%",
+                  background: "#25D366",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 22,
+                  textDecoration: "none"
+                }}
+              >
+                📱
+              </a>
+              <a 
+                href="https://instagram.com/turfista_mysuru" 
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: "50%",
+                  background: "#E1306C",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 22,
+                  textDecoration: "none"
+                }}
+              >
+                📸
+              </a>
             </div>
             <nav className="flex flex-col gap-2 text-[12px] text-muted opacity-60">
               <Link href="/privacy">Privacy Policy</Link>

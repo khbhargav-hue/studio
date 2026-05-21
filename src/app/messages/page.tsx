@@ -1,7 +1,7 @@
-
 'use client';
 
 import { Navbar } from "@/components/navbar";
+import { Footer } from "@/components/footer";
 import { MobileNav } from "@/components/mobile-nav";
 import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
 import { collection, query, where, orderBy, limit } from "firebase/firestore";

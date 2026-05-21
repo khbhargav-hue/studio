@@ -3,6 +3,7 @@
 import { formatDistanceToNow } from "date-fns";
 import { Trash2, Heart, MessageCircle, Share2, MapPin, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { doc, deleteDoc, getFirestore } from "firebase/firestore";
 
 interface PostCardProps {
   post: any;
@@ -17,6 +18,13 @@ export default function PostCard({ post, currentUser, onDelete, onLike, hasLiked
   const timeAgo = post.createdAt?.seconds 
     ? formatDistanceToNow(new Date(post.createdAt.seconds * 1000)) + " ago" 
     : "Recently";
+
+  const handleDelete = (postId: string) => {
+    const db = getFirestore();
+    deleteDoc(doc(db, "posts", postId))
+      .then(() => console.log("deleted"))
+      .catch(e => alert("Delete failed: " + e.message));
+  };
 
   const handleWhatsAppShare = () => {
     const text = encodeURIComponent(`Join my ${post.sport} match in ${post.location} Mysuru! Check it out on Turfista.`);
@@ -51,7 +59,7 @@ export default function PostCard({ post, currentUser, onDelete, onLike, hasLiked
           </span>
           {isOwner && (
             <button 
-              onClick={onDelete} 
+              onClick={() => handleDelete(post.id)} 
               className="p-1.5 text-destructive/40 hover:text-destructive transition-colors" 
               title="Retract Signal"
             >

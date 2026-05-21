@@ -26,10 +26,13 @@ export function Footer() {
           <div className="space-y-6">
             <h4 className="label-caps text-primary">Discover</h4>
             <nav className="flex flex-col gap-4 text-[14px] font-medium text-muted">
-              <Link href="/" className="hover:text-foreground">Browse Arenas</Link>
-              <Link href="/featured" className="hover:text-foreground">Featured Venues</Link>
-              <Link href="/areas" className="hover:text-foreground">Popular Areas</Link>
-              <Link href="/sponsors" className="hover:text-foreground">Partner Network</Link>
+              <Link href="/turfs" className="hover:text-foreground">Browse Arenas</Link>
+              <div className="space-y-2 mt-2">
+                <p className="text-foreground font-bold text-xs uppercase tracking-widest">Popular Areas</p>
+                <p className="text-[12px] opacity-60 italic">
+                  Vijayanagar · Yadavagiri · JP Nagar · Bogadi
+                </p>
+              </div>
             </nav>
           </div>
 
@@ -89,7 +92,7 @@ export function Footer() {
         </div>
 
         <div className="pt-8 border-t border-border flex items-center justify-between">
-          <p className="label-caps text-[9px] text-muted">© 2026 Turfista Network. All rights reserved.</p>
+          <p className="label-caps text-[9px] text-muted">© 2025 Turfista · Made in Mysuru 🟢</p>
           <div className="flex items-center gap-2">
             <div className="h-1.5 w-1.5 bg-primary rounded-full" />
             <span className="label-caps text-[9px] text-muted">Network Stable</span>

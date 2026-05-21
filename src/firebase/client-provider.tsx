@@ -18,10 +18,10 @@ export function FirebaseClientProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!auth || !db) return;
 
-    // Monitor auth state circuit
+    // 4. On app startup: Global Auth Monitor
     const unsub = onAuthStateChanged(auth, (user) => {
       if (user) {
-        console.log("AUTH_USER", user.uid);
+        console.log("LOGIN_SUCCESS", user.uid);
       }
     });
 

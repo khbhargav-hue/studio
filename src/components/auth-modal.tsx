@@ -20,7 +20,9 @@ import {
   GoogleAuthProvider, 
   signInWithPopup, 
   signInWithRedirect,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  browserLocalPersistence,
+  setPersistence
 } from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { Loader2, Mail, Lock, User, ShieldCheck, Chrome, AlertCircle, ExternalLink, RefreshCw, Copy, CheckCircle2 } from "lucide-react";
@@ -59,9 +61,14 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
     const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
 
     try {
+      // 1. Ensure persistence
+      await setPersistence(auth, browserLocalPersistence);
+
       if (isMobile) {
+        // 2. Mobile: Redirect modality
         await signInWithRedirect(auth, provider);
       } else {
+        // 3. Desktop: Popup modality
         const result = await signInWithPopup(auth, provider);
         const user = result.user;
         
@@ -106,6 +113,7 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
     setIsLoading(true);
     setError(null);
     try {
+      await setPersistence(auth, browserLocalPersistence);
       await signInWithEmailAndPassword(auth, email, password);
       toast({ title: "Welcome Athlete" });
       if (onOpenChange) onOpenChange(false);
@@ -122,6 +130,7 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
     setIsLoading(true);
     setError(null);
     try {
+      await setPersistence(auth, browserLocalPersistence);
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(userCredential.user, { displayName: name });
       

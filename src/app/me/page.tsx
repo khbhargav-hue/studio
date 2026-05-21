@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useUser, useAuth, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut } from "firebase/auth";
+import { GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut, setPersistence, browserLocalPersistence } from "firebase/auth";
 import { collection, query, where, doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { UserCircle, LogOut, LayoutGrid, Zap, MessageSquare, ChevronRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -44,6 +44,8 @@ export default function MePage() {
     const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
 
     try {
+      await setPersistence(auth, browserLocalPersistence);
+
       if (isMobile) {
         await signInWithRedirect(auth, provider);
       } else {

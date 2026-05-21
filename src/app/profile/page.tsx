@@ -11,7 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUser, useAuth, useFirestore, useDoc, useMemoFirebase } from "@/firebase";
-import { GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut } from "firebase/auth";
+import { GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut, setPersistence, browserLocalPersistence } from "firebase/auth";
 import { doc, setDoc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { 
   UserCircle, 
@@ -100,6 +100,8 @@ export default function ProfilePage() {
     const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
 
     try {
+      await setPersistence(auth, browserLocalPersistence);
+
       if (isMobile) {
         await signInWithRedirect(auth, provider);
       } else {

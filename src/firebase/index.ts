@@ -32,7 +32,7 @@ export function initializeFirebase() {
 
   const auth = getAuth(app);
   
-  // Ensure sessions persist across reloads and mobile browser closures
+  // 1. Set persistence to keep login after refresh
   setPersistence(auth, browserLocalPersistence).catch(err => {
     console.error("PERSISTENCE_FAILURE", err);
   });

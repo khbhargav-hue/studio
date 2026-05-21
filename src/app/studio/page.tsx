@@ -17,7 +17,7 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { Edit2, Trash2, Plus, Zap, Users, Trophy, UserCheck, Database, LayoutDashboard, RefreshCw } from 'lucide-react';
-import Link from 'link';
+import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from "@/lib/utils";
 import { mysuuruTurfs } from '@/lib/seed-circuit';

@@ -33,11 +33,7 @@ export default function MePage() {
 
   const myPosts = useMemo(() => {
     if (!rawMyPosts) return [];
-    return [...rawMyPosts].sort((a: any, b: any) => {
-      const at = a.createdAt?.seconds || 0;
-      const bt = b.createdAt?.seconds || 0;
-      return bt - at;
-    });
+    return [...rawMyPosts].sort((a: any, b: any) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
   }, [rawMyPosts]);
 
   const handleSignIn = async () => {
@@ -45,18 +41,16 @@ export default function MePage() {
     setIsSigningIn(true);
     
     const provider = new GoogleAuthProvider();
-    provider.addScope("email");
-    provider.addScope("profile");
 
-    // Detect mobile device automatically for redirect protocol
-    const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
-
-    try {
-      if (isMobile) {
-        // iOS Safari and Android Chrome require redirect to bypass popup blockers
+    if (/Android|iPhone|iPad/i.test(navigator.userAgent)) {
+      try {
         await signInWithRedirect(auth, provider);
-      } else {
-        // Desktop browsers handle popups seamlessly
+      } catch (err: any) {
+        toast({ title: "Auth Failed", description: err.message, variant: "destructive" });
+        setIsSigningIn(false);
+      }
+    } else {
+      try {
         const result = await signInWithPopup(auth, provider);
         const userResult = result.user;
         
@@ -68,19 +62,14 @@ export default function MePage() {
           updatedAt: serverTimestamp()
         }, { merge: true });
 
-        toast({ title: "Identity Verified", description: "Welcome back to the Mysuru circuit." });
-      }
-    } catch (err: any) {
-      // Handle cancelled actions silently
-      if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
+        toast({ title: "Identity Verified" });
+      } catch (err: any) {
+        if (err.code !== 'auth/popup-closed-by-user') {
+          toast({ title: "Auth Failed", description: err.message, variant: "destructive" });
+        }
+      } finally {
         setIsSigningIn(false);
-        return;
       }
-      
-      toast({ title: "Auth Failed", description: err.message, variant: "destructive" });
-    } finally {
-      // For mobile, we stay in signing-in state until redirect occurs
-      if (!isMobile) setIsSigningIn(false);
     }
   };
 
@@ -88,27 +77,12 @@ export default function MePage() {
     if (!auth) return;
     signOut(auth).then(() => {
       router.push("/");
-      toast({ title: "Protocol Terminated", description: "Identity node offline." });
-    });
-  };
-
-  const handleDeletePost = (postId: string) => {
-    if (!db) return;
-    deleteDoc(doc(db, "posts", postId)).then(() => {
-      toast({ title: "Signal Redacted" });
+      toast({ title: "Protocol Terminated" });
     });
   };
 
   if (userLoading) {
-    return (
-      <div className="flex min-h-screen flex-col bg-[#0A0A0A] p-6">
-        <div className="max-w-lg mx-auto w-full pt-12">
-           <SkeletonCard />
-           <SkeletonCard />
-           <SkeletonCard />
-        </div>
-      </div>
-    );
+    return <div className="flex h-screen items-center justify-center bg-[#0A0A0A]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
 
   if (!user) {
@@ -137,30 +111,21 @@ export default function MePage() {
           <div className="relative mb-6">
             <div className="h-[72px] w-[72px] rounded-full overflow-hidden border-2 border-primary/20 p-0.5 bg-[#111]">
               {user.photoURL ? (
-                <img src={user.photoURL} alt={user.displayName || "Me"} className="h-full w-full object-cover rounded-full" loading="lazy" />
+                <img src={user.photoURL} alt={user.displayName || "Me"} className="h-full w-full object-cover rounded-full" />
               ) : (
                 <UserCircle className="h-full w-full text-white/10" />
               )}
             </div>
             <div className="absolute bottom-0 right-0 h-4 w-4 bg-green-500 rounded-full border-2 border-[#0A0A0A]" />
           </div>
-          
-          <h2 className="text-[20px] font-black uppercase italic tracking-tighter text-white mb-1">
-            {user.displayName || "Athlete Node"}
-          </h2>
-          <p className="text-[13px] text-[#888] mb-4 font-medium">{user.email}</p>
-          
-          <Badge className="bg-primary/10 text-primary border-primary/20 font-black uppercase tracking-widest text-[9px] px-3 py-1">
-            Verified Athlete
-          </Badge>
+          <h2 className="text-[20px] font-black uppercase italic tracking-tighter text-white mb-1">{user.displayName || "Athlete Node"}</h2>
+          <Badge className="bg-primary/10 text-primary border-primary/20 font-black uppercase tracking-widest text-[9px] px-3 py-1">Verified Athlete</Badge>
         </div>
 
         <div className="space-y-4 mb-12">
           <Link href="/messages" className="flex items-center justify-between p-6 bg-[#111] border border-[#222] rounded-xl hover:border-primary/40 transition-all group">
             <div className="flex items-center gap-4">
-              <div className="h-10 w-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary border border-primary/20">
-                <MessageSquare className="h-5 w-5" />
-              </div>
+              <div className="h-10 w-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary border border-primary/20"><MessageSquare className="h-5 w-5" /></div>
               <div>
                 <p className="text-sm font-black uppercase italic text-white">Direct Signals</p>
                 <p className="text-[10px] font-bold text-[#444] uppercase tracking-widest">Tactical Private Chat</p>
@@ -168,21 +133,6 @@ export default function MePage() {
             </div>
             <ChevronRight className="h-4 w-4 text-white/10 group-hover:text-primary transition-all" />
           </Link>
-        </div>
-
-        <div className="grid grid-cols-3 gap-[1px] bg-[#222] border border-[#222] rounded-xl overflow-hidden mb-12">
-          <div className="bg-[#111] p-4 flex flex-col items-center">
-            <span className="text-[18px] font-black italic text-white leading-none">{myPosts?.length || 0}</span>
-            <span className="text-[10px] font-black uppercase tracking-widest text-[#444] mt-2">Posts</span>
-          </div>
-          <div className="bg-[#111] p-4 flex flex-col items-center">
-            <span className="text-[18px] font-black italic text-white leading-none">0</span>
-            <span className="text-[10px] font-black uppercase tracking-widest text-[#444] mt-2">Turfs</span>
-          </div>
-          <div className="bg-[#111] p-4 flex flex-col items-center">
-            <span className="text-[18px] font-black italic text-white leading-none">0</span>
-            <span className="text-[10px] font-black uppercase tracking-widest text-[#444] mt-2">Teams</span>
-          </div>
         </div>
 
         <div className="flex items-center gap-2 mb-6 px-1">
@@ -194,16 +144,7 @@ export default function MePage() {
           {postsLoading ? (
             [...Array(2)].map((_, i) => <SkeletonCard key={i} />)
           ) : myPosts && myPosts.length > 0 ? (
-            myPosts.map(post => (
-              <PostCard 
-                key={post.id} 
-                post={post} 
-                currentUser={user} 
-                onDelete={() => handleDeletePost(post.id)}
-                onLike={() => {}} 
-                hasLiked={false}
-              />
-            ))
+            myPosts.map(post => <PostCard key={post.id} post={post} currentUser={user} onDelete={() => {}} onLike={() => {}} hasLiked={false} />)
           ) : (
             <div className="py-20 text-center border border-dashed border-[#222] rounded-xl bg-[#111]/30">
               <Zap className="h-10 w-10 text-white/5 mx-auto mb-4" />
@@ -213,10 +154,7 @@ export default function MePage() {
         </div>
 
         <div className="mt-12 pt-8 border-t border-[#222]">
-          <button 
-            onClick={handleSignOut}
-            className="w-full h-12 border border-[#FF4444] text-[#FF4444] font-black uppercase tracking-widest text-[11px] rounded-xl hover:bg-[#FF4444]/5 transition-all flex items-center justify-center gap-2"
-          >
+          <button onClick={handleSignOut} className="w-full h-12 border border-[#FF4444] text-[#FF4444] font-black uppercase tracking-widest text-[11px] rounded-xl hover:bg-[#FF4444]/5 transition-all flex items-center justify-center gap-2">
             <LogOut className="h-4 w-4" /> Sign Out
           </button>
         </div>

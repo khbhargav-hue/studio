@@ -56,18 +56,33 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
     setError(null);
     
     const provider = new GoogleAuthProvider();
-    provider.addScope("email");
-    provider.addScope("profile");
 
-    // Detect mobile device automatically for redirect protocol
-    const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
-    
-    try {
-      if (isMobile) {
-        // Mobile browsers (Safari/Chrome) and WhatsApp in-app browser require Redirect
+    if (/Android|iPhone|iPad/i.test(navigator.userAgent)) {
+      try {
         await signInWithRedirect(auth, provider);
-      } else {
-        // Desktop environments favor the seamless Popup
+      } catch (err: any) {
+        if (err.code === 'auth/unauthorized-domain') {
+          const domain = typeof window !== 'undefined' ? window.location.hostname : 'your domain';
+          setError(
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-destructive font-black text-[10px] uppercase tracking-tighter">
+                <AlertCircle className="h-4 w-4" /> Domain Not Authorized
+              </div>
+              <p className="text-[10px] leading-relaxed opacity-70">
+                This host (<code className="bg-destructive/10 px-1 py-0.5 rounded text-white font-mono">{domain}</code>) is not authorized.
+              </p>
+              <Button size="sm" onClick={copyHostname} className="w-full text-[9px] uppercase font-black tracking-widest bg-primary/10 text-primary">
+                {copied ? "COPIED" : "COPY HOSTNAME"}
+              </Button>
+            </div>
+          );
+        } else {
+          toast({ title: "Login Error", description: err.message, variant: "destructive" });
+        }
+        setIsLoading(false);
+      }
+    } else {
+      try {
         const result = await signInWithPopup(auth, provider);
         const user = result.user;
         
@@ -79,63 +94,15 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
           updatedAt: serverTimestamp()
         }, { merge: true });
 
-        toast({ title: "Identity Verified", description: "Welcome back to the Mysuru circuit." });
+        toast({ title: "Identity Verified" });
         if (onOpenChange) onOpenChange(false);
-      }
-    } catch (err: any) {
-      // Handle cancelled actions silently
-      if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
+      } catch (err: any) {
+        if (err.code !== 'auth/popup-closed-by-user') {
+          toast({ title: "Authentication Failed", description: err.message, variant: "destructive" });
+        }
+      } finally {
         setIsLoading(false);
-        return;
       }
-
-      if (err.code === 'auth/unauthorized-domain') {
-        const domain = typeof window !== 'undefined' ? window.location.hostname : 'your domain';
-        setError(
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 text-destructive font-black text-[10px] uppercase tracking-tighter">
-              <AlertCircle className="h-4 w-4" /> Domain Not Authorized
-            </div>
-            <p className="text-[10px] leading-relaxed opacity-70">
-              This host (<code className="bg-destructive/10 px-1 py-0.5 rounded text-white font-mono">{domain}</code>) is not authorized in your Firebase Project.
-            </p>
-            <div className="flex flex-col gap-2 p-4 bg-white/5 border border-white/10 rounded-xl">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="h-9 text-[9px] font-black uppercase tracking-widest bg-primary/10 border-primary/20 text-primary w-full"
-                onClick={copyHostname}
-              >
-                {copied ? <CheckCircle2 className="mr-1.5 h-3 w-3" /> : <Copy className="mr-1.5 h-3 w-3" />}
-                {copied ? "COPIED" : "COPY HOSTNAME"}
-              </Button>
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="h-9 text-[9px] font-black uppercase tracking-widest border-white/10 text-white flex-1"
-                  onClick={() => window.open("https://console.firebase.google.com/", "_blank")}
-                >
-                  Console <ExternalLink className="ml-1.5 h-3 w-3" />
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-9 text-[9px] font-black uppercase tracking-widest text-white/30 flex-1"
-                  onClick={() => setError(null)}
-                >
-                  <RefreshCw className="ml-1.5 h-3 w-3" /> Retry
-                </Button>
-              </div>
-            </div>
-          </div>
-        );
-      } else {
-        toast({ title: "Authentication Failed", description: err.message, variant: "destructive" });
-      }
-    } finally {
-      // For mobile, setIsLoading remains true until the page redirects
-      if (!isMobile) setIsLoading(false);
     }
   };
 
@@ -146,10 +113,10 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
     setError(null);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      toast({ title: "Welcome Athlete", description: "Access granted to the network." });
+      toast({ title: "Welcome Athlete" });
       if (onOpenChange) onOpenChange(false);
     } catch (err: any) {
-      toast({ title: "Invalid Credentials", description: "Check your email or passcode.", variant: "destructive" });
+      toast({ title: "Invalid Credentials", variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -174,10 +141,10 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
         }, { merge: true });
       }
 
-      toast({ title: "Squad Member Registered", description: "Your athlete profile is now active." });
+      toast({ title: "Profile Registered" });
       if (onOpenChange) onOpenChange(false);
     } catch (err: any) {
-      toast({ title: "Registration Blocked", description: "Could not register account.", variant: "destructive" });
+      toast({ title: "Registration Blocked", variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -185,14 +152,14 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
 
   const handleForgotPassword = async () => {
     if (!email) {
-      toast({ title: "Identity Required", description: "Enter your email to receive a reset link.", variant: "destructive" });
+      toast({ title: "Email Required", variant: "destructive" });
       return;
     }
     try {
       await sendPasswordResetEmail(auth!, email);
-      toast({ title: "Reset Link Dispatched", description: "Check your inbox for recovery instructions." });
+      toast({ title: "Reset Link Sent" });
     } catch (error: any) {
-      toast({ title: "Transmission Failed", variant: "destructive" });
+      toast({ title: "Error", variant: "destructive" });
     }
   };
 
@@ -213,6 +180,7 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
         {error && (
           <div className="bg-destructive/5 border border-destructive/20 rounded-[20px] p-6 mb-8 animate-in zoom-in-95 duration-200">
             <div className="text-xs font-medium">{error}</div>
+            <Button variant="ghost" size="sm" onClick={() => setError(null)} className="mt-4 w-full text-[10px] uppercase font-black text-white/40"><RefreshCw className="h-3 w-3 mr-2" /> Retry</Button>
           </div>
         )}
 
@@ -229,14 +197,7 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
                   <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Combat Email</Label>
                   <div className="relative">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20 z-10" />
-                    <Input 
-                      type="email" 
-                      placeholder="name@email.com" 
-                      className="pl-12 bg-white/5 border-white/5 text-white h-12 focus:border-primary/50" 
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                    />
+                    <Input type="email" placeholder="name@email.com" className="pl-12 bg-white/5 border-white/5 text-white h-12 focus:border-primary/50" value={email} onChange={(e) => setEmail(e.target.value)} required />
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -246,14 +207,7 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
                   </div>
                   <div className="relative">
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20 z-10" />
-                    <Input 
-                      type="password" 
-                      placeholder="••••••••" 
-                      className="pl-12 bg-white/5 border-white/5 text-white h-12 focus:border-primary/50" 
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
+                    <Input type="password" placeholder="••••••••" className="pl-12 bg-white/5 border-white/5 text-white h-12 focus:border-primary/50" value={password} onChange={(e) => setPassword(e.target.value)} required />
                   </div>
                 </div>
                 <Button type="submit" disabled={isLoading} className="w-full h-14 bg-primary text-black font-black uppercase tracking-widest text-xs rounded-[12px] mt-4 shadow-lg shadow-primary/20">
@@ -268,42 +222,21 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
                   <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Athlete Alias</Label>
                   <div className="relative">
                     <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20 z-10" />
-                    <Input 
-                      type="text" 
-                      placeholder="John Doe" 
-                      className="pl-12 bg-white/5 border-white/5 text-white h-12 focus:border-primary/50" 
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      required
-                    />
+                    <Input type="text" placeholder="John Doe" className="pl-12 bg-white/5 border-white/5 text-white h-12 focus:border-primary/50" value={name} onChange={(e) => setName(e.target.value)} required />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Combat Email</Label>
                   <div className="relative">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20 z-10" />
-                    <Input 
-                      type="email" 
-                      placeholder="name@email.com" 
-                      className="pl-12 bg-white/5 border-white/5 text-white h-12 focus:border-primary/50" 
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                    />
+                    <Input type="email" placeholder="name@email.com" className="pl-12 bg-white/5 border-white/5 text-white h-12 focus:border-primary/50" value={email} onChange={(e) => setEmail(e.target.value)} required />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Secure Passcode</Label>
                   <div className="relative">
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20 z-10" />
-                    <Input 
-                      type="password" 
-                      placeholder="Min. 8 characters" 
-                      className="pl-12 bg-white/5 border-white/5 text-white h-12 focus:border-primary/50" 
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
+                    <Input type="password" placeholder="Min. 8 characters" className="pl-12 bg-white/5 border-white/5 text-white h-12 focus:border-primary/50" value={password} onChange={(e) => setPassword(e.target.value)} required />
                   </div>
                 </div>
                 <Button type="submit" disabled={isLoading} className="w-full h-14 bg-primary text-black font-black uppercase tracking-widest text-xs rounded-[12px] mt-4 shadow-lg shadow-primary/20">

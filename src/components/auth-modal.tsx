@@ -56,33 +56,12 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
     setError(null);
     
     const provider = new GoogleAuthProvider();
+    const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
 
-    if (/Android|iPhone|iPad/i.test(navigator.userAgent)) {
-      try {
+    try {
+      if (isMobile) {
         await signInWithRedirect(auth, provider);
-      } catch (err: any) {
-        if (err.code === 'auth/unauthorized-domain') {
-          const domain = typeof window !== 'undefined' ? window.location.hostname : 'your domain';
-          setError(
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-destructive font-black text-[10px] uppercase tracking-tighter">
-                <AlertCircle className="h-4 w-4" /> Domain Not Authorized
-              </div>
-              <p className="text-[10px] leading-relaxed opacity-70">
-                This host (<code className="bg-destructive/10 px-1 py-0.5 rounded text-white font-mono">{domain}</code>) is not authorized.
-              </p>
-              <Button size="sm" onClick={copyHostname} className="w-full text-[9px] uppercase font-black tracking-widest bg-primary/10 text-primary">
-                {copied ? "COPIED" : "COPY HOSTNAME"}
-              </Button>
-            </div>
-          );
-        } else {
-          toast({ title: "Login Error", description: err.message, variant: "destructive" });
-        }
-        setIsLoading(false);
-      }
-    } else {
-      try {
+      } else {
         const result = await signInWithPopup(auth, provider);
         const user = result.user;
         
@@ -96,13 +75,28 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
 
         toast({ title: "Identity Verified" });
         if (onOpenChange) onOpenChange(false);
-      } catch (err: any) {
-        if (err.code !== 'auth/popup-closed-by-user') {
-          toast({ title: "Authentication Failed", description: err.message, variant: "destructive" });
-        }
-      } finally {
-        setIsLoading(false);
       }
+    } catch (err: any) {
+      if (err.code === 'auth/unauthorized-domain') {
+        const domain = typeof window !== 'undefined' ? window.location.hostname : 'your domain';
+        setError(
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-destructive font-black text-[10px] uppercase tracking-tighter">
+              <AlertCircle className="h-4 w-4" /> Domain Not Authorized
+            </div>
+            <p className="text-[10px] leading-relaxed opacity-70">
+              This host (<code className="bg-destructive/10 px-1 py-0.5 rounded text-white font-mono">{domain}</code>) is not authorized.
+            </p>
+            <Button size="sm" onClick={copyHostname} className="w-full text-[9px] uppercase font-black tracking-widest bg-primary/10 text-primary">
+              {copied ? "COPIED" : "COPY HOSTNAME"}
+            </Button>
+          </div>
+        );
+      } else if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
+        toast({ title: "Authentication Failed", description: err.message, variant: "destructive" });
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 

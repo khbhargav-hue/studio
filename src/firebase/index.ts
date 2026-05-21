@@ -2,7 +2,7 @@
 
 import { initializeApp, getApps } from 'firebase/app';
 import { initializeFirestore, getFirestore } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
+import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { getStorage } from 'firebase/storage';
 import { firebaseConfig } from './config';
 
@@ -14,8 +14,7 @@ export * from './use-memo-firebase';
 
 /**
  * Hardened Firebase Initialization
- * Enforces Long Polling to bypass "unavailable" errors in proxied environments.
- * Disables persistence to avoid false offline states.
+ * Enforces Long Polling for stability and Local Persistence for mobile session recovery.
  */
 export function initializeFirebase() {
   const apps = getApps();
@@ -32,6 +31,12 @@ export function initializeFirebase() {
   }
 
   const auth = getAuth(app);
+  
+  // Ensure sessions persist across reloads and mobile browser closures
+  setPersistence(auth, browserLocalPersistence).catch(err => {
+    console.error("PERSISTENCE_FAILURE", err);
+  });
+
   const storage = getStorage(app);
   
   return { app, auth, db, storage };

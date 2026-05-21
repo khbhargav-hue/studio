@@ -4,13 +4,13 @@ import React, { ReactNode, useMemo, useEffect } from 'react';
 import { initializeFirebase } from './index';
 import { FirebaseProvider } from './provider';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
-import { getRedirectResult } from "firebase/auth";
+import { getRedirectResult, onAuthStateChanged } from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 
 /**
  * FirebaseClientProvider
- * Composes the FirebaseProvider with initialized production services.
- * Handles the permanent mobile redirect result from Google Authentication.
+ * Composes the FirebaseProvider and handles global authentication side-effects.
+ * Captures redirect results from mobile Google sign-in.
  */
 export function FirebaseClientProvider({ children }: { children: ReactNode }) {
   const { app, db, auth, storage } = useMemo(() => initializeFirebase(), []);
@@ -18,14 +18,21 @@ export function FirebaseClientProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!auth || !db) return;
 
-    // Handle mobile redirect return protocol
+    // Monitor auth state circuit
+    const unsub = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        console.log("AUTH_USER", user.uid);
+      }
+    });
+
+    // Capture identity signals returning from Google mobile redirect
     getRedirectResult(auth)
       .then((result) => {
         if (result?.user) {
           const user = result.user;
-          console.log("LOGIN_SUCCESS", user.uid);
+          console.log("REDIRECT_SUCCESS", user.uid);
 
-          // Synchronize athlete identity with Firestore registry
+          // Synchronize identity with registry
           setDoc(doc(db, "users", user.uid), {
             name: user.displayName,
             email: user.email,
@@ -36,8 +43,10 @@ export function FirebaseClientProvider({ children }: { children: ReactNode }) {
         }
       })
       .catch(err => {
-        console.error("Redirect protocol failure:", err);
+        console.error("REDIRECT_ERROR", err.code);
       });
+
+    return () => unsub();
   }, [auth, db]);
 
   return (

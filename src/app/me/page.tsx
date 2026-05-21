@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useUser, useAuth, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut } from "firebase/auth";
-import { collection, query, where, deleteDoc, doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { collection, query, where, doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { UserCircle, LogOut, LayoutGrid, Zap, MessageSquare, ChevronRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -41,16 +41,12 @@ export default function MePage() {
     setIsSigningIn(true);
     
     const provider = new GoogleAuthProvider();
+    const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
 
-    if (/Android|iPhone|iPad/i.test(navigator.userAgent)) {
-      try {
+    try {
+      if (isMobile) {
         await signInWithRedirect(auth, provider);
-      } catch (err: any) {
-        toast({ title: "Auth Failed", description: err.message, variant: "destructive" });
-        setIsSigningIn(false);
-      }
-    } else {
-      try {
+      } else {
         const result = await signInWithPopup(auth, provider);
         const userResult = result.user;
         
@@ -63,13 +59,13 @@ export default function MePage() {
         }, { merge: true });
 
         toast({ title: "Identity Verified" });
-      } catch (err: any) {
-        if (err.code !== 'auth/popup-closed-by-user') {
-          toast({ title: "Auth Failed", description: err.message, variant: "destructive" });
-        }
-      } finally {
-        setIsSigningIn(false);
       }
+    } catch (err: any) {
+      if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
+        toast({ title: "Auth Failed", description: err.message, variant: "destructive" });
+      }
+    } finally {
+      setIsSigningIn(false);
     }
   };
 

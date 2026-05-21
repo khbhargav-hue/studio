@@ -11,37 +11,22 @@ import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUser, useAuth, useFirestore, useDoc, useMemoFirebase } from "@/firebase";
-import { GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut, getAuth } from "firebase/auth";
-import { doc, setDoc, serverTimestamp, updateDoc, getDoc } from "firebase/firestore";
+import { GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut } from "firebase/auth";
+import { doc, setDoc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { 
   UserCircle, 
   LogOut, 
-  Users, 
-  Trophy, 
-  Zap, 
-  ChevronRight,
   Loader2,
-  Mail,
-  Activity,
   Star,
-  Gift,
-  Settings2,
   Save,
-  Swords,
   AlertCircle,
-  ExternalLink,
-  RefreshCw,
-  ShieldCheck,
-  Copy,
-  CheckCircle2
+  Copy
 } from "lucide-react";
-import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
-import { REWARD_POINTS, calculateLevel, getProgressToNextLevel } from "@/lib/rewards";
+import { calculateLevel, getProgressToNextLevel } from "@/lib/rewards";
 import { cn } from "@/lib/utils";
 
 const SKILL_LEVELS = ["Beginner", "Intermediate", "Advanced", "Pro"];
-const AVAILABILITY = ["Morning", "Evening", "Weekend", "All-Time"];
 
 export default function ProfilePage() {
   const { user, loading: userLoading } = useUser();
@@ -112,28 +97,12 @@ export default function ProfilePage() {
     setAuthError(null);
     
     const provider = new GoogleAuthProvider();
+    const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
 
-    if (/Android|iPhone|iPad/i.test(navigator.userAgent)) {
-      try {
+    try {
+      if (isMobile) {
         await signInWithRedirect(auth, provider);
-      } catch (error: any) {
-        if (error.code === 'auth/unauthorized-domain') {
-          const domain = typeof window !== 'undefined' ? window.location.hostname : 'your domain';
-          setAuthError(
-            <div className="space-y-4">
-              <p className="text-[10px] text-white/50 leading-relaxed italic">Host domain <span className="text-white font-mono">{domain}</span> unauthorized.</p>
-              <Button size="sm" variant="outline" className="w-full text-[9px] uppercase font-black" onClick={copyHostname}>
-                {copied ? "COPIED" : "COPY HOSTNAME"}
-              </Button>
-            </div>
-          );
-        } else {
-          toast({ title: "Error", description: error.message, variant: "destructive" });
-        }
-        setIsSigningIn(false);
-      }
-    } else {
-      try {
+      } else {
         const result = await signInWithPopup(auth, provider);
         const userResult = result.user;
         
@@ -146,13 +115,23 @@ export default function ProfilePage() {
         }, { merge: true });
 
         toast({ title: "Identity Verified" });
-      } catch (error: any) {
-        if (error.code !== 'auth/popup-closed-by-user') {
-          toast({ title: "Failed", description: error.message, variant: "destructive" });
-        }
-      } finally {
-        setIsSigningIn(false);
       }
+    } catch (error: any) {
+      if (error.code === 'auth/unauthorized-domain') {
+        const domain = typeof window !== 'undefined' ? window.location.hostname : 'your domain';
+        setAuthError(
+          <div className="space-y-4">
+            <p className="text-[10px] text-white/50 leading-relaxed italic">Host domain <span className="text-white font-mono">{domain}</span> unauthorized.</p>
+            <Button size="sm" variant="outline" className="w-full text-[9px] uppercase font-black" onClick={copyHostname}>
+              {copied ? "COPIED" : "COPY HOSTNAME"}
+            </Button>
+          </div>
+        );
+      } else if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+      }
+    } finally {
+      setIsSigningIn(false);
     }
   };
 

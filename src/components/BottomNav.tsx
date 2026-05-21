@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from "next/link";
@@ -15,10 +14,6 @@ export function BottomNav() {
   const db = useFirestore();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  if (pathname.startsWith('/studio') || pathname.startsWith('/admin')) {
-    return null;
-  }
-
   const convosQuery = useMemoFirebase(() => {
     if (!db || !user) return null;
     return query(
@@ -33,6 +28,11 @@ export function BottomNav() {
     if (!convos || !user) return 0;
     return convos.reduce((acc, convo: any) => acc + (convo.unreadCount?.[user.uid] || 0), 0);
   }, [convos, user]);
+
+  // Hook validation: Ensure early returns for route visibility occur AFTER all hook initializations
+  if (pathname.startsWith('/studio') || pathname.startsWith('/admin')) {
+    return null;
+  }
 
   const navItems = [
     { label: "Feed", href: "/", icon: "🏠" },

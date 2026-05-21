@@ -10,7 +10,7 @@ import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 /**
  * FirebaseClientProvider
  * Composes the FirebaseProvider with initialized production services.
- * Breaking circular dependency by avoiding re-exporting this from index.ts.
+ * Handles the mobile redirect result from Google Authentication.
  */
 export function FirebaseClientProvider({ children }: { children: ReactNode }) {
   const { app, db, auth, storage } = useMemo(() => initializeFirebase(), []);
@@ -18,10 +18,15 @@ export function FirebaseClientProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!auth || !db) return;
 
+    // Handle mobile redirect return protocol
     getRedirectResult(auth)
       .then((result) => {
         if (result?.user) {
           const user = result.user;
+          // Tactical log as requested
+          console.log("Logged in:", user.email);
+
+          // Synchronize athlete identity with Firestore registry
           setDoc(doc(db, "users", user.uid), {
             name: user.displayName,
             email: user.email,
@@ -30,12 +35,12 @@ export function FirebaseClientProvider({ children }: { children: ReactNode }) {
             updatedAt: serverTimestamp()
           }, { merge: true })
           .then(() => {
-            console.log("User saved:", user.email);
+            console.log("Identity synchronized for:", user.email);
           });
         }
       })
       .catch(err => {
-        console.error("Redirect error:", err.code);
+        console.error("Redirect protocol error:", err);
       });
   }, [auth, db]);
 

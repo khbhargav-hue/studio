@@ -1,9 +1,9 @@
 'use client';
 
-import React, { createContext, useContext, ReactNode } from 'react';
+import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
 import { FirebaseApp } from 'firebase/app';
 import { Firestore } from 'firebase/firestore';
-import { Auth } from 'firebase/auth';
+import { Auth, User, onAuthStateChanged } from 'firebase/auth';
 import { FirebaseStorage } from 'firebase/storage';
 
 interface FirebaseContextType {
@@ -11,6 +11,8 @@ interface FirebaseContextType {
   firestore: Firestore;
   auth: Auth;
   storage: FirebaseStorage;
+  user: User | null;
+  loading: boolean;
 }
 
 const FirebaseContext = createContext<FirebaseContextType | undefined>(undefined);
@@ -28,8 +30,20 @@ export function FirebaseProvider({
   auth: Auth;
   storage: FirebaseStorage;
 }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (authUser) => {
+      console.log("AUTH_STATE", authUser?.uid || "NO_USER");
+      setUser(authUser);
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, [auth]);
+
   return (
-    <FirebaseContext.Provider value={{ app, firestore, auth, storage }}>
+    <FirebaseContext.Provider value={{ app, firestore, auth, storage, user, loading }}>
       {children}
     </FirebaseContext.Provider>
   );
@@ -57,4 +71,9 @@ export function useAuth() {
 
 export function useStorage() {
   return useFirebase().storage;
+}
+
+export function useAuthContext() {
+  const { user, loading } = useFirebase();
+  return { user, loading };
 }

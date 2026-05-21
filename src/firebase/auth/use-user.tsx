@@ -1,20 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { User, onAuthStateChanged } from 'firebase/auth';
-import { useAuth } from '../provider';
+import { useAuthContext } from '../provider';
 
+/**
+ * useUser Hook
+ * Consumes the centralized auth state from the FirebaseProvider.
+ * Ensures a single source of truth for the athlete session.
+ */
 export function useUser() {
-  const auth = useAuth();
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    return onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      setLoading(false);
-    });
-  }, [auth]);
-
-  return { user, loading };
+  return useAuthContext();
 }

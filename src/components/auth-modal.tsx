@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from "react";
@@ -49,38 +48,28 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
     if (!auth || !db) return;
     setIsLoading(true);
     setError(null);
-    console.log("AUTH_START: Google");
+    console.log("LOGIN_START: Google");
     
     const provider = new GoogleAuthProvider();
     const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
 
     try {
-      // 1. Mandatory Persistence Enforce
+      // 1. Force Local Persistence BEFORE Provider Trigger
       await setPersistence(auth, browserLocalPersistence);
 
       if (isMobile) {
-        // 2. Mobile Redirect Cycle
+        // 2. Mobile Redirect Strategy
         await signInWithRedirect(auth, provider);
       } else {
-        // 3. Desktop Popup Cycle
+        // 3. Desktop Popup Strategy
         const result = await signInWithPopup(auth, provider);
-        const user = result.user;
+        console.log("LOGIN_SUCCESS", result.user.uid);
         
-        await setDoc(doc(db, "users", user.uid), {
-          name: user.displayName,
-          email: user.email,
-          photoURL: user.photoURL,
-          role: "user",
-          updatedAt: serverTimestamp()
-        }, { merge: true });
-
-        console.log("AUTH_SUCCESS", user.uid);
-        localStorage.setItem("userLoggedIn", "true");
-        toast({ title: "Identity Verified" });
         if (onOpenChange) onOpenChange(false);
+        toast({ title: "Identity Verified" });
       }
     } catch (err: any) {
-      console.log("AUTH_FAIL", err.code);
+      console.log("LOGIN_FAIL", err.code);
       if (err.code === 'auth/unauthorized-domain') {
         const domain = typeof window !== 'undefined' ? window.location.hostname : 'your domain';
         setError(
@@ -109,10 +98,11 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
     try {
       await setPersistence(auth, browserLocalPersistence);
       await signInWithEmailAndPassword(auth, email, password);
-      localStorage.setItem("userLoggedIn", "true");
-      toast({ title: "Welcome Athlete" });
+      console.log("LOGIN_SUCCESS");
       if (onOpenChange) onOpenChange(false);
+      toast({ title: "Welcome Athlete" });
     } catch (err: any) {
+      console.log("LOGIN_FAIL", err.code);
       toast({ title: "Invalid Credentials", variant: "destructive" });
     } finally {
       setIsLoading(false);
@@ -129,20 +119,11 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(userCredential.user, { displayName: name });
       
-      if (db) {
-        await setDoc(doc(db, "users", userCredential.user.uid), {
-          name: name,
-          email: email,
-          photoURL: "",
-          role: "user",
-          updatedAt: serverTimestamp()
-        }, { merge: true });
-      }
-
-      localStorage.setItem("userLoggedIn", "true");
-      toast({ title: "Profile Registered" });
+      console.log("LOGIN_SUCCESS", userCredential.user.uid);
       if (onOpenChange) onOpenChange(false);
+      toast({ title: "Profile Registered" });
     } catch (err: any) {
+      console.log("LOGIN_FAIL", err.code);
       toast({ title: "Registration Blocked", variant: "destructive" });
     } finally {
       setIsLoading(false);

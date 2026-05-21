@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from "react";
@@ -40,7 +39,7 @@ export default function MePage() {
   const handleSignIn = async () => {
     if (!auth || !db) return;
     setIsSigningIn(true);
-    console.log("AUTH_START: Me Google");
+    console.log("LOGIN_START: Me Google");
     
     const provider = new GoogleAuthProvider();
     const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
@@ -52,22 +51,11 @@ export default function MePage() {
         await signInWithRedirect(auth, provider);
       } else {
         const result = await signInWithPopup(auth, provider);
-        const userResult = result.user;
-        
-        await setDoc(doc(db, "users", userResult.uid), {
-          name: userResult.displayName,
-          email: userResult.email,
-          photoURL: userResult.photoURL,
-          role: "user",
-          updatedAt: serverTimestamp()
-        }, { merge: true });
-
-        console.log("AUTH_SUCCESS", userResult.uid);
-        localStorage.setItem("userLoggedIn", "true");
+        console.log("LOGIN_SUCCESS", result.user.uid);
         toast({ title: "Identity Verified" });
       }
     } catch (err: any) {
-      console.log("AUTH_FAIL", err.code);
+      console.log("LOGIN_FAIL", err.code);
       if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
         toast({ title: "Auth Failed", description: err.message, variant: "destructive" });
       }
@@ -78,7 +66,6 @@ export default function MePage() {
 
   const handleSignOut = () => {
     if (!auth) return;
-    localStorage.removeItem("userLoggedIn");
     signOut(auth).then(() => {
       router.push("/");
       toast({ title: "Protocol Terminated" });

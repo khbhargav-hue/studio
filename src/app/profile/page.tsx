@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from "react";
@@ -85,7 +84,7 @@ export default function ProfilePage() {
   const handleGoogleSignIn = async () => {
     if (!auth || !db) return;
     setIsSigningIn(true);
-    console.log("AUTH_START: Profile Google");
+    console.log("LOGIN_START: Profile Google");
     
     const provider = new GoogleAuthProvider();
     const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
@@ -97,22 +96,11 @@ export default function ProfilePage() {
         await signInWithRedirect(auth, provider);
       } else {
         const result = await signInWithPopup(auth, provider);
-        const userResult = result.user;
-        
-        await setDoc(doc(db, "users", userResult.uid), {
-          name: userResult.displayName,
-          email: userResult.email,
-          photoURL: userResult.photoURL,
-          role: "user",
-          updatedAt: serverTimestamp()
-        }, { merge: true });
-
-        console.log("AUTH_SUCCESS", userResult.uid);
-        localStorage.setItem("userLoggedIn", "true");
+        console.log("LOGIN_SUCCESS", result.user.uid);
         toast({ title: "Identity Verified" });
       }
     } catch (error: any) {
-      console.log("AUTH_FAIL", error.code);
+      console.log("LOGIN_FAIL", error.code);
       if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
         toast({ title: "Error", description: error.message, variant: "destructive" });
       }
@@ -212,7 +200,7 @@ export default function ProfilePage() {
               </section>
 
               <div className="pt-20">
-                <Button onClick={() => { localStorage.removeItem("userLoggedIn"); signOut(auth!); }} variant="ghost" className="w-full h-16 text-destructive/40 hover:text-destructive uppercase tracking-[0.5em] font-black text-[10px]">
+                <Button onClick={() => signOut(auth!)} variant="ghost" className="w-full h-16 text-destructive/40 hover:text-destructive uppercase tracking-[0.5em] font-black text-[10px]">
                   <LogOut className="mr-3 h-4 w-4" /> TERMINATE PROTOCOL
                 </Button>
               </div>

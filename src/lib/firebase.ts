@@ -5,6 +5,7 @@ import { getAuth } from "firebase/auth";
 /**
  * Unified Firebase Identity Node
  * Centralized configuration for the Turfista Mysuru Network.
+ * Resolved duplicate declaration syntax error.
  */
 const firebaseConfig = {
   apiKey: "AIzaSyD7J3fG4GXUehnNyGRZ_a2ZeFU4cBnSAIQ",

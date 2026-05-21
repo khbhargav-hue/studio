@@ -42,11 +42,17 @@ export default function SocialWallPage() {
     }
   }, []);
 
+  // Simplified Real-Time Listener Node
   useEffect(() => {
+    if (!db) return;
     const unsub = onSnapshot(
       collection(db, "posts"),
-      (snap) => {
-        const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      (snapshot) => {
+        const list: any[] = [];
+        snapshot.forEach((doc) => {
+          list.push({ id: doc.id, ...doc.data() });
+        });
+        // Tactical Client-Side Chronological Sort
         list.sort((a: any, b: any) => {
           const at = a.createdAt?.seconds || 0;
           const bt = b.createdAt?.seconds || 0;
@@ -56,7 +62,6 @@ export default function SocialWallPage() {
         setLoading(false);
       },
       (err) => {
-        console.error("Transmission error:", err);
         setLoading(false);  
       }
     );
@@ -64,6 +69,7 @@ export default function SocialWallPage() {
   }, []);
 
   useEffect(() => {
+    if (!db) return;
     getDocs(collection(db, "ads")).then(snap => {
       setAds(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter((a: any) => a.isActive));
     });
@@ -71,6 +77,7 @@ export default function SocialWallPage() {
 
   const handleLike = (postId: string) => {
     if (likedPosts.includes(postId)) return;
+    if (!db) return;
     
     const postRef = doc(db, "posts", postId);
     updateDoc(postRef, { likes: increment(1) })

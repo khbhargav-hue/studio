@@ -8,8 +8,8 @@ import { onAuthStateChanged } from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 
 /**
- * FirebaseClientProvider (Root Auth Hub)
- * Wraps the entire application circuit to maintain the identity state.
+ * FirebaseClientProvider (Root Identity Hub)
+ * Centralized source of truth for the Turfista session state.
  */
 export function FirebaseClientProvider({ children }: { children: ReactNode }) {
   const { app, db, auth, storage } = useMemo(() => initializeFirebase(), []);
@@ -17,19 +17,21 @@ export function FirebaseClientProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!auth || !db) return;
 
-    // Background Identity Sync Node
+    // Tactical Identity Observer: Absolute source of truth for session status
     const unsub = onAuthStateChanged(auth, (user) => {
+      console.log("AUTH_STATE", user?.uid || "OFFLINE");
+      
       if (user) {
-        console.log("LOGIN_SUCCESS", user.email);
-        
-        // Ensure athlete metadata is synchronized with the registry
+        // Registry Synchronization Protocol
         setDoc(doc(db, "users", user.uid), {
           name: user.displayName,
           email: user.email,
           photoURL: user.photoURL,
           role: "user",
           updatedAt: serverTimestamp()
-        }, { merge: true }).catch(err => console.log("REGISTRY_SYNC_FAIL", err.code));
+        }, { merge: true })
+        .then(() => console.log("LOGIN_SUCCESS", user.email))
+        .catch(err => console.log("REGISTRY_SYNC_FAIL", err.code));
       }
     });
 

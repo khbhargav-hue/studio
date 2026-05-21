@@ -19,12 +19,10 @@ import {
   updateProfile,
   GoogleAuthProvider, 
   signInWithPopup, 
-  signInWithRedirect,
   sendPasswordResetEmail,
   browserLocalPersistence,
   setPersistence
 } from "firebase/auth";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { Loader2, Mail, Lock, User, ShieldCheck, Chrome, AlertCircle, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -36,7 +34,6 @@ interface AuthModalProps {
 
 export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
   const auth = useAuth();
-  const db = useFirestore();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
@@ -45,45 +42,47 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
   const [error, setError] = useState<React.ReactNode | null>(null);
 
   const handleGoogleSignIn = async () => {
-    if (!auth || !db) return;
+    if (!auth) return;
     setIsLoading(true);
     setError(null);
-    console.log("LOGIN_START: Google");
+    console.log("LOGIN_START: Unified Popup");
     
     const provider = new GoogleAuthProvider();
-    const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
 
     try {
-      // 1. Force Local Persistence BEFORE Provider Trigger
+      // 1. Force Local Persistence Cycle
       await setPersistence(auth, browserLocalPersistence);
 
-      if (isMobile) {
-        // 2. Mobile Redirect Strategy
-        await signInWithRedirect(auth, provider);
-      } else {
-        // 3. Desktop Popup Strategy
-        const result = await signInWithPopup(auth, provider);
-        console.log("LOGIN_SUCCESS", result.user.uid);
-        
-        if (onOpenChange) onOpenChange(false);
-        toast({ title: "Identity Verified" });
-      }
+      // 2. Unified Popup Protocol (Prevents mobile session loss)
+      const result = await signInWithPopup(auth, provider);
+      console.log("LOGIN_SUCCESS", result.user.uid);
+      
+      if (onOpenChange) onOpenChange(false);
+      toast({ title: "Identity Verified" });
     } catch (err: any) {
       console.log("LOGIN_FAIL", err.code);
-      if (err.code === 'auth/unauthorized-domain') {
-        const domain = typeof window !== 'undefined' ? window.location.hostname : 'your domain';
+      
+      if (err.code === 'auth/popup-blocked') {
         setError(
           <div className="space-y-4">
-            <div className="flex items-center gap-2 text-destructive font-black text-[10px] uppercase tracking-tighter">
-              <AlertCircle className="h-4 w-4" /> Domain Not Authorized
+            <div className="flex items-center gap-2 text-primary font-black text-[10px] uppercase tracking-tighter">
+              <AlertCircle className="h-4 w-4" /> Popup Blocked
             </div>
-            <p className="text-[10px] leading-relaxed opacity-70">
-              Host <code className="bg-destructive/10 px-1 py-0.5 rounded text-white font-mono">{domain}</code> is not authorized.
+            <p className="text-[10px] leading-relaxed text-white">
+              Tactical protocol interrupted. Please enable popups or <span className="text-primary font-bold">Open in Chrome browser</span> to complete verification.
             </p>
           </div>
         );
+      } else if (err.code === 'auth/unauthorized-domain') {
+        const domain = typeof window !== 'undefined' ? window.location.hostname : 'domain';
+        setError(
+          <div className="space-y-2">
+            <p className="text-destructive font-bold text-[10px] uppercase">Domain Not Authorized</p>
+            <p className="text-[10px] opacity-70">Add {domain} to authorized list in Firebase console.</p>
+          </div>
+        );
       } else if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
-        toast({ title: "Authentication Failed", description: err.message, variant: "destructive" });
+        toast({ title: "Auth Failed", description: err.message, variant: "destructive" });
       }
     } finally {
       setIsLoading(false);
@@ -98,11 +97,9 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
     try {
       await setPersistence(auth, browserLocalPersistence);
       await signInWithEmailAndPassword(auth, email, password);
-      console.log("LOGIN_SUCCESS");
       if (onOpenChange) onOpenChange(false);
       toast({ title: "Welcome Athlete" });
     } catch (err: any) {
-      console.log("LOGIN_FAIL", err.code);
       toast({ title: "Invalid Credentials", variant: "destructive" });
     } finally {
       setIsLoading(false);
@@ -118,12 +115,9 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
       await setPersistence(auth, browserLocalPersistence);
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(userCredential.user, { displayName: name });
-      
-      console.log("LOGIN_SUCCESS", userCredential.user.uid);
       if (onOpenChange) onOpenChange(false);
       toast({ title: "Profile Registered" });
     } catch (err: any) {
-      console.log("LOGIN_FAIL", err.code);
       toast({ title: "Registration Blocked", variant: "destructive" });
     } finally {
       setIsLoading(false);
@@ -158,7 +152,7 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
         </DialogHeader>
 
         {error && (
-          <div className="bg-destructive/5 border border-destructive/20 rounded-[20px] p-6 mb-8 animate-in zoom-in-95 duration-200">
+          <div className="bg-white/5 border border-white/10 rounded-[20px] p-6 mb-8 animate-in zoom-in-95 duration-200">
             <div className="text-xs font-medium">{error}</div>
             <Button variant="ghost" size="sm" onClick={() => setError(null)} className="mt-4 w-full text-[10px] uppercase font-black text-white/40"><RefreshCw className="h-3 w-3 mr-2" /> Retry</Button>
           </div>

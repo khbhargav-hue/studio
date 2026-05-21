@@ -3,9 +3,9 @@
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useUser, useAuth, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut, setPersistence, browserLocalPersistence } from "firebase/auth";
-import { collection, query, where, doc, setDoc, serverTimestamp } from "firebase/firestore";
-import { UserCircle, LogOut, LayoutGrid, Zap, MessageSquare, ChevronRight, Loader2, Chrome } from "lucide-react";
+import { GoogleAuthProvider, signInWithPopup, setPersistence, browserLocalPersistence } from "firebase/auth";
+import { collection, query, where } from "firebase/firestore";
+import { UserCircle, LogOut, LayoutGrid, Zap, MessageSquare, ChevronRight, Loader2, Chrome, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import PostCard from "@/components/PostCard";
@@ -20,6 +20,7 @@ export default function MePage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   const myPostsQuery = useMemoFirebase(() => {
     if (!db || !user) return null;
@@ -37,26 +38,23 @@ export default function MePage() {
   }, [rawMyPosts]);
 
   const handleSignIn = async () => {
-    if (!auth || !db) return;
+    if (!auth) return;
     setIsSigningIn(true);
-    console.log("LOGIN_START: Me Google");
+    setAuthError(null);
+    console.log("LOGIN_START: Me Popup");
     
     const provider = new GoogleAuthProvider();
-    const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
 
     try {
       await setPersistence(auth, browserLocalPersistence);
-
-      if (isMobile) {
-        await signInWithRedirect(auth, provider);
-      } else {
-        const result = await signInWithPopup(auth, provider);
-        console.log("LOGIN_SUCCESS", result.user.uid);
-        toast({ title: "Identity Verified" });
-      }
+      const result = await signInWithPopup(auth, provider);
+      console.log("LOGIN_SUCCESS", result.user.uid);
+      toast({ title: "Identity Verified" });
     } catch (err: any) {
       console.log("LOGIN_FAIL", err.code);
-      if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
+      if (err.code === 'auth/popup-blocked') {
+        setAuthError("Popup blocked. Open in Chrome browser.");
+      } else if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
         toast({ title: "Auth Failed", description: err.message, variant: "destructive" });
       }
     } finally {
@@ -66,7 +64,7 @@ export default function MePage() {
 
   const handleSignOut = () => {
     if (!auth) return;
-    signOut(auth).then(() => {
+    auth.signOut().then(() => {
       router.push("/");
       toast({ title: "Protocol Terminated" });
     });
@@ -84,6 +82,13 @@ export default function MePage() {
         </div>
         <h1 className="text-3xl font-black italic uppercase tracking-tighter mb-4">Identify Yourself</h1>
         <p className="text-[#888] max-w-xs mb-8 italic">Join the Mysuru athlete circuit to recruit players and visit arenas.</p>
+        
+        {authError && (
+          <div className="mb-6 p-4 bg-primary/10 border border-primary/20 rounded-xl flex items-center gap-3 text-primary text-xs font-bold uppercase italic max-w-sm w-full mx-auto">
+            <AlertCircle className="h-4 w-4" /> {authError}
+          </div>
+        )}
+
         <Button 
           onClick={handleSignIn} 
           disabled={isSigningIn}

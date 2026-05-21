@@ -11,15 +11,16 @@ import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUser, useAuth, useFirestore, useDoc, useMemoFirebase } from "@/firebase";
-import { GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut, setPersistence, browserLocalPersistence } from "firebase/auth";
-import { doc, setDoc, serverTimestamp, updateDoc } from "firebase/firestore";
+import { GoogleAuthProvider, signInWithPopup, setPersistence, browserLocalPersistence } from "firebase/auth";
+import { doc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { 
   UserCircle, 
   LogOut, 
   Loader2,
   Star,
   Save,
-  Chrome
+  Chrome,
+  AlertCircle
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { calculateLevel, getProgressToNextLevel } from "@/lib/rewards";
@@ -34,6 +35,7 @@ export default function ProfilePage() {
   const { toast } = useToast();
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
   
   const userProfileRef = useMemoFirebase(() => {
     if (!db || !user) return null;
@@ -82,26 +84,23 @@ export default function ProfilePage() {
   };
 
   const handleGoogleSignIn = async () => {
-    if (!auth || !db) return;
+    if (!auth) return;
     setIsSigningIn(true);
-    console.log("LOGIN_START: Profile Google");
+    setAuthError(null);
+    console.log("LOGIN_START: Profile Popup");
     
     const provider = new GoogleAuthProvider();
-    const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
 
     try {
       await setPersistence(auth, browserLocalPersistence);
-
-      if (isMobile) {
-        await signInWithRedirect(auth, provider);
-      } else {
-        const result = await signInWithPopup(auth, provider);
-        console.log("LOGIN_SUCCESS", result.user.uid);
-        toast({ title: "Identity Verified" });
-      }
+      const result = await signInWithPopup(auth, provider);
+      console.log("LOGIN_SUCCESS", result.user.uid);
+      toast({ title: "Identity Verified" });
     } catch (error: any) {
       console.log("LOGIN_FAIL", error.code);
-      if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
+      if (error.code === 'auth/popup-blocked') {
+        setAuthError("Popup blocked. Open in Chrome browser.");
+      } else if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
         toast({ title: "Error", description: error.message, variant: "destructive" });
       }
     } finally {
@@ -131,6 +130,12 @@ export default function ProfilePage() {
               <h1 className="text-5xl font-black tracking-tighter uppercase italic mb-6">Identity <span className="text-primary">Required</span></h1>
               <p className="text-white/40 text-lg mb-8 leading-relaxed font-medium italic">Join the Mysuru athlete circuit to form squads and earn Turf Coins.</p>
               
+              {authError && (
+                <div className="mb-6 p-4 bg-primary/10 border border-primary/20 rounded-xl flex items-center gap-3 text-primary text-xs font-bold uppercase italic">
+                  <AlertCircle className="h-4 w-4" /> {authError}
+                </div>
+              )}
+
               <Button onClick={handleGoogleSignIn} disabled={isSigningIn} className="w-full h-20 bg-primary text-black font-black uppercase tracking-widest rounded-[2rem] shadow-xl shadow-primary/20">
                 {isSigningIn ? <Loader2 className="h-6 w-6 animate-spin" /> : <><Chrome className="mr-3 h-6 w-6" /> Identify with Google</>}
               </Button>
@@ -200,7 +205,7 @@ export default function ProfilePage() {
               </section>
 
               <div className="pt-20">
-                <Button onClick={() => signOut(auth!)} variant="ghost" className="w-full h-16 text-destructive/40 hover:text-destructive uppercase tracking-[0.5em] font-black text-[10px]">
+                <Button onClick={() => auth?.signOut()} variant="ghost" className="w-full h-16 text-destructive/40 hover:text-destructive uppercase tracking-[0.5em] font-black text-[10px]">
                   <LogOut className="mr-3 h-4 w-4" /> TERMINATE PROTOCOL
                 </Button>
               </div>

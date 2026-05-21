@@ -1,16 +1,16 @@
+
 'use client';
 
 import React, { ReactNode, useMemo, useEffect } from 'react';
 import { initializeFirebase } from './index';
 import { FirebaseProvider } from './provider';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
-import { getRedirectResult, onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, getRedirectResult } from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 
 /**
- * FirebaseClientProvider
- * Composes the FirebaseProvider and handles global authentication side-effects.
- * Captures redirect results from mobile Google sign-in.
+ * FirebaseClientProvider (AuthProvider Hub)
+ * Centralized session monitor and identity synchronization node.
  */
 export function FirebaseClientProvider({ children }: { children: ReactNode }) {
   const { app, db, auth, storage } = useMemo(() => initializeFirebase(), []);
@@ -18,32 +18,41 @@ export function FirebaseClientProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!auth || !db) return;
 
-    // 4. On app startup: Global Auth Monitor
+    console.log("AUTH_START: Identity Monitor Active");
+
+    // Primary Identity Truth Circuit
     const unsub = onAuthStateChanged(auth, (user) => {
+      console.log("AUTH_CHANGED", user?.uid || "NO_IDENTITY");
+      
       if (user) {
-        console.log("LOGIN_SUCCESS", user.uid);
+        console.log("AUTH_SUCCESS", user.email);
+        localStorage.setItem("userLoggedIn", "true");
+        
+        // Background Identity Sync
+        setDoc(doc(db, "users", user.uid), {
+          name: user.displayName,
+          email: user.email,
+          photoURL: user.photoURL,
+          role: "user",
+          updatedAt: serverTimestamp()
+        }, { merge: true }).catch(err => console.log("SYNC_WARNING", err.code));
+        
+      } else {
+        localStorage.removeItem("userLoggedIn");
       }
     });
 
-    // Capture identity signals returning from Google mobile redirect
+    // Capture Redirect Results (Mobile)
     getRedirectResult(auth)
       .then((result) => {
         if (result?.user) {
-          const user = result.user;
-          console.log("REDIRECT_SUCCESS", user.uid);
-
-          // Synchronize identity with registry
-          setDoc(doc(db, "users", user.uid), {
-            name: user.displayName,
-            email: user.email,
-            photoURL: user.photoURL,
-            role: "user",
-            updatedAt: serverTimestamp()
-          }, { merge: true });
+          console.log("REDIRECT_SUCCESS", result.user.uid);
         }
       })
       .catch(err => {
-        console.error("REDIRECT_ERROR", err.code);
+        if (err.code !== 'auth/popup-closed-by-user') {
+          console.log("AUTH_FAIL: Redirect", err.code);
+        }
       });
 
     return () => unsub();

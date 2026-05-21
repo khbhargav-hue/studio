@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from "react";
@@ -25,7 +26,7 @@ import {
   setPersistence
 } from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
-import { Loader2, Mail, Lock, User, ShieldCheck, Chrome, AlertCircle, ExternalLink, RefreshCw, Copy, CheckCircle2 } from "lucide-react";
+import { Loader2, Mail, Lock, User, ShieldCheck, Chrome, AlertCircle, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface AuthModalProps {
@@ -43,32 +44,25 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [error, setError] = useState<React.ReactNode | null>(null);
-  const [copied, setCopied] = useState(false);
-
-  const copyHostname = () => {
-    if (typeof window !== 'undefined') {
-      navigator.clipboard.writeText(window.location.hostname);
-      setCopied(true);
-    }
-  };
 
   const handleGoogleSignIn = async () => {
     if (!auth || !db) return;
     setIsLoading(true);
     setError(null);
+    console.log("AUTH_START: Google");
     
     const provider = new GoogleAuthProvider();
     const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
 
     try {
-      // 1. Ensure persistence
+      // 1. Mandatory Persistence Enforce
       await setPersistence(auth, browserLocalPersistence);
 
       if (isMobile) {
-        // 2. Mobile: Redirect modality
+        // 2. Mobile Redirect Cycle
         await signInWithRedirect(auth, provider);
       } else {
-        // 3. Desktop: Popup modality
+        // 3. Desktop Popup Cycle
         const result = await signInWithPopup(auth, provider);
         const user = result.user;
         
@@ -80,10 +74,13 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
           updatedAt: serverTimestamp()
         }, { merge: true });
 
+        console.log("AUTH_SUCCESS", user.uid);
+        localStorage.setItem("userLoggedIn", "true");
         toast({ title: "Identity Verified" });
         if (onOpenChange) onOpenChange(false);
       }
     } catch (err: any) {
+      console.log("AUTH_FAIL", err.code);
       if (err.code === 'auth/unauthorized-domain') {
         const domain = typeof window !== 'undefined' ? window.location.hostname : 'your domain';
         setError(
@@ -92,11 +89,8 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
               <AlertCircle className="h-4 w-4" /> Domain Not Authorized
             </div>
             <p className="text-[10px] leading-relaxed opacity-70">
-              This host (<code className="bg-destructive/10 px-1 py-0.5 rounded text-white font-mono">{domain}</code>) is not authorized.
+              Host <code className="bg-destructive/10 px-1 py-0.5 rounded text-white font-mono">{domain}</code> is not authorized.
             </p>
-            <Button size="sm" onClick={copyHostname} className="w-full text-[9px] uppercase font-black tracking-widest bg-primary/10 text-primary">
-              {copied ? "COPIED" : "COPY HOSTNAME"}
-            </Button>
           </div>
         );
       } else if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
@@ -115,6 +109,7 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
     try {
       await setPersistence(auth, browserLocalPersistence);
       await signInWithEmailAndPassword(auth, email, password);
+      localStorage.setItem("userLoggedIn", "true");
       toast({ title: "Welcome Athlete" });
       if (onOpenChange) onOpenChange(false);
     } catch (err: any) {
@@ -144,6 +139,7 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
         }, { merge: true });
       }
 
+      localStorage.setItem("userLoggedIn", "true");
       toast({ title: "Profile Registered" });
       if (onOpenChange) onOpenChange(false);
     } catch (err: any) {

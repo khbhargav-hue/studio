@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from "react";
@@ -19,8 +20,7 @@ import {
   Loader2,
   Star,
   Save,
-  AlertCircle,
-  Copy
+  Chrome
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { calculateLevel, getProgressToNextLevel } from "@/lib/rewards";
@@ -35,8 +35,6 @@ export default function ProfilePage() {
   const { toast } = useToast();
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [authError, setAuthError] = useState<React.ReactNode | null>(null);
-  const [copied, setCopied] = useState(false);
   
   const userProfileRef = useMemoFirebase(() => {
     if (!db || !user) return null;
@@ -67,13 +65,6 @@ export default function ProfilePage() {
     }
   }, [profile]);
 
-  const copyHostname = () => {
-    if (typeof window !== 'undefined') {
-      navigator.clipboard.writeText(window.location.hostname);
-      setCopied(true);
-    }
-  };
-
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!db || !user) return;
@@ -94,7 +85,7 @@ export default function ProfilePage() {
   const handleGoogleSignIn = async () => {
     if (!auth || !db) return;
     setIsSigningIn(true);
-    setAuthError(null);
+    console.log("AUTH_START: Profile Google");
     
     const provider = new GoogleAuthProvider();
     const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
@@ -116,20 +107,13 @@ export default function ProfilePage() {
           updatedAt: serverTimestamp()
         }, { merge: true });
 
+        console.log("AUTH_SUCCESS", userResult.uid);
+        localStorage.setItem("userLoggedIn", "true");
         toast({ title: "Identity Verified" });
       }
     } catch (error: any) {
-      if (error.code === 'auth/unauthorized-domain') {
-        const domain = typeof window !== 'undefined' ? window.location.hostname : 'your domain';
-        setAuthError(
-          <div className="space-y-4">
-            <p className="text-[10px] text-white/50 leading-relaxed italic">Host domain <span className="text-white font-mono">{domain}</span> unauthorized.</p>
-            <Button size="sm" variant="outline" className="w-full text-[9px] uppercase font-black" onClick={copyHostname}>
-              {copied ? "COPIED" : "COPY HOSTNAME"}
-            </Button>
-          </div>
-        );
-      } else if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
+      console.log("AUTH_FAIL", error.code);
+      if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
         toast({ title: "Error", description: error.message, variant: "destructive" });
       }
     } finally {
@@ -159,13 +143,9 @@ export default function ProfilePage() {
               <h1 className="text-5xl font-black tracking-tighter uppercase italic mb-6">Identity <span className="text-primary">Required</span></h1>
               <p className="text-white/40 text-lg mb-8 leading-relaxed font-medium italic">Join the Mysuru athlete circuit to form squads and earn Turf Coins.</p>
               
-              {authError && <div className="mb-10">{authError}</div>}
-
-              {!authError && (
-                <Button onClick={handleGoogleSignIn} disabled={isSigningIn} className="w-full h-20 bg-primary text-black font-black uppercase tracking-widest rounded-[2rem] shadow-xl shadow-primary/20">
-                  {isSigningIn ? <Loader2 className="h-6 w-6 animate-spin" /> : "Identify with Google"}
-                </Button>
-              )}
+              <Button onClick={handleGoogleSignIn} disabled={isSigningIn} className="w-full h-20 bg-primary text-black font-black uppercase tracking-widest rounded-[2rem] shadow-xl shadow-primary/20">
+                {isSigningIn ? <Loader2 className="h-6 w-6 animate-spin" /> : <><Chrome className="mr-3 h-6 w-6" /> Identify with Google</>}
+              </Button>
             </div>
           ) : (
             <div className="space-y-12 animate-in fade-in duration-700">
@@ -232,7 +212,7 @@ export default function ProfilePage() {
               </section>
 
               <div className="pt-20">
-                <Button onClick={() => signOut(auth!)} variant="ghost" className="w-full h-16 text-destructive/40 hover:text-destructive uppercase tracking-[0.5em] font-black text-[10px]">
+                <Button onClick={() => { localStorage.removeItem("userLoggedIn"); signOut(auth!); }} variant="ghost" className="w-full h-16 text-destructive/40 hover:text-destructive uppercase tracking-[0.5em] font-black text-[10px]">
                   <LogOut className="mr-3 h-4 w-4" /> TERMINATE PROTOCOL
                 </Button>
               </div>

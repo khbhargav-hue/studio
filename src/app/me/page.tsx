@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from "react";
@@ -5,12 +6,13 @@ import { useRouter } from "next/navigation";
 import { useUser, useAuth, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
 import { collection, query, where, deleteDoc, doc } from "firebase/firestore";
-import { UserCircle, LogOut, LayoutGrid, Zap } from "lucide-react";
+import { UserCircle, LogOut, LayoutGrid, Zap, MessageSquare, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import PostCard from "@/components/PostCard";
 import { SkeletonCard } from "@/components/Skeleton";
 import { useToast } from "@/hooks/use-toast";
+import Link from "next/link";
 
 export default function MePage() {
   const { user, loading: userLoading } = useUser();
@@ -122,6 +124,21 @@ export default function MePage() {
           <Badge className="bg-primary/10 text-primary border-primary/20 font-black uppercase tracking-widest text-[9px] px-3 py-1">
             Verified Athlete
           </Badge>
+        </div>
+
+        <div className="space-y-4 mb-12">
+          <Link href="/messages" className="flex items-center justify-between p-6 bg-[#111] border border-[#222] rounded-xl hover:border-primary/40 transition-all group">
+            <div className="flex items-center gap-4">
+              <div className="h-10 w-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary border border-primary/20">
+                <MessageSquare className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-sm font-black uppercase italic text-white">Direct Signals</p>
+                <p className="text-[10px] font-bold text-[#444] uppercase tracking-widest">Tactical Private Chat</p>
+              </div>
+            </div>
+            <ChevronRight className="h-4 w-4 text-white/10 group-hover:text-primary transition-all" />
+          </Link>
         </div>
 
         <div className="grid grid-cols-3 gap-[1px] bg-[#222] border border-[#222] rounded-xl overflow-hidden mb-12">

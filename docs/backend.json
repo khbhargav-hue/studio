@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "Turf": {
@@ -54,32 +55,34 @@
         "createdAt": { "type": "object" }
       }
     },
-    "Ad": {
-      "title": "Ad",
-      "description": "Sponsored content node",
+    "Conversation": {
+      "title": "Conversation",
+      "description": "A private chat session between two athletes",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
-        "title": { "type": "string" },
-        "imageUrl": { "type": "string" },
-        "targetUrl": { "type": "string" },
-        "placement": { "type": "string" },
-        "isActive": { "type": "boolean" },
-        "clickCount": { "type": "number" }
+        "participants": { "type": "array", "items": { "type": "string" } },
+        "participantNames": { "type": "object" },
+        "participantPhotos": { "type": "object" },
+        "lastMessage": { "type": "string" },
+        "lastMessageTime": { "type": "object" },
+        "unreadCount": { "type": "object" },
+        "relatedPostId": { "type": "string" },
+        "createdAt": { "type": "object" }
       }
     },
-    "Sponsor": {
-      "title": "Sponsor",
-      "description": "Platform partner node",
+    "Message": {
+      "title": "Message",
+      "description": "A single communication node within a conversation",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
-        "name": { "type": "string" },
-        "logoUrl": { "type": "string" },
-        "website": { "type": "string" },
-        "category": { "type": "string", "enum": ["Sports Brand", "Equipment", "Academy", "Local Business"] },
-        "tier": { "type": "string", "enum": ["Gold", "Silver", "Bronze"] },
-        "isActive": { "type": "boolean" }
+        "text": { "type": "string" },
+        "senderId": { "type": "string" },
+        "senderName": { "type": "string" },
+        "senderPhoto": { "type": "string" },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "object" }
       }
     }
   },
@@ -99,17 +102,13 @@
       "schema": "Post",
       "description": "Social wall posts"
     },
-    "/ads/{adId}": {
-      "schema": "Ad",
-      "description": "Sponsored nodes"
+    "/conversations/{convoId}": {
+      "schema": "Conversation",
+      "description": "Direct message threads"
     },
-    "/sponsors/{sponsorId}": {
-      "schema": "Sponsor",
-      "description": "Platform partners"
-    },
-    "/settings/branding": {
-      "schema": "object",
-      "description": "Platform global config"
+    "/conversations/{convoId}/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Thread communications"
     }
   }
 }

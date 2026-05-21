@@ -3,9 +3,9 @@
 
 import { useState } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { Trash2, Heart, MessageCircle, Share2, MapPin, Users, Send, X, Edit2 } from "lucide-react";
+import { Trash2, Heart, MessageCircle, Share2, Users, Send, X, Edit2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { doc, deleteDoc, getFirestore, addDoc, collection, serverTimestamp, updateDoc } from "firebase/firestore";
+import { doc, deleteDoc, getFirestore, addDoc, collection, serverTimestamp, updateDoc, setDoc, increment } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
@@ -17,6 +17,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Textarea } from "./ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 
 interface PostCardProps {
   post: any;
@@ -35,6 +36,7 @@ const optimizeUrl = (url: string) => {
 };
 
 export default function PostCard({ post, currentUser, isAdmin, onLike, hasLiked }: PostCardProps) {
+  const { toast } = useToast();
   const [isReplying, setIsReplying] = useState(false);
   const [replyText, setReplyText] = useState("");
   const [isEditOpen, setEditOpen] = useState(false);
@@ -56,21 +58,58 @@ export default function PostCard({ post, currentUser, isAdmin, onLike, hasLiked 
 
   const handleReply = (postId: string, text: string) => {
     if (!text.trim()) return;
-    if (!auth.currentUser) return;
+    if (!auth.currentUser || !post.postedBy?.uid) return;
     
+    if (auth.currentUser.uid === post.postedBy.uid) {
+      toast({ title: "Self-Signal Detected", description: "You cannot message yourself.", variant: "destructive" });
+      return;
+    }
+
     const dbInstance = getFirestore();
-    addDoc(collection(dbInstance, "posts", postId, "replies"), {
-      text: text,
-      postedBy: {
-        uid: auth.currentUser.uid,
-        name: auth.currentUser.displayName || "Player",
-        photo: auth.currentUser.photoURL || ""
+    const myUid = auth.currentUser.uid;
+    const targetUid = post.postedBy.uid;
+    const convoId = [myUid, targetUid].sort().join("_");
+    
+    const convoRef = doc(dbInstance, "conversations", convoId);
+    const msgRef = collection(dbInstance, "conversations", convoId, "messages");
+
+    const metadata = {
+      participants: [myUid, targetUid],
+      participantNames: {
+        [myUid]: auth.currentUser.displayName || "Player",
+        [targetUid]: post.postedBy.name || "Player"
       },
+      participantPhotos: {
+        [myUid]: auth.currentUser.photoURL || "",
+        [targetUid]: post.postedBy.photo || post.postedBy.photoURL || ""
+      },
+      lastMessage: text,
+      lastMessageTime: serverTimestamp(),
+      unreadCount: {
+        [targetUid]: increment(1),
+        [myUid]: 0
+      },
+      relatedPostId: postId,
+      updatedAt: serverTimestamp(),
       createdAt: serverTimestamp()
-    }).then(() => {
-      setReplyText("");
-      setIsReplying(false);
-    }).catch(() => {});
+    };
+
+    setDoc(convoRef, metadata, { merge: true }).then(() => {
+      addDoc(msgRef, {
+        text: text,
+        senderId: myUid,
+        senderName: auth.currentUser.displayName || "Player",
+        senderPhoto: auth.currentUser.photoURL || "",
+        read: false,
+        createdAt: serverTimestamp()
+      }).then(() => {
+        setReplyText("");
+        setIsReplying(false);
+        toast({ title: "Signal Transmitted 📡", description: `Direct link established with ${post.postedBy.name}` });
+      });
+    }).catch(e => {
+      toast({ title: "Transmission Failed", description: e.message, variant: "destructive" });
+    });
   };
 
   const handleSaveEdit = () => {
@@ -90,7 +129,7 @@ export default function PostCard({ post, currentUser, isAdmin, onLike, hasLiked 
         <div className="flex items-center gap-3">
           <div className="h-9 w-9 rounded-full bg-[#1A1A1A] border border-[#222] p-0.5 overflow-hidden shrink-0">
             <img 
-              src={optimizeUrl(post.postedBy?.photo || `https://picsum.photos/seed/${post.postedBy?.uid}/100`)} 
+              src={optimizeUrl(post.postedBy?.photo || post.postedBy?.photoURL || `https://picsum.photos/seed/${post.postedBy?.uid}/100`)} 
               className="h-full w-full object-cover rounded-full" 
               alt="Athlete" 
               loading="lazy"
@@ -164,7 +203,7 @@ export default function PostCard({ post, currentUser, isAdmin, onLike, hasLiked 
             )}
           >
             <MessageCircle className="h-4 w-4" />
-            <span className="text-[13px] font-black uppercase tracking-widest">Reply</span>
+            <span className="text-[13px] font-black uppercase tracking-widest">Message</span>
           </button>
         </div>
         <button 
@@ -181,7 +220,7 @@ export default function PostCard({ post, currentUser, isAdmin, onLike, hasLiked 
         <div className="mt-4 pt-4 border-t border-white/5 animate-in slide-in-from-top-2 duration-200">
           <div className="flex gap-2">
             <Input 
-              placeholder="Type your response..." 
+              placeholder="Send private message..." 
               className="h-10 bg-white/5 border-white/10 text-white text-xs italic"
               value={replyText}
               onChange={(e) => setReplyText(e.target.value)}
@@ -206,6 +245,7 @@ export default function PostCard({ post, currentUser, isAdmin, onLike, hasLiked 
               <X className="h-4 w-4" />
             </button>
           </div>
+          <p className="text-[9px] font-bold text-white/20 uppercase tracking-widest mt-2 px-1">Reply starts a direct tactical link</p>
         </div>
       )}
 

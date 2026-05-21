@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
@@ -58,18 +57,26 @@ export default function SponsorsPage() {
     const currentUser = auth.currentUser;
     if (!currentUser || !db) return;
     
-    getDoc(doc(db, "users", currentUser.uid)).then(snap => {
-      if (snap.exists()) {
-        setIsAdmin(snap.data().role === "admin");
-      } else {
-        setDoc(doc(db, "users", currentUser.uid), {
-          name: currentUser.displayName || "Player",
-          email: currentUser.email,
-          role: "user",
-          createdAt: serverTimestamp()
-        });
-      }
-    });
+    getDoc(doc(db, "users", currentUser.uid))
+      .then(snap => {
+        if (snap.exists()) {
+          setIsAdmin(snap.data().role === "admin");
+        } else {
+          setDoc(doc(db, "users", currentUser.uid), {
+            name: currentUser.displayName || "Player",
+            email: currentUser.email,
+            role: "user",
+            createdAt: serverTimestamp()
+          });
+        }
+      })
+      .catch(err => {
+        if (err.code === "unavailable") {
+          console.log("Offline - using cached data for identity check");
+        } else {
+          console.error("Identity verification error:", err);
+        }
+      });
   }, [user, db]);
 
   // Form State

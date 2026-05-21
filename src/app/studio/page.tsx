@@ -17,7 +17,7 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { Edit2, Trash2, Plus, Zap, Users, Trophy, UserCheck, Database, LayoutDashboard, RefreshCw } from 'lucide-react';
-import Link from 'next/link';
+import Link from 'link';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from "@/lib/utils";
 import { mysuuruTurfs } from '@/lib/seed-circuit';
@@ -32,7 +32,9 @@ export default function StudioDashboard() {
   // Connection Telemetry Circuit
   useEffect(() => {
     // Initial check on mount to prevent hydration mismatch
-    setIsOnline(navigator.onLine);
+    if (typeof navigator !== 'undefined') {
+      setIsOnline(navigator.onLine);
+    }
 
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
@@ -51,18 +53,26 @@ export default function StudioDashboard() {
     const currentUser = auth.currentUser;
     if (!currentUser || !db) return;
     
-    getDoc(doc(db, "users", currentUser.uid)).then(snap => {
-      if (snap.exists()) {
-        setIsAdmin(snap.data().role === "admin");
-      } else {
-        setDoc(doc(db, "users", currentUser.uid), {
-          name: currentUser.displayName || "Player",
-          email: currentUser.email,
-          role: "user",
-          createdAt: serverTimestamp()
-        });
-      }
-    });
+    getDoc(doc(db, "users", currentUser.uid))
+      .then(snap => {
+        if (snap.exists()) {
+          setIsAdmin(snap.data().role === "admin");
+        } else {
+          setDoc(doc(db, "users", currentUser.uid), {
+            name: currentUser.displayName || "Player",
+            email: currentUser.email,
+            role: "user",
+            createdAt: serverTimestamp()
+          });
+        }
+      })
+      .catch(err => {
+        if (err.code === "unavailable") {
+          console.log("Offline - using cached data for identity check");
+        } else {
+          console.error("Identity verification error:", err);
+        }
+      });
   }, [user, db]);
 
   const turfsQuery = useMemoFirebase(() => {

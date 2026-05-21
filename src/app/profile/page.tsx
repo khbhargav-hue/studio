@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from "react";
@@ -12,7 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUser, useAuth, useFirestore, useDoc, useMemoFirebase } from "@/firebase";
-import { GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut } from "firebase/auth";
+import { GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut, getAuth } from "firebase/auth";
 import { doc, setDoc, serverTimestamp, updateDoc, getDoc } from "firebase/firestore";
 import { 
   UserCircle, 
@@ -76,18 +75,26 @@ export default function ProfilePage() {
     const currentUser = authInstance.currentUser;
     if (!currentUser || !db) return;
     
-    getDoc(doc(db, "users", currentUser.uid)).then(snap => {
-      if (snap.exists()) {
-        setIsAdmin(snap.data().role === "admin");
-      } else {
-        setDoc(doc(db, "users", currentUser.uid), {
-          name: currentUser.displayName || "Player",
-          email: currentUser.email,
-          role: "user",
-          createdAt: serverTimestamp()
-        });
-      }
-    });
+    getDoc(doc(db, "users", currentUser.uid))
+      .then(snap => {
+        if (snap.exists()) {
+          setIsAdmin(snap.data().role === "admin");
+        } else {
+          setDoc(doc(db, "users", currentUser.uid), {
+            name: currentUser.displayName || "Player",
+            email: currentUser.email,
+            role: "user",
+            createdAt: serverTimestamp()
+          });
+        }
+      })
+      .catch(err => {
+        if (err.code === "unavailable") {
+          console.log("Offline - using cached data for identity check");
+        } else {
+          console.error("Identity check error:", err);
+        }
+      });
   }, [user, db]);
 
   useEffect(() => {

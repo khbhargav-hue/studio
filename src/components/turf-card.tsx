@@ -1,8 +1,8 @@
+
 'use client';
 
-import Image from "next/image";
 import Link from "next/link";
-import { MapPin, MessageCircle, Clock, Star, Zap, Banknote } from "lucide-react";
+import { MapPin, MessageCircle, Clock, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Turf } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -11,19 +11,27 @@ interface TurfCardProps {
   turf: Turf;
 }
 
+const ERROR_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='200'%3E%3Crect width='400' height='200' fill='%231A1A1A'/%3E%3Ctext x='50%25' y='50%25' fill='%23444' text-anchor='middle' font-size='40'%3E⚽%3C/text%3E%3C/svg%3E";
+
+const optimizeUrl = (url: string) => {
+  if (!url) return url;
+  return url.includes('cloudinary.com') ? `${url}?w=400&q=60&f=webp` : url;
+};
+
 export function TurfCard({ turf }: TurfCardProps) {
   const whatsappUrl = `https://wa.me/${turf.whatsapp}?text=${encodeURIComponent(`Hi! I found ${turf.name} on Turfista and want to ask availability.`)}`;
-  const displayImage = turf.imageUrl || "https://images.unsplash.com/photo-1529900748604-07564a03e7a6?w=800&q=75";
+  const displayImage = optimizeUrl(turf.imageUrl || "https://images.unsplash.com/photo-1529900748604-07564a03e7a6?w=800&q=75");
 
   return (
     <div className="group bg-card border border-border flex flex-col h-full hover:border-primary/40 transition-all duration-200">
       <div className="relative aspect-[16/10] w-full overflow-hidden bg-black">
-        <Image
+        <img
           src={displayImage}
           alt={turf.name}
-          fill
           loading="lazy"
-          className="object-cover group-hover:scale-105 transition-transform duration-500"
+          decoding="async"
+          onError={(e) => { (e.target as any).src = ERROR_IMAGE }}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
         <div className="absolute top-2 left-2 flex gap-1">
           {turf.isPremium && (

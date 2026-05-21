@@ -27,6 +27,13 @@ interface PostCardProps {
   hasLiked: boolean;
 }
 
+const ERROR_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='200'%3E%3Crect width='400' height='200' fill='%231A1A1A'/%3E%3Ctext x='50%25' y='50%25' fill='%23444' text-anchor='middle' font-size='40'%3E⚽%3C/text%3E%3C/svg%3E";
+
+const optimizeUrl = (url: string) => {
+  if (!url) return url;
+  return url.includes('cloudinary.com') ? `${url}?w=400&q=60&f=webp` : url;
+};
+
 export default function PostCard({ post, currentUser, isAdmin, onDelete, onLike, hasLiked }: PostCardProps) {
   const [isReplying, setIsReplying] = useState(false);
   const [replyText, setReplyText] = useState("");
@@ -85,10 +92,12 @@ export default function PostCard({ post, currentUser, isAdmin, onDelete, onLike,
         <div className="flex items-center gap-3">
           <div className="h-9 w-9 rounded-full bg-[#1A1A1A] border border-[#222] p-0.5 overflow-hidden shrink-0">
             <img 
-              src={post.postedBy?.photo || `https://picsum.photos/seed/${post.postedBy?.uid}/100`} 
+              src={optimizeUrl(post.postedBy?.photo || `https://picsum.photos/seed/${post.postedBy?.uid}/100`)} 
               className="h-full w-full object-cover rounded-full" 
               alt="Athlete" 
               loading="lazy"
+              decoding="async"
+              onError={(e) => { (e.target as any).src = ERROR_IMAGE }}
             />
           </div>
           <div>

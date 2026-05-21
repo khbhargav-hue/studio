@@ -1,57 +1,29 @@
+
 "use client"
 
 import { useState, useEffect, useMemo } from 'react';
 import { Footer } from '@/components/footer';
 import { db } from '@/lib/firebase';
-import { useUser } from '@/firebase';
-import { collection, getDocs, addDoc, serverTimestamp, doc } from 'firebase/firestore';
-import { Star, MessageCircle, MapPin, Plus, IndianRupee, Phone, Image as ImageIcon } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger 
-} from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { collection, getDocs, serverTimestamp, addDoc } from 'firebase/firestore';
+import { Star, MessageCircle, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { SkeletonCard } from '@/components/Skeleton';
 
 const FILTERS = ["All", "Football", "Cricket", "Pickleball", "Swimming", "Badminton"];
-const AREAS = ["Vijayanagar", "Yadavagiri", "JP Nagar", "Saraswathipuram", "Kuvempunagar", "Bogadi", "Hebbal", "Other"];
-const SPORT_OPTIONS = ["Football", "Cricket", "Pickleball", "Badminton", "Swimming"];
+const ERROR_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='200'%3E%3Crect width='400' height='200' fill='%231A1A1A'/%3E%3Ctext x='50%25' y='50%25' fill='%23444' text-anchor='middle' font-size='40'%3E⚽%3C/text%3E%3C/svg%3E";
+
+const optimizeUrl = (url: string) => {
+  if (!url) return url;
+  return url.includes('cloudinary.com') ? `${url}?w=400&q=60&f=webp` : url;
+};
 
 export default function TurfsPage() {
-  const { user } = useUser();
   const { toast } = useToast();
   
   const [turfs, setTurfs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState("All");
-  const [isAdding, setIsAdding] = useState(false);
-  const [showDialog, setShowDialog] = useState(false);
-
-  const [formData, setFormData] = useState({
-    name: "",
-    area: "Vijayanagar",
-    sports: [] as string[],
-    price: "",
-    whatsapp: "",
-    imageUrl: "",
-    rating: "4.5"
-  });
 
   const fetchTurfs = async () => {
     setLoading(true);
@@ -68,40 +40,6 @@ export default function TurfsPage() {
   useEffect(() => {
     fetchTurfs();
   }, []);
-
-  const handleSaveTurf = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsAdding(true);
-    const payload = {
-      ...formData,
-      price: formData.price,
-      rating: Number(formData.rating),
-      isActive: true,
-      isPremium: false,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
-    };
-
-    try {
-      await addDoc(collection(db, "turfs"), payload);
-      toast({ title: "Arena Deployed", description: `${formData.name} is now live on the circuit.` });
-      setShowDialog(false);
-      setFormData({
-        name: "",
-        area: "Vijayanagar",
-        sports: [],
-        price: "",
-        whatsapp: "",
-        imageUrl: "",
-        rating: "4.5"
-      });
-      fetchTurfs();
-    } catch (err: any) {
-      toast({ title: "Deployment Failed", description: err.message, variant: "destructive" });
-    } finally {
-      setIsAdding(false);
-    }
-  };
 
   const filteredTurfs = useMemo(() => {
     if (activeFilter === "All") return turfs;
@@ -149,15 +87,13 @@ export default function TurfsPage() {
               <div key={turf.id} className="bg-[#111] border border-[#222] rounded-[12px] overflow-hidden mb-[12px] flex flex-col h-full group">
                 <div className="relative h-[160px] w-full bg-[#1A1A1A] overflow-hidden">
                   <img
-                    src={turf.imageUrl || ""}
+                    src={optimizeUrl(turf.imageUrl || "")}
                     alt={turf.name}
                     loading="lazy"
+                    decoding="async"
+                    onError={(e) => { (e.target as any).src = ERROR_IMAGE }}
                     className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
-                  <div className="hidden absolute inset-0 items-center justify-center text-[40px] flex-col bg-[#1A1A1A]">
-                    <span>⚽</span>
-                    <span className="text-[10px] font-black uppercase tracking-widest text-white/10 mt-2">No Image</span>
-                  </div>
                 </div>
 
                 <div className="p-[14px] flex-1 flex flex-col">

@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Footer } from '@/components/footer';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, limit } from 'firebase/firestore';
+import { collection, getDocs } from 'firebase/firestore';
 import { Star, MessageCircle, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -25,20 +25,19 @@ export default function TurfsPage() {
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState("All");
 
-  const fetchTurfs = async () => {
-    setLoading(true);
-    try {
-      const snap = await getDocs(query(collection(db, "turfs"), limit(12)));
-      setTurfs(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    } catch (err) {
-      console.error("Registry fetch error", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchTurfs();
+    getDocs(collection(db, "turfs"))
+      .then(snap => {
+        console.log("Turfs found:", snap.size);
+        setTurfs(snap.docs.map(d => ({ 
+          id: d.id, ...d.data() 
+        })));
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setLoading(false);
+      });
   }, []);
 
   const filteredTurfs = useMemo(() => {

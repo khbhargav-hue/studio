@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Star, User, Loader2, Send, MessageSquare, Gift, Camera } from 'lucide-react';
+import { Star, User, Send, MessageSquare, Gift, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { REWARD_POINTS } from '@/lib/rewards';
+import { SkeletonCard } from './Skeleton';
 
 export function ReviewSection({ turfId, currentRating, reviewCount }: { turfId: string, currentRating: number, reviewCount: number }) {
   const { user } = useUser();
@@ -56,7 +57,6 @@ export function ReviewSection({ turfId, currentRating, reviewCount }: { turfId: 
         reviewCount: increment(1)
       });
 
-      // Grant Reward Points for Review
       const userRef = doc(db, "users", user.uid);
       await updateDoc(userRef, {
         rewardPoints: increment(REWARD_POINTS.REVIEW),
@@ -85,7 +85,6 @@ export function ReviewSection({ turfId, currentRating, reviewCount }: { turfId: 
         </div>
       </div>
 
-      {/* Review Form */}
       {user ? (
         <form onSubmit={handleSubmit} className="bg-[#111111] p-8 rounded-[16px] border border-[#222222] space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
@@ -121,7 +120,7 @@ export function ReviewSection({ turfId, currentRating, reviewCount }: { turfId: 
             disabled={isSubmitting || rating === 0} 
             className="w-full h-14 bg-primary text-black rounded-[10px] font-black uppercase tracking-widest text-[11px]"
           >
-            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Transmit Feedback"}
+            {isSubmitting ? <span className="animate-pulse">TRANSMITTING...</span> : "Transmit Feedback"}
           </Button>
         </form>
       ) : (
@@ -130,11 +129,10 @@ export function ReviewSection({ turfId, currentRating, reviewCount }: { turfId: 
         </div>
       )}
 
-      {/* Review List */}
       <div className="space-y-4">
         {loading ? (
-          <div className="flex justify-center py-10">
-            <Loader2 className="h-6 w-6 animate-spin text-primary opacity-20" />
+          <div className="space-y-3">
+            {[...Array(3)].map((_, i) => <SkeletonCard key={i} />)}
           </div>
         ) : reviews && reviews.length > 0 ? (
           reviews.map((review: any) => (

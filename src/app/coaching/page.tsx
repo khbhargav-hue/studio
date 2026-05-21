@@ -15,6 +15,7 @@ import {
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase"
 import { collection, query, where } from "firebase/firestore"
 import { cn } from "@/lib/utils"
+import { SkeletonCard } from "@/components/Skeleton"
 
 const SPORT_CATEGORIES = ["All", "Football", "Cricket", "Swimming", "Badminton", "Pickleball"]
 
@@ -24,7 +25,6 @@ export default function CoachingPage() {
 
   const coachesQuery = useMemoFirebase(() => {
     if (!db) return null
-    // Removed orderBy to prevent composite index requirement when sport filter is active
     let q = query(collection(db, "coaches"))
     if (activeSport !== "All") {
       q = query(q, where("sport", "==", activeSport))
@@ -44,7 +44,6 @@ export default function CoachingPage() {
       <Navbar />
       
       <main className="flex-1 pt-32 pb-32 max-w-7xl mx-auto w-full px-4 md:px-8">
-        {/* Section Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-8">
           <div className="space-y-4">
             <div className="text-[11px] font-black uppercase tracking-[0.4em] text-primary">COACHING</div>
@@ -57,7 +56,6 @@ export default function CoachingPage() {
           </div>
         </div>
 
-        {/* Sport Categories */}
         <div className="flex gap-2 overflow-x-auto no-scrollbar mb-12 pb-2">
           {SPORT_CATEGORIES.map((sport) => (
             <button
@@ -77,9 +75,7 @@ export default function CoachingPage() {
 
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="h-[320px] bg-card border border-border animate-pulse rounded-[16px]" />
-            ))}
+            {[...Array(6)].map((_, i) => <SkeletonCard key={i} />)}
           </div>
         ) : coaches && coaches.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -112,7 +108,6 @@ function CoachCard({ coach }: { coach: any }) {
 
   return (
     <div className="bg-card border border-border rounded-[16px] p-8 flex flex-col items-center text-center transition-all hover:border-primary/40 group active:scale-[0.99] duration-200">
-      {/* Coach Photo Circle */}
       <div className="relative mb-6">
         <div className="h-28 w-28 rounded-full border-2 border-primary p-1">
           <div className="h-full w-full rounded-full overflow-hidden bg-surface flex items-center justify-center border border-border relative">

@@ -1,12 +1,12 @@
-
 'use client';
 
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, query, where, orderBy } from "firebase/firestore";
+import { collection, query, orderBy } from "firebase/firestore";
 import { PoolCard } from "@/components/pool-card";
-import { Loader2, Waves, Zap } from "lucide-react";
+import { Waves, Zap } from "lucide-react";
+import { SkeletonCard } from "@/components/Skeleton";
 
 export default function PoolsPage() {
   const db = useFirestore();
@@ -23,7 +23,6 @@ export default function PoolsPage() {
       <Navbar />
       
       <main className="flex-1 pt-32 pb-32 max-w-7xl mx-auto w-full px-4 md:px-8">
-        {/* Section Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-8">
           <div className="space-y-4">
             <div className="text-[11px] font-black uppercase tracking-[0.4em] text-[#AAFF00]">SWIMMING</div>
@@ -37,9 +36,8 @@ export default function PoolsPage() {
         </div>
 
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-40 gap-4">
-            <Loader2 className="h-12 w-12 animate-spin text-[#AAFF00] opacity-20" />
-            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-[#AAFF00]/30">Synchronizing Aquatic Data...</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[...Array(6)].map((_, i) => <SkeletonCard key={i} />)}
           </div>
         ) : pools && pools.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -55,7 +53,6 @@ export default function PoolsPage() {
           </div>
         )}
         
-        {/* Pro Tip Node */}
         {!loading && pools && pools.length > 0 && (
           <div className="mt-20 p-8 rounded-[16px] bg-[#111111] border border-[#222222] flex flex-col md:flex-row items-center gap-6">
             <div className="h-14 w-14 rounded-[12px] bg-[#AAFF00]/10 flex items-center justify-center border border-[#AAFF00]/20">

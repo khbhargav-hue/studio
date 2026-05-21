@@ -6,8 +6,9 @@ import { Footer } from "@/components/footer";
 import { TurfCard } from "@/components/turf-card";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection, query, where } from "firebase/firestore";
-import { Trophy, Zap, Star, Users, Loader2, ArrowLeft } from "lucide-react";
+import { Trophy, Zap, Star, Users, ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { SkeletonCard } from "@/components/Skeleton";
 
 const SPORT_CONFIG: Record<string, any> = {
   football: { name: "Football", icon: Zap, theme: "text-blue-500", desc: "Elite 5v5 & 7v7 football turfs in Mysuru. Pro-grade lighting and FIFA certified grass." },
@@ -26,7 +27,6 @@ export default function SportGuidePage() {
   const turfsQuery = useMemoFirebase(() => {
     if (!db) return null;
     const displayName = config.name;
-    // Query check for 'sports' array as per the latest requirements
     return query(
       collection(db, "turfs"), 
       where("sports", "array-contains", displayName)
@@ -80,8 +80,8 @@ export default function SportGuidePage() {
              </div>
 
              {loading ? (
-                <div className="flex justify-center py-32">
-                   <Loader2 className="h-12 w-12 animate-spin text-primary opacity-20" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-10">
+                   {[...Array(4)].map((_, i) => <SkeletonCard key={i} />)}
                 </div>
              ) : (turfs && turfs.length > 0) ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 md:gap-10">

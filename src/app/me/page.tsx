@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useUser, useAuth, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
 import { collection, query, where, deleteDoc, doc } from "firebase/firestore";
-import { UserCircle, LogOut, LayoutGrid, Zap, Loader2 } from "lucide-react";
+import { UserCircle, LogOut, LayoutGrid, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import PostCard from "@/components/PostCard";
@@ -22,7 +22,6 @@ export default function MePage() {
 
   const myPostsQuery = useMemoFirebase(() => {
     if (!db || !user) return null;
-    // Removed orderBy to prevent composite index requirement
     return query(
       collection(db, "posts"),
       where("postedBy.uid", "==", user.uid)
@@ -71,8 +70,12 @@ export default function MePage() {
 
   if (userLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0A0A0A]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex min-h-screen flex-col bg-[#0A0A0A] p-6">
+        <div className="max-w-lg mx-auto w-full pt-12">
+           <SkeletonCard />
+           <SkeletonCard />
+           <SkeletonCard />
+        </div>
       </div>
     );
   }
@@ -90,7 +93,7 @@ export default function MePage() {
           disabled={isSigningIn}
           className="w-full max-w-sm h-14 bg-[#AAFF00] text-[#0A0A0A] font-black uppercase tracking-widest rounded-xl shadow-xl shadow-[#AAFF00]/10"
         >
-          {isSigningIn ? <Loader2 className="h-5 w-5 animate-spin" /> : "Sign in with Google"}
+          {isSigningIn ? <span className="animate-pulse">VERIFYING...</span> : "Sign in with Google"}
         </Button>
       </div>
     );
@@ -99,7 +102,6 @@ export default function MePage() {
   return (
     <div className="flex min-h-screen flex-col bg-[#0A0A0A] selection:bg-primary selection:text-black">
       <main className="flex-1 pt-12 pb-32 max-w-lg mx-auto w-full px-4">
-        {/* Profile Header */}
         <div className="flex flex-col items-center text-center mb-12">
           <div className="relative mb-6">
             <div className="h-[72px] w-[72px] rounded-full overflow-hidden border-2 border-primary/20 p-0.5 bg-[#111]">
@@ -122,7 +124,6 @@ export default function MePage() {
           </Badge>
         </div>
 
-        {/* Stats Grid */}
         <div className="grid grid-cols-3 gap-[1px] bg-[#222] border border-[#222] rounded-xl overflow-hidden mb-12">
           <div className="bg-[#111] p-4 flex flex-col items-center">
             <span className="text-[18px] font-black italic text-white leading-none">{myPosts?.length || 0}</span>
@@ -138,13 +139,11 @@ export default function MePage() {
           </div>
         </div>
 
-        {/* Section Title */}
         <div className="flex items-center gap-2 mb-6 px-1">
           <LayoutGrid className="h-4 w-4 text-primary" />
           <h3 className="text-[14px] font-black uppercase tracking-widest text-white italic">My Broadcasts</h3>
         </div>
 
-        {/* My Posts Feed */}
         <div className="space-y-3">
           {postsLoading ? (
             [...Array(2)].map((_, i) => <SkeletonCard key={i} />)
@@ -167,7 +166,6 @@ export default function MePage() {
           )}
         </div>
 
-        {/* Action Footer */}
         <div className="mt-12 pt-8 border-t border-[#222]">
           <button 
             onClick={handleSignOut}

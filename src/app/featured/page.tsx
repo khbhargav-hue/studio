@@ -1,13 +1,14 @@
 'use client';
 
-import { useMemo, useEffect } from "react";
+import { useMemo } from "react";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { TurfCard } from "@/components/turf-card";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, query, limit, getDocs } from "firebase/firestore";
-import { Loader2, Star, Trophy, Zap } from "lucide-react";
+import { collection, query, limit } from "firebase/firestore";
+import { Star, Trophy, Zap } from "lucide-react";
 import { motion } from "framer-motion";
+import { SkeletonCard } from "@/components/Skeleton";
 
 export default function FeaturedPage() {
   const db = useFirestore();
@@ -51,9 +52,8 @@ export default function FeaturedPage() {
           </motion.div>
 
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-40 gap-6">
-              <Loader2 className="h-12 w-12 animate-spin text-primary" />
-              <p className="text-[10px] font-black uppercase tracking-widest text-primary/40">Fetching Elite Intel...</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-12">
+              {[...Array(8)].map((_, i) => <SkeletonCard key={i} />)}
             </div>
           ) : displayTurfs.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-12">

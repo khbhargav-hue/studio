@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useMemo } from "react"
@@ -8,7 +7,6 @@ import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { 
   Dialog, 
   DialogContent, 
@@ -17,18 +15,12 @@ import {
   DialogTrigger 
 } from "@/components/ui/dialog"
 import { 
-  Calendar, 
-  Clock, 
   Plus, 
-  Loader2, 
-  ArrowRight,
   ShieldAlert,
   MapPin,
   Trophy,
   Zap,
-  Activity,
-  Swords,
-  Users
+  Calendar
 } from "lucide-react"
 import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase"
 import { collection, query, orderBy, setDoc, doc, serverTimestamp, where } from "firebase/firestore"
@@ -36,6 +28,7 @@ import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 import { errorEmitter } from '@/firebase/error-emitter'
 import { FirestorePermissionError } from '@/firebase/errors'
+import { SkeletonCard } from "@/components/Skeleton"
 
 export default function ChallengesPage() {
   const db = useFirestore()
@@ -116,7 +109,6 @@ export default function ChallengesPage() {
       <Navbar />
       
       <main className="flex-1 pt-32 pb-32 max-w-7xl mx-auto w-full px-4">
-        {/* Section Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-8">
           <div className="space-y-4">
             <div className="text-[11px] font-black uppercase tracking-[0.4em] text-primary">CHALLENGES</div>
@@ -130,9 +122,8 @@ export default function ChallengesPage() {
         </div>
 
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-40 gap-4">
-            <Loader2 className="h-12 w-12 animate-spin text-primary opacity-20" />
-            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/30">Syncing Intelligence...</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[...Array(6)].map((_, i) => <SkeletonCard key={i} />)}
           </div>
         ) : challenges.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -148,7 +139,6 @@ export default function ChallengesPage() {
           </div>
         )}
 
-        {/* FAB Button */}
         <Dialog open={showPostDialog} onOpenChange={setShowPostDialog}>
           <DialogTrigger asChild>
             <button 
@@ -212,7 +202,7 @@ export default function ChallengesPage() {
                   </div>
                 </div>
                 <Button type="submit" disabled={isPosting} className="bg-primary text-black w-full h-14 text-xs font-black uppercase tracking-widest">
-                  {isPosting ? <Loader2 className="h-5 w-5 animate-spin" /> : "Transmit Claim to Circuit"}
+                  {isPosting ? <span className="animate-pulse">TRANSMITTING...</span> : "Transmit Claim to Circuit"}
                 </Button>
               </form>
             )}

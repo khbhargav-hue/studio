@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useMemo } from "react"
@@ -8,9 +7,10 @@ import { MobileNav } from "@/components/mobile-nav"
 import { TurfCard } from "@/components/turf-card"
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase"
 import { collection, query, limit } from "firebase/firestore"
-import { Search, MapPin, Loader2, Database, Zap } from "lucide-react"
+import { Search, MapPin, Database, Zap } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
+import { SkeletonCard } from "@/components/Skeleton"
 
 const SPORT_FILTERS = ["All", "Football", "Cricket", "Badminton", "Pickleball", "Swimming"]
 
@@ -82,7 +82,7 @@ export default function ArenasPage() {
 
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[...Array(8)].map((_, i) => <div key={i} className="h-80 bg-white/5 rounded-2xl animate-pulse" />)}
+            {[...Array(8)].map((_, i) => <SkeletonCard key={i} />)}
           </div>
         ) : filteredTurfs.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

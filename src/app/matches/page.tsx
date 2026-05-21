@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect } from "react"
@@ -19,10 +18,8 @@ import {
   Plus, 
   Swords, 
   MapPin, 
-  Clock, 
   Calendar, 
   Users, 
-  Loader2, 
   Zap,
   CheckCircle2,
   Trash2,
@@ -31,10 +28,11 @@ import {
 } from "lucide-react"
 import { db } from "@/lib/firebase"
 import { getAuth } from "firebase/auth"
-import { useUser, useDoc, useMemoFirebase } from "@/firebase"
+import { useUser } from "@/firebase"
 import { collection, query, orderBy, addDoc, doc, serverTimestamp, updateDoc, increment, deleteDoc, arrayUnion, onSnapshot, getDoc, setDoc } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
+import { SkeletonCard } from "@/components/Skeleton"
 
 export default function MatchesPage() {
   const { user } = useUser()
@@ -232,7 +230,7 @@ export default function MatchesPage() {
                   </div>
                 </div>
                 <Button type="button" onClick={handleSubmit} disabled={isPosting} className="w-full h-16 bg-primary text-black font-black uppercase tracking-widest text-xs rounded-xl">
-                  {isPosting ? <Loader2 className="h-5 w-5 animate-spin" /> : editingMatch ? "SYNC CHANGES ⚡" : "POST MATCH REQUEST 🚀"}
+                  {isPosting ? <span className="animate-pulse">TRANSMITTING...</span> : editingMatch ? "SYNC CHANGES ⚡" : "POST MATCH REQUEST 🚀"}
                 </Button>
               </div>
             </DialogContent>
@@ -240,8 +238,8 @@ export default function MatchesPage() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-40">
-             <Loader2 className="h-12 w-12 animate-spin text-primary opacity-20" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+             {[...Array(6)].map((_, i) => <SkeletonCard key={i} />)}
           </div>
         ) : requests && requests.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

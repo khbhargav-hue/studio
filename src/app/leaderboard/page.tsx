@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Navbar } from "@/components/navbar";
@@ -6,9 +5,10 @@ import { Footer } from "@/components/footer";
 import { MobileNav } from "@/components/mobile-nav";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection, query, orderBy, limit } from "firebase/firestore";
-import { Trophy, Medal, Star, UserCircle, Loader2, Activity } from "lucide-react";
+import { Medal, Star, UserCircle, Activity } from "lucide-react";
 import { calculateLevel } from "@/lib/rewards";
 import { cn } from "@/lib/utils";
+import { SkeletonCard } from "@/components/Skeleton";
 
 export default function LeaderboardPage() {
   const db = useFirestore();
@@ -38,9 +38,8 @@ export default function LeaderboardPage() {
         </header>
 
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-40 gap-4">
-            <Loader2 className="h-10 w-10 animate-spin text-primary opacity-20" />
-            <p className="text-[10px] font-black text-muted uppercase tracking-[0.4em]">Syncing Rankings...</p>
+          <div className="space-y-4">
+            {[...Array(10)].map((_, i) => <SkeletonCard key={i} />)}
           </div>
         ) : leaders && leaders.length > 0 ? (
           <div className="space-y-3">

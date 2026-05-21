@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useUser, useAuth, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { GoogleAuthProvider, signInWithPopup, setPersistence, browserLocalPersistence } from "firebase/auth";
-import { collection, query, where } from "firebase/firestore";
+import { collection, query, where, doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { UserCircle, LogOut, LayoutGrid, Zap, MessageSquare, ChevronRight, Loader2, Chrome, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -37,29 +37,42 @@ export default function MePage() {
     return [...rawMyPosts].sort((a: any, b: any) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
   }, [rawMyPosts]);
 
-  const handleSignIn = async () => {
-    if (!auth) return;
+  const handleSignIn = () => {
+    if (!auth || !db) return;
     setIsSigningIn(true);
     setAuthError(null);
-    console.log("LOGIN_START: Me Popup");
     
     const provider = new GoogleAuthProvider();
-
-    try {
-      await setPersistence(auth, browserLocalPersistence);
-      const result = await signInWithPopup(auth, provider);
-      console.log("LOGIN_SUCCESS", result.user.uid);
-      toast({ title: "Identity Verified" });
-    } catch (err: any) {
-      console.log("LOGIN_FAIL", err.code);
-      if (err.code === 'auth/popup-blocked') {
-        setAuthError("Popup blocked. Open in Chrome browser.");
-      } else if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
-        toast({ title: "Auth Failed", description: err.message, variant: "destructive" });
-      }
-    } finally {
-      setIsSigningIn(false);
-    }
+    
+    setPersistence(auth, browserLocalPersistence)
+      .then(() => signInWithPopup(auth, provider))
+      .then((result) => {
+        console.log("LOGIN_SUCCESS", result.user.uid);
+        toast({ title: "Identity Verified" });
+        return setDoc(
+          doc(db, "users", result.user.uid),
+          {
+            name: result.user.displayName,
+            email: result.user.email,
+            photo: result.user.photoURL,
+            role: "user",
+            updatedAt: serverTimestamp()
+          },
+          { merge: true }
+        );
+      })
+      .catch((err) => {
+        console.log("LOGIN_FAIL", err.code);
+        if (err.code === "auth/popup-blocked") {
+          alert("Popup blocked. Please open Turfista in Chrome browser and try again.");
+          setAuthError("Popup blocked. Open in Chrome browser.");
+        } else if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
+          alert("Login failed: " + err.message);
+        }
+      })
+      .finally(() => {
+        setIsSigningIn(false);
+      });
   };
 
   const handleSignOut = () => {

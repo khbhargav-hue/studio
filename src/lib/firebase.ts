@@ -5,7 +5,7 @@ import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth"
 /**
  * Unified Firebase Identity Node
  * Centralized configuration for the Turfista Mysuru Network.
- * Optimized for offline circuit stability.
+ * Optimized for high-stability persistence.
  */
 const firebaseConfig = {
   apiKey: "AIzaSyD7J3fG4GXUehnNyGRZ_a2ZeFU4cBnSAIQ",
@@ -24,7 +24,7 @@ const app = getApps().length === 0
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 
-// Enforce session persistence for mobile stability
+// Enforce session persistence immediately at the identity node
 setPersistence(auth, browserLocalPersistence);
 
 // Enable Offline Circuit Persistence

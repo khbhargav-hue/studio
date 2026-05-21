@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUser, useAuth, useFirestore, useDoc, useMemoFirebase } from "@/firebase";
 import { GoogleAuthProvider, signInWithPopup, setPersistence, browserLocalPersistence } from "firebase/auth";
-import { doc, serverTimestamp, updateDoc } from "firebase/firestore";
+import { doc, serverTimestamp, updateDoc, setDoc } from "firebase/firestore";
 import { 
   UserCircle, 
   LogOut, 
@@ -83,29 +83,42 @@ export default function ProfilePage() {
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    if (!auth) return;
+  const handleGoogleSignIn = () => {
+    if (!auth || !db) return;
     setIsSigningIn(true);
     setAuthError(null);
-    console.log("LOGIN_START: Profile Popup");
     
     const provider = new GoogleAuthProvider();
 
-    try {
-      await setPersistence(auth, browserLocalPersistence);
-      const result = await signInWithPopup(auth, provider);
-      console.log("LOGIN_SUCCESS", result.user.uid);
-      toast({ title: "Identity Verified" });
-    } catch (error: any) {
-      console.log("LOGIN_FAIL", error.code);
-      if (error.code === 'auth/popup-blocked') {
-        setAuthError("Popup blocked. Open in Chrome browser.");
-      } else if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
-        toast({ title: "Error", description: error.message, variant: "destructive" });
-      }
-    } finally {
-      setIsSigningIn(false);
-    }
+    setPersistence(auth, browserLocalPersistence)
+      .then(() => signInWithPopup(auth, provider))
+      .then((result) => {
+        console.log("LOGIN_SUCCESS", result.user.uid);
+        toast({ title: "Identity Verified" });
+        return setDoc(
+          doc(db, "users", result.user.uid),
+          {
+            name: result.user.displayName,
+            email: result.user.email,
+            photo: result.user.photoURL,
+            role: "user",
+            updatedAt: serverTimestamp()
+          },
+          { merge: true }
+        );
+      })
+      .catch((err) => {
+        console.log("LOGIN_FAIL", err.code);
+        if (err.code === "auth/popup-blocked") {
+          alert("Popup blocked. Please open Turfista in Chrome browser and try again.");
+          setAuthError("Popup blocked. Open in Chrome browser.");
+        } else if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
+          alert("Login failed: " + err.message);
+        }
+      })
+      .finally(() => {
+        setIsSigningIn(false);
+      });
   };
 
   if (userLoading) {

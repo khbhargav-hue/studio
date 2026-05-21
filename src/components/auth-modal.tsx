@@ -23,6 +23,7 @@ import {
   browserLocalPersistence,
   setPersistence
 } from "firebase/auth";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { Loader2, Mail, Lock, User, ShieldCheck, Chrome, AlertCircle, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -34,6 +35,7 @@ interface AuthModalProps {
 
 export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
   const auth = useAuth();
+  const db = useFirestore();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
@@ -41,52 +43,52 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
   const [name, setName] = useState("");
   const [error, setError] = useState<React.ReactNode | null>(null);
 
-  const handleGoogleSignIn = async () => {
-    if (!auth) return;
+  const handleGoogleSignIn = () => {
+    if (!auth || !db) return;
     setIsLoading(true);
     setError(null);
-    console.log("LOGIN_START: Unified Popup");
     
     const provider = new GoogleAuthProvider();
 
-    try {
-      // 1. Force Local Persistence Cycle
-      await setPersistence(auth, browserLocalPersistence);
-
-      // 2. Unified Popup Protocol (Prevents mobile session loss)
-      const result = await signInWithPopup(auth, provider);
-      console.log("LOGIN_SUCCESS", result.user.uid);
-      
-      if (onOpenChange) onOpenChange(false);
-      toast({ title: "Identity Verified" });
-    } catch (err: any) {
-      console.log("LOGIN_FAIL", err.code);
-      
-      if (err.code === 'auth/popup-blocked') {
-        setError(
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 text-primary font-black text-[10px] uppercase tracking-tighter">
-              <AlertCircle className="h-4 w-4" /> Popup Blocked
+    setPersistence(auth, browserLocalPersistence)
+      .then(() => signInWithPopup(auth, provider))
+      .then((result) => {
+        console.log("LOGIN_SUCCESS", result.user.uid);
+        if (onOpenChange) onOpenChange(false);
+        toast({ title: "Identity Verified" });
+        return setDoc(
+          doc(db, "users", result.user.uid),
+          {
+            name: result.user.displayName,
+            email: result.user.email,
+            photo: result.user.photoURL,
+            role: "user",
+            updatedAt: serverTimestamp()
+          },
+          { merge: true }
+        );
+      })
+      .catch((err) => {
+        console.log("LOGIN_FAIL", err.code);
+        if (err.code === "auth/popup-blocked") {
+          alert("Popup blocked. Please open Turfista in Chrome browser and try again.");
+          setError(
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-primary font-black text-[10px] uppercase tracking-tighter">
+                <AlertCircle className="h-4 w-4" /> Popup Blocked
+              </div>
+              <p className="text-[10px] leading-relaxed text-white">
+                Tactical protocol interrupted. Please enable popups or <span className="text-primary font-bold">Open in Chrome browser</span> to complete verification.
+              </p>
             </div>
-            <p className="text-[10px] leading-relaxed text-white">
-              Tactical protocol interrupted. Please enable popups or <span className="text-primary font-bold">Open in Chrome browser</span> to complete verification.
-            </p>
-          </div>
-        );
-      } else if (err.code === 'auth/unauthorized-domain') {
-        const domain = typeof window !== 'undefined' ? window.location.hostname : 'domain';
-        setError(
-          <div className="space-y-2">
-            <p className="text-destructive font-bold text-[10px] uppercase">Domain Not Authorized</p>
-            <p className="text-[10px] opacity-70">Add {domain} to authorized list in Firebase console.</p>
-          </div>
-        );
-      } else if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
-        toast({ title: "Auth Failed", description: err.message, variant: "destructive" });
-      }
-    } finally {
-      setIsLoading(false);
-    }
+          );
+        } else if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
+          alert("Login failed: " + err.message);
+        }
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   };
 
   const handleEmailSignIn = async (e: React.FormEvent) => {

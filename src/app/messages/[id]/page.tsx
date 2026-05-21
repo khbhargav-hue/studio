@@ -4,13 +4,13 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase } from "@/firebase";
-import { collection, query, orderBy, limit, addDoc, serverTimestamp, doc, updateDoc } from "firebase/firestore";
+import { collection, query, orderBy, limit, addDoc, serverTimestamp, doc, updateDoc, increment } from "firebase/firestore";
 import { ArrowLeft, Send, UserCircle, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
-export default function ChatViewPage() {
+export default function ChatTerminalPage() {
   const params = useParams();
   const id = params?.id as string;
   const { user } = useUser();
@@ -38,30 +38,34 @@ export default function ChatViewPage() {
   const { data: convo } = useDoc(convoRef);
   const { data: messages, loading: messagesLoading } = useCollection(messagesQuery);
 
+  // Auto-scroll Protocol
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
 
-  // Mark as read protocol
+  // Read Protocol: Reset unread count for current user
   useEffect(() => {
-    if (db && id && user && convo && convo.unreadCount?.[user.uid] > 0) {
+    if (db && id && user && convo && (convo.unreadCount?.[user.uid] || 0) > 0) {
       updateDoc(doc(db, "conversations", id), {
         [`unreadCount.${user.uid}`]: 0
       });
     }
   }, [db, id, user, convo]);
 
-  const handleSend = async (e: React.FormEvent) => {
+  const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
     if (!text.trim() || !db || !user || !convo) return;
 
+    const currentText = text;
+    setText(""); // Instant clear for UI speed
     setIsTransmitting(true);
+    
     const otherUid = convo.participants.find((p: string) => p !== user.uid);
     
     const msgData = {
-      text: text,
+      text: currentText,
       senderId: user.uid,
       senderName: user.displayName || "Player",
       senderPhoto: user.photoURL || "",
@@ -69,18 +73,18 @@ export default function ChatViewPage() {
       createdAt: serverTimestamp()
     };
 
-    try {
-      await addDoc(collection(db, "conversations", id, "messages"), msgData);
-      await updateDoc(doc(db, "conversations", id), {
-        lastMessage: text,
-        lastMessageTime: serverTimestamp(),
-        [`unreadCount.${otherUid}`]: (convo.unreadCount?.[otherUid] || 0) + 1,
-        updatedAt: serverTimestamp()
+    addDoc(collection(db, "conversations", id, "messages"), msgData)
+      .then(() => {
+        updateDoc(doc(db, "conversations", id), {
+          lastMessage: currentText,
+          lastMessageTime: serverTimestamp(),
+          [`unreadCount.${otherUid}`]: increment(1),
+          updatedAt: serverTimestamp()
+        });
+      })
+      .finally(() => {
+        setIsTransmitting(false);
       });
-      setText("");
-    } finally {
-      setIsTransmitting(false);
-    }
   };
 
   if (!user) return null;
@@ -91,22 +95,32 @@ export default function ChatViewPage() {
 
   return (
     <div className="flex flex-col h-screen bg-[#050505] selection:bg-primary selection:text-black">
+      {/* Header Node */}
       <header className="fixed top-0 z-[100] h-[64px] w-full bg-[#0A0A0A]/95 border-b border-[#222] backdrop-blur-xl px-4 flex items-center gap-4">
         <button onClick={() => router.back()} className="p-2 text-white/40 hover:text-white transition-colors">
           <ArrowLeft className="h-5 w-5" />
         </button>
         <div className="h-9 w-9 rounded-full bg-[#1A1A1A] border border-[#222] overflow-hidden flex items-center justify-center p-0.5">
-           {otherPhoto ? <img src={otherPhoto} className="h-full w-full object-cover rounded-full" /> : <UserCircle className="h-6 w-6 text-white/10" />}
+           {otherPhoto ? (
+             <img 
+               src={otherPhoto} 
+               className="h-full w-full object-cover rounded-full" 
+               loading="lazy"
+               decoding="async"
+               onError={(e) => { (e.target as any).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect width='40' height='40' fill='%231A1A1A'/%3E%3C/svg%3E" }}
+             />
+           ) : <UserCircle className="h-6 w-6 text-white/10" />}
         </div>
         <div className="flex-1">
           <h2 className="text-sm font-black uppercase italic text-white leading-none">{otherName}</h2>
-          <p className="text-[8px] font-black text-primary uppercase tracking-[0.3em] mt-1.5">Circuit Active</p>
+          <p className="text-[8px] font-black text-primary uppercase tracking-[0.3em] mt-1.5">Tactical Link Active</p>
         </div>
       </header>
 
+      {/* Message Feed */}
       <main 
         ref={scrollRef}
-        className="flex-1 pt-[80px] pb-[100px] overflow-y-auto px-4 space-y-4 no-scrollbar"
+        className="flex-1 pt-[80px] pb-[100px] overflow-y-auto px-4 flex flex-col gap-3 no-scrollbar"
       >
         {messagesLoading ? (
           <div className="flex items-center justify-center py-20">
@@ -119,13 +133,15 @@ export default function ChatViewPage() {
               <div 
                 key={msg.id} 
                 className={cn(
-                  "flex flex-col max-w-[80%]",
+                  "flex flex-col max-w-[75%]",
                   isMe ? "ml-auto items-end" : "mr-auto items-start"
                 )}
               >
                 <div className={cn(
-                  "px-4 py-3 rounded-2xl text-[14px] leading-snug italic font-medium",
-                  isMe ? "bg-primary text-black rounded-tr-none" : "bg-[#1A1A1A] text-white rounded-tl-none border border-[#222]"
+                  "px-4 py-[10px] text-[14px] leading-snug italic font-medium",
+                  isMe 
+                    ? "bg-[#AAFF00] text-[#0A0A0A] rounded-[16px_16px_4px_16px]" 
+                    : "bg-[#1A1A1A] text-[#F5F5F5] rounded-[16px_16px_16px_4px] border border-[#222]"
                 )}>
                   {msg.text}
                 </div>
@@ -136,14 +152,15 @@ export default function ChatViewPage() {
             );
           })
         ) : (
-          <div className="py-40 text-center opacity-20 italic text-[11px] font-black uppercase tracking-[0.4em]">Establish tactical link...</div>
+          <div className="py-40 text-center opacity-20 italic text-[11px] font-black uppercase tracking-[0.4em]">Establish tactical signal...</div>
         )}
       </main>
 
+      {/* Input Terminal */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#0A0A0A]/95 border-t border-[#222] backdrop-blur-xl">
         <form onSubmit={handleSend} className="max-w-lg mx-auto flex gap-2">
           <Input 
-            placeholder="Type transmission..." 
+            placeholder="Type signal..." 
             className="h-12 bg-[#1A1A1A] border-[#333] text-white text-sm italic rounded-xl focus:border-primary/50"
             value={text}
             onChange={e => setText(e.target.value)}

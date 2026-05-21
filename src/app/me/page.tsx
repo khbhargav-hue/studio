@@ -1,11 +1,10 @@
-
 'use client';
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useUser, useAuth, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
-import { collection, query, where, deleteDoc, doc } from "firebase/firestore";
+import { GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut } from "firebase/auth";
+import { collection, query, where, deleteDoc, doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { UserCircle, LogOut, LayoutGrid, Zap, MessageSquare, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -42,14 +41,34 @@ export default function MePage() {
   }, [rawMyPosts]);
 
   const handleSignIn = async () => {
-    if (!auth) return;
+    if (!auth || !db) return;
     setIsSigningIn(true);
+    
     const provider = new GoogleAuthProvider();
+    provider.addScope("email");
+    provider.addScope("profile");
+
+    const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
+
     try {
-      await signInWithPopup(auth, provider);
-      toast({ title: "Identity Verified", description: "Welcome back to the Mysuru circuit." });
+      if (isMobile) {
+        await signInWithRedirect(auth, provider);
+      } else {
+        const result = await signInWithPopup(auth, provider);
+        const userResult = result.user;
+        
+        await setDoc(doc(db, "users", userResult.uid), {
+          name: userResult.displayName,
+          email: userResult.email,
+          photoURL: userResult.photoURL,
+          role: "user",
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+
+        toast({ title: "Identity Verified", description: "Welcome back to the Mysuru circuit." });
+      }
     } catch (err: any) {
-      toast({ title: "Auth Failed", variant: "destructive" });
+      toast({ title: "Auth Failed", description: err.message, variant: "destructive" });
     } finally {
       setIsSigningIn(false);
     }

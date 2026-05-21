@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from "react";
@@ -13,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useAuth } from "@/firebase";
+import { useAuth, useFirestore } from "@/firebase";
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
@@ -23,6 +22,7 @@ import {
   signInWithRedirect,
   sendPasswordResetEmail
 } from "firebase/auth";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { Loader2, Mail, Lock, User, ShieldCheck, Chrome, AlertCircle, ExternalLink, RefreshCw, Copy, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -34,6 +34,7 @@ interface AuthModalProps {
 
 export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
   const auth = useAuth();
+  const db = useFirestore();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
@@ -50,16 +51,34 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
   };
 
   const handleGoogleSignIn = async () => {
-    if (!auth) return;
+    if (!auth || !db) return;
     setIsLoading(true);
     setError(null);
+    
     const provider = new GoogleAuthProvider();
+    provider.addScope("email");
+    provider.addScope("profile");
+
+    const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
+    
     try {
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      if (isMobile) await signInWithRedirect(auth, provider);
-      else await signInWithPopup(auth, provider);
-      toast({ title: "Identity Verified", description: "Welcome back to the Mysuru circuit." });
-      if (onOpenChange) onOpenChange(false);
+      if (isMobile) {
+        await signInWithRedirect(auth, provider);
+      } else {
+        const result = await signInWithPopup(auth, provider);
+        const user = result.user;
+        
+        await setDoc(doc(db, "users", user.uid), {
+          name: user.displayName,
+          email: user.email,
+          photoURL: user.photoURL,
+          role: "user",
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+
+        toast({ title: "Identity Verified", description: "Welcome back to the Mysuru circuit." });
+        if (onOpenChange) onOpenChange(false);
+      }
     } catch (err: any) {
       if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
         setIsLoading(false);
@@ -108,7 +127,7 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
           </div>
         );
       } else {
-        toast({ title: "Authentication Failed", variant: "destructive" });
+        toast({ title: "Authentication Failed", description: err.message, variant: "destructive" });
       }
     } finally {
       setIsLoading(false);
@@ -139,6 +158,17 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(userCredential.user, { displayName: name });
+      
+      if (db) {
+        await setDoc(doc(db, "users", userCredential.user.uid), {
+          name: name,
+          email: email,
+          photoURL: "",
+          role: "user",
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+      }
+
       toast({ title: "Squad Member Registered", description: "Your athlete profile is now active." });
       if (onOpenChange) onOpenChange(false);
     } catch (err: any) {

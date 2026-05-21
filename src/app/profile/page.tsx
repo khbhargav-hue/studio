@@ -83,9 +83,10 @@ export default function ProfilePage() {
           setDoc(doc(db, "users", currentUser.uid), {
             name: currentUser.displayName || "Player",
             email: currentUser.email,
+            photoURL: currentUser.photoURL || "",
             role: "user",
             createdAt: serverTimestamp()
-          });
+          }, { merge: true });
         }
       })
       .catch(err => {
@@ -135,14 +136,33 @@ export default function ProfilePage() {
   };
 
   const handleGoogleSignIn = async () => {
-    if (!auth) return;
+    if (!auth || !db) return;
     setIsSigningIn(true);
     setAuthError(null);
+    
     const provider = new GoogleAuthProvider();
+    provider.addScope("email");
+    provider.addScope("profile");
+
+    const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
+    
     try {
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      if (isMobile) await signInWithRedirect(auth, provider);
-      else await signInWithPopup(auth, provider);
+      if (isMobile) {
+        await signInWithRedirect(auth, provider);
+      } else {
+        const result = await signInWithPopup(auth, provider);
+        const userResult = result.user;
+        
+        await setDoc(doc(db, "users", userResult.uid), {
+          name: userResult.displayName,
+          email: userResult.email,
+          photoURL: userResult.photoURL,
+          role: "user",
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+
+        toast({ title: "Identity Verified", description: "Welcome back to the Mysuru circuit." });
+      }
     } catch (error: any) {
       if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
         setIsSigningIn(false);
@@ -198,7 +218,7 @@ export default function ProfilePage() {
           </div>
         );
       } else {
-        toast({ title: "Identification Failed", variant: "destructive" });
+        toast({ title: "Identification Failed", description: error.message, variant: "destructive" });
       }
     } finally {
       setIsSigningIn(false);
@@ -283,7 +303,7 @@ export default function ProfilePage() {
                       <div className="text-center md:text-left">
                         <p className="text-[12px] font-black text-primary uppercase tracking-[0.5em] mb-4">CURRENT COIN BALANCE</p>
                         <div className="flex items-center justify-center md:justify-start gap-4">
-                           <Star className="h-10 w-10 text-primary fill-current shadow-[0_0_20px_rgba(170,255,0,0.4)]" />
+                           <Star className="h-10 w-10 text-primary fill-current shadow-[0_0_200px_rgba(170,255,0,0.4)]" />
                            <span className="text-8xl font-black italic text-white tracking-tighter leading-none">{points}</span>
                         </div>
                       </div>

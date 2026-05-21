@@ -63,7 +63,7 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
     
     try {
       if (isMobile) {
-        await signInWithRedirect(auth, provider);
+        signInWithRedirect(auth, provider);
       } else {
         const result = await signInWithPopup(auth, provider);
         const user = result.user;
@@ -130,7 +130,7 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
         toast({ title: "Authentication Failed", description: err.message, variant: "destructive" });
       }
     } finally {
-      setIsLoading(false);
+      if (!isMobile) setIsLoading(false);
     }
   };
 

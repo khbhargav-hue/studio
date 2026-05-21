@@ -148,7 +148,7 @@ export default function ProfilePage() {
     
     try {
       if (isMobile) {
-        await signInWithRedirect(auth, provider);
+        signInWithRedirect(auth, provider);
       } else {
         const result = await signInWithPopup(auth, provider);
         const userResult = result.user;
@@ -221,7 +221,7 @@ export default function ProfilePage() {
         toast({ title: "Identification Failed", description: error.message, variant: "destructive" });
       }
     } finally {
-      setIsSigningIn(false);
+      if (!isMobile) setIsSigningIn(false);
     }
   };
 

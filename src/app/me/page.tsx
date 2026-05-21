@@ -52,7 +52,7 @@ export default function MePage() {
 
     try {
       if (isMobile) {
-        await signInWithRedirect(auth, provider);
+        signInWithRedirect(auth, provider);
       } else {
         const result = await signInWithPopup(auth, provider);
         const userResult = result.user;
@@ -68,9 +68,11 @@ export default function MePage() {
         toast({ title: "Identity Verified", description: "Welcome back to the Mysuru circuit." });
       }
     } catch (err: any) {
-      toast({ title: "Auth Failed", description: err.message, variant: "destructive" });
+      if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
+        toast({ title: "Auth Failed", description: err.message, variant: "destructive" });
+      }
     } finally {
-      setIsSigningIn(false);
+      if (!isMobile) setIsSigningIn(false);
     }
   };
 

@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -28,6 +27,24 @@ export default function StudioDashboard() {
   const { user } = useUser();
   const { toast } = useToast();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isOnline, setIsOnline] = React.useState(true);
+
+  // Connection Telemetry Circuit
+  useEffect(() => {
+    // Initial check on mount to prevent hydration mismatch
+    setIsOnline(navigator.onLine);
+
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
 
   useEffect(() => {
     const auth = getAuth();
@@ -96,10 +113,28 @@ export default function StudioDashboard() {
 
   return (
     <div className="space-y-12 pb-20 animate-in fade-in duration-500">
+      {/* Offline Status Node */}
+      {!isOnline && (
+        <div style={{
+          background: "#FF4444",
+          color: "white",
+          padding: "8px 16px",
+          fontSize: 13,
+          textAlign: "center",
+          fontWeight: 700,
+          borderRadius: "8px",
+          marginBottom: "16px"
+        }}>
+          ⚠️ You are offline. Changes will sync when reconnected.
+        </div>
+      )}
+
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h1 className="text-4xl font-black italic uppercase leading-none">Studio <span className="text-primary">Admin</span></h1>
-          <p className="text-[#888] text-[10px] font-black uppercase tracking-widest mt-2">Mysuru Sports Circuit Node: 🟢 Stable</p>
+          <p className="text-[#888] text-[10px] font-black uppercase tracking-widest mt-2">
+            Mysuru Sports Circuit Node: <span className={cn(isOnline ? "text-green-500" : "text-red-500")}>{isOnline ? "🟢 Stable" : "🔴 Offline"}</span>
+          </p>
         </div>
         <div className="flex flex-wrap gap-3">
           {isAdmin && (

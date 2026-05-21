@@ -46,22 +46,15 @@ export default function PostCard({ post, currentUser, isAdmin, onDelete, onLike,
       .catch(e => alert("Delete failed: " + e.message));
   };
 
-  const handleSaveEdit = () => {
-    updateDoc(doc(db, "posts", post.id), { text: editText })
-      .then(() => setEditOpen(false))
-      .catch(e => alert("Update failed: " + e.message));
-  };
-
-  const handleReply = (postId: string, text: string) => {
-    if (!text.trim()) return;
+  const handleReply = (postId: string, replyText: string) => {
+    if (!replyText.trim()) return;
     if (!auth.currentUser) {
       alert("Please sign in to reply.");
       return;
     }
-
-    const dbInstance = getFirestore();
-    addDoc(collection(dbInstance, "posts", postId, "replies"), {
-      text: text,
+    const db = getFirestore();
+    addDoc(collection(db, "posts", postId, "replies"), {
+      text: replyText,
       postedBy: {
         uid: auth.currentUser.uid,
         name: auth.currentUser.displayName || "Player",
@@ -72,6 +65,12 @@ export default function PostCard({ post, currentUser, isAdmin, onDelete, onLike,
       setReplyText("");
       setIsReplying(false);
     }).catch(e => alert(e.message));
+  };
+
+  const handleSaveEdit = () => {
+    updateDoc(doc(db, "posts", post.id), { text: editText })
+      .then(() => setEditOpen(false))
+      .catch(e => alert("Update failed: " + e.message));
   };
 
   const handleWhatsAppShare = () => {
@@ -188,24 +187,21 @@ export default function PostCard({ post, currentUser, isAdmin, onDelete, onLike,
               }}
               autoFocus
             />
-            <Button 
-              size="sm" 
-              className="h-10 px-4 bg-primary text-black"
+            <button 
+              className="h-10 px-4 bg-primary text-black rounded-lg font-black uppercase text-[10px]"
               onClick={() => handleReply(post.id, replyText)}
             >
               <Send className="h-4 w-4" />
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-10 w-10 p-0 text-white/20 hover:text-white"
+            </button>
+            <button 
+              className="h-10 w-10 p-0 text-white/20 hover:text-white flex items-center justify-center"
               onClick={() => {
                 setIsReplying(false);
                 setReplyText("");
               }}
             >
               <X className="h-4 w-4" />
-            </Button>
+            </button>
           </div>
         </div>
       )}

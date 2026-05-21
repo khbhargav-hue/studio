@@ -40,8 +40,8 @@ export default function PostCard({ post, currentUser, isAdmin, onDelete, onLike,
     : "Recently";
 
   const handleDelete = (postId: string) => {
-    const dbInstance = getFirestore();
-    deleteDoc(doc(dbInstance, "posts", postId))
+    const db = getFirestore();
+    deleteDoc(doc(db, "posts", postId))
       .then(() => console.log("deleted"))
       .catch(e => alert("Delete failed: " + e.message));
   };
@@ -59,7 +59,8 @@ export default function PostCard({ post, currentUser, isAdmin, onDelete, onLike,
       return;
     }
 
-    addDoc(collection(db, "posts", postId, "replies"), {
+    const dbInstance = getFirestore();
+    addDoc(collection(dbInstance, "posts", postId, "replies"), {
       text: text,
       postedBy: {
         uid: auth.currentUser.uid,

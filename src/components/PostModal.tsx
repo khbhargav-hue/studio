@@ -39,8 +39,6 @@ interface PostModalProps {
 
 export function PostModal({ isOpen, onClose }: PostModalProps) {
   const { toast } = useToast();
-  const user = auth.currentUser;
-
   const [text, setText] = useState("");
   const [sport, setSport] = useState("Football");
   const [area, setArea] = useState("Vijayanagar");
@@ -50,41 +48,39 @@ export function PostModal({ isOpen, onClose }: PostModalProps) {
   const charCount = text.length;
   const isApproachingLimit = charCount >= 130;
 
+  const resetForm = () => {
+    setText("");
+    setSport("Football");
+    setArea("Vijayanagar");
+    setTime("18:00");
+    setPlayersNeeded(1);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) {
+    if (!auth.currentUser) {
         toast({ title: "Identity Required", description: "Please login to post a match.", variant: "destructive" });
         return;
     }
 
-    const postData = {
-      text,
-      sport,
+    addDoc(collection(db, "posts"), {
+      text: text,
+      sport: sport,
       location: area,
-      time,
-      playersNeeded: Number(playersNeeded),
+      matchTime: time,
+      playersNeeded: playersNeeded,
       likes: 0,
       postedBy: {
-        uid: user.uid,
-        name: user.displayName || "Athlete",
-        photo: user.photoURL || ""
+        uid: auth.currentUser.uid,
+        name: auth.currentUser.displayName || "Player",
+        photo: auth.currentUser.photoURL || ""
       },
       createdAt: serverTimestamp()
-    };
-
-    addDoc(collection(db, "posts"), postData)
-      .then(() => {
-        setText("");
-        setSport("Football");
-        setArea("Vijayanagar");
-        setTime("18:00");
-        setPlayersNeeded(1);
-        toast({ title: "Signal Broadcasted 🚀", description: "Your match is live on the circuit." });
-        onClose();
-      })
-      .catch((e) => {
-        toast({ title: "Transmission Failed", description: e.message, variant: "destructive" });
-      });
+    }).then(() => {
+      onClose();
+      resetForm();
+      toast({ title: "Signal Broadcasted 🚀" });
+    }).catch(e => alert(e.message));
   };
 
   return (

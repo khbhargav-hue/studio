@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, Suspense } from "react";
@@ -45,7 +46,6 @@ function LoginForm() {
     if (typeof window !== 'undefined') {
       navigator.clipboard.writeText(window.location.hostname);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
       toast({ title: "Hostname Copied", description: "Add this to your Firebase Auth settings." });
     }
   };
@@ -127,8 +127,6 @@ function LoginForm() {
         );
       } else if (err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
         message = "Invalid identity or passcode.";
-      } else {
-        console.error("Login fatal error:", err);
       }
 
       setError(message);

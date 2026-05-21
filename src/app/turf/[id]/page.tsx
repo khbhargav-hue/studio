@@ -71,7 +71,6 @@ export default function TurfDetail() {
   const db = useFirestore()
   const { user } = useUser()
   const hasIncremented = useRef(false)
-  const [isThrottled, setIsThrottled] = useState(false)
   const [addInsurance, setAddInsurance] = useState(false)
 
   const turfDocRef = useMemoFirebase(() => {
@@ -93,10 +92,8 @@ export default function TurfDetail() {
   }, [db, id, turf])
 
   const handleWhatsAppClick = async () => {
-    if (db && id && !isThrottled && turf) {
+    if (db && id && turf) {
       gtag.event({ action: 'generate_lead', category: 'Booking', label: turf.name, value: 1 });
-      setIsThrottled(true)
-      setTimeout(() => setIsThrottled(false), 5000)
       
       const leadData = {
         turfId: id,
@@ -109,7 +106,6 @@ export default function TurfDetail() {
       addDoc(collection(db, "leads"), leadData);
       setDoc(doc(db, "turfs", id), { whatsappClicks: increment(1) }, { merge: true });
 
-      // Grant Reward Points for Booking Attempt
       if (user) {
         const userRef = doc(db, "users", user.uid);
         updateDoc(userRef, {
@@ -130,18 +126,11 @@ export default function TurfDetail() {
     if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
       try {
         await navigator.share(shareData);
-      } catch (err) {
-        if ((err as Error).name !== 'AbortError') {
-          console.log('Share failed:', err);
-        }
-      }
+      } catch (err) {}
     } else {
       try {
         await navigator.clipboard.writeText(window.location.href);
-        toast({ title: "Link Copied 🔗", description: "Arena link copied to clipboard." });
-      } catch (err) {
-        toast({ title: "Sharing Error", variant: "destructive" });
-      }
+      } catch (err) {}
     }
   };
 
@@ -176,7 +165,6 @@ export default function TurfDetail() {
       <Navbar />
       
       <main className="flex-1 pt-24 pb-40 max-w-7xl mx-auto w-full px-4">
-        {/* Navigation Breadcrumb */}
         <div className="flex items-center justify-between mb-8">
           <Button variant="ghost" onClick={() => router.back()} className="rounded-[10px] group font-black text-[10px] uppercase tracking-widest text-[#888888] hover:text-[#F5F5F5] h-12 px-2">
             <ArrowLeft className="mr-3 h-4 w-4 group-hover:-translate-x-1 transition-transform" /> BACK TO CIRCUIT
@@ -188,8 +176,6 @@ export default function TurfDetail() {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           <div className="lg:col-span-8 space-y-10">
-            
-            {/* 1. Swipeable Gallery */}
             <section className="relative rounded-[16px] overflow-hidden bg-[#111111] border border-[#222222]">
               <Carousel className="w-full">
                 <CarouselContent>
@@ -219,7 +205,6 @@ export default function TurfDetail() {
               )}
             </section>
 
-            {/* 2. Header & Amenities */}
             <section className="bg-[#111111] p-6 md:p-12 rounded-[16px] border border-[#222222] space-y-8">
               <div className="flex flex-wrap gap-2">
                 {turf.sports?.map((s: string) => (
@@ -267,7 +252,6 @@ export default function TurfDetail() {
               </div>
             </section>
 
-            {/* 3. Pitch & Rules */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <section className="bg-[#111111] p-6 md:p-8 rounded-[16px] border border-[#222222] space-y-6">
                 <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/60">PITCH SPEC</h3>
@@ -326,7 +310,6 @@ export default function TurfDetail() {
 
           </div>
 
-          {/* Sticky Sidebar */}
           <div className="lg:col-span-4">
             <aside className="sticky top-28 space-y-6 hidden lg:block">
               <div className="bg-[#111111] border border-[#222222] p-10 rounded-[16px] text-center space-y-8">
@@ -393,7 +376,6 @@ export default function TurfDetail() {
         </div>
       </main>
 
-      {/* Sticky Mobile Conversion Bar */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 p-4 bg-[#0A0A0A]/95 backdrop-blur-2xl border-t border-[#222]">
         <div className="max-w-md mx-auto flex items-center justify-between gap-4">
           <div className="flex flex-col">

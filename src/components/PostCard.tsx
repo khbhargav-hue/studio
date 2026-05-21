@@ -34,7 +34,7 @@ const optimizeUrl = (url: string) => {
   return url.includes('cloudinary.com') ? `${url}?w=400&q=60&f=webp` : url;
 };
 
-export default function PostCard({ post, currentUser, isAdmin, onDelete, onLike, hasLiked }: PostCardProps) {
+export default function PostCard({ post, currentUser, isAdmin, onLike, hasLiked }: PostCardProps) {
   const [isReplying, setIsReplying] = useState(false);
   const [replyText, setReplyText] = useState("");
   const [isEditOpen, setEditOpen] = useState(false);
@@ -48,21 +48,19 @@ export default function PostCard({ post, currentUser, isAdmin, onDelete, onLike,
     : "Recently";
 
   const handleDelete = (postId: string) => {
-    const db = getFirestore();
-    deleteDoc(doc(db, "posts", postId))
-      .then(() => console.log("deleted"))
-      .catch(e => alert("Delete failed: " + e.message));
+    const dbInstance = getFirestore();
+    deleteDoc(doc(dbInstance, "posts", postId))
+      .then(() => {})
+      .catch(() => {});
   };
 
-  const handleReply = (postId: string, replyText: string) => {
-    if (!replyText.trim()) return;
-    if (!auth.currentUser) {
-      alert("Please sign in to reply.");
-      return;
-    }
-    const db = getFirestore();
-    addDoc(collection(db, "posts", postId, "replies"), {
-      text: replyText,
+  const handleReply = (postId: string, text: string) => {
+    if (!text.trim()) return;
+    if (!auth.currentUser) return;
+    
+    const dbInstance = getFirestore();
+    addDoc(collection(dbInstance, "posts", postId, "replies"), {
+      text: text,
       postedBy: {
         uid: auth.currentUser.uid,
         name: auth.currentUser.displayName || "Player",
@@ -72,13 +70,13 @@ export default function PostCard({ post, currentUser, isAdmin, onDelete, onLike,
     }).then(() => {
       setReplyText("");
       setIsReplying(false);
-    }).catch(e => alert(e.message));
+    }).catch(() => {});
   };
 
   const handleSaveEdit = () => {
     updateDoc(doc(db, "posts", post.id), { text: editText })
       .then(() => setEditOpen(false))
-      .catch(e => alert("Update failed: " + e.message));
+      .catch(() => {});
   };
 
   const handleWhatsAppShare = () => {

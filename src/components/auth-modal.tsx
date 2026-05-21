@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from "react";
@@ -12,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useAuth, useUser } from "@/firebase";
+import { useAuth } from "@/firebase";
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
@@ -24,7 +25,6 @@ import {
 } from "firebase/auth";
 import { Loader2, Mail, Lock, User, ShieldCheck, Chrome, AlertCircle, ExternalLink, RefreshCw, Copy, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
 
 interface AuthModalProps {
   children?: React.ReactNode;
@@ -46,7 +46,6 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
     if (typeof window !== 'undefined') {
       navigator.clipboard.writeText(window.location.hostname);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
     }
   };
 
@@ -109,7 +108,6 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
           </div>
         );
       } else {
-        console.error("Authentication signal lost:", err);
         toast({ title: "Authentication Failed", variant: "destructive" });
       }
     } finally {
@@ -127,12 +125,7 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
       toast({ title: "Welcome Athlete", description: "Access granted to the network." });
       if (onOpenChange) onOpenChange(false);
     } catch (err: any) {
-      if (err.code === 'auth/unauthorized-domain') {
-        const domain = typeof window !== 'undefined' ? window.location.hostname : 'your domain';
-        setError("Domain authorization missing for: " + domain);
-      } else {
-        toast({ title: "Invalid Credentials", description: "Check your email or passcode.", variant: "destructive" });
-      }
+      toast({ title: "Invalid Credentials", description: "Check your email or passcode.", variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -149,7 +142,7 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
       toast({ title: "Squad Member Registered", description: "Your athlete profile is now active." });
       if (onOpenChange) onOpenChange(false);
     } catch (err: any) {
-      toast({ title: "Registration Blocked", description: err.message, variant: "destructive" });
+      toast({ title: "Registration Blocked", description: "Could not register account.", variant: "destructive" });
     } finally {
       setIsLoading(false);
     }

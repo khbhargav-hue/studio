@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from "react";
@@ -34,10 +35,7 @@ export function PostModal({ isOpen, onClose }: PostModalProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) {
-      alert("Please sign in first to broadcast your plan.");
-      return;
-    }
+    if (!user) return;
 
     const postData = {
       text,
@@ -54,18 +52,14 @@ export function PostModal({ isOpen, onClose }: PostModalProps) {
     };
 
     addDoc(collection(db, "posts"), postData)
-      .then((docRef) => {
-        console.log("SAVED TO FIRESTORE:", docRef.id);
+      .then(() => {
         setText("");
         setLocation("");
         setPlayersNeeded(1);
         toast({ title: "Signal Broadcasted 🚀" });
         onClose();
       })
-      .catch((err) => {
-        console.error("FIRESTORE FAILED:", err.code, err.message);
-        alert("Save failed: " + err.code + " - " + err.message);
-      });
+      .catch(() => {});
   };
 
   return (
@@ -137,7 +131,7 @@ export function PostModal({ isOpen, onClose }: PostModalProps) {
                 <div className="relative">
                   <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20" />
                   <Input
-                    placeholder="e.g. Vijayanagar / Bogadi"
+                    placeholder="e.g. Vijaynagar / Bogadi"
                     className="bg-[#1A1A1A] border-[#333333] pl-12 h-14 text-[#F5F5F5] italic font-bold"
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}

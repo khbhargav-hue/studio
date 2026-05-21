@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect } from "react"
@@ -29,7 +30,7 @@ import {
 import { db } from "@/lib/firebase"
 import { getAuth } from "firebase/auth"
 import { useUser } from "@/firebase"
-import { collection, query, orderBy, addDoc, doc, serverTimestamp, updateDoc, increment, deleteDoc, arrayUnion, onSnapshot, getDoc, setDoc } from "firebase/firestore"
+import { collection, query, orderBy, addDoc, doc, serverTimestamp, updateDoc, increment, deleteDoc, arrayUnion, onSnapshot, getDoc, setDoc, limit } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 import { SkeletonCard } from "@/components/Skeleton"
@@ -79,7 +80,8 @@ export default function MatchesPage() {
 
     const q = query(
       collection(db, "matches"),
-      orderBy("createdAt", "desc")
+      orderBy("createdAt", "desc"),
+      limit(15)
     )
 
     const unsubscribe = onSnapshot(
@@ -92,8 +94,7 @@ export default function MatchesPage() {
         setRequests(data)
         setLoading(false)
       },
-      err => {
-        console.error("READ_ERROR", err)
+      () => {
         setLoading(false)
       }
     )
@@ -102,7 +103,7 @@ export default function MatchesPage() {
   }, [db])
 
   const handleSubmit = () => {
-    if (!user) { alert("Please sign in first"); return; }
+    if (!user) { return; }
     
     setIsPosting(true);
     
@@ -131,9 +132,8 @@ export default function MatchesPage() {
           setEditingMatch(null);
           toast({ title: "Signal Updated ⚡" });
         })
-        .catch((err) => {
+        .catch(() => {
           setIsPosting(false);
-          alert("Update Failed: " + err.message);
         });
     } else {
       addDoc(collection(db, "matches"), {
@@ -148,9 +148,8 @@ export default function MatchesPage() {
         setNewRequest(initialFormState);
         toast({ title: "Signal Broadcasted 🚀" });
       })
-      .catch((err) => {
+      .catch(() => {
         setIsPosting(false);
-        alert("Broadcast Failed: " + err.message);
       });
     }
   };
@@ -296,8 +295,6 @@ function MatchCard({ request, isAdmin, onEdit }: { request: any, isAdmin: boolea
       updatedAt: serverTimestamp()
     }).then(() => {
       toast({ title: "Slot Secured ⚡", description: "You are now part of the lineup." })
-    }).catch(err => {
-      toast({ variant: "destructive", title: "Join Failed", description: err.message });
     });
   }
 
@@ -320,12 +317,9 @@ function MatchCard({ request, isAdmin, onEdit }: { request: any, isAdmin: boolea
 
   const handleDelete = () => {
     if (!db || !canManage) return
-    if (!confirm("Retract this match signal?")) return
     const matchRef = doc(db, "matches", request.id);
     deleteDoc(matchRef).then(() => {
       toast({ title: "Signal Redacted" })
-    }).catch(err => {
-      toast({ variant: "destructive", title: "Deletion Failed", description: err.message });
     });
   }
 
@@ -386,7 +380,7 @@ function MatchCard({ request, isAdmin, onEdit }: { request: any, isAdmin: boolea
         <div className="flex -space-x-3">
           {Array.from({ length: avatarCount }).map((_, i) => (
             <div key={i} className="h-10 w-10 rounded-full border-2 border-card bg-white/10 overflow-hidden">
-              <img src={`https://picsum.photos/seed/${request.id}-${i}/100`} className="h-full w-full object-cover" alt="Player" />
+              <img src={`https://picsum.photos/seed/${request.id}-${i}/100`} loading="lazy" decoding="async" className="h-full w-full object-cover" alt="Player" />
             </div>
           ))}
           {playersJoined > 3 && (

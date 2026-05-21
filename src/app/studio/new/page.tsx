@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, Suspense, useRef } from "react";
@@ -19,16 +20,12 @@ import {
   ArrowLeft, 
   Sparkles, 
   Loader2, 
-  Save, 
   Image as ImageIcon, 
   IndianRupee, 
   Upload, 
   Settings2, 
   Clock,
   Layout,
-  CheckCircle2,
-  Phone,
-  Zap,
   ShieldCheck
 } from "lucide-react";
 import { generateTurfDescriptionForAdmin } from "@/ai/flows/generate-turf-description-for-admin";
@@ -144,14 +141,12 @@ function NewTurfForm() {
       
       const xhr = new XMLHttpRequest();
       xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, true);
-      xhr.timeout = 8000; 
 
       xhr.onload = () => {
         if (xhr.status === 200) resolve(JSON.parse(xhr.responseText).secure_url);
         else resolve(null);
       };
       xhr.onerror = () => resolve(null);
-      xhr.ontimeout = () => resolve(null);
       xhr.send(form);
     });
   };
@@ -162,29 +157,12 @@ function NewTurfForm() {
     
     setIsSaving(true);
 
-    const watchdogId = setTimeout(() => {
-      if (isSaving) {
-        setIsSaving(false);
-        toast({ 
-          title: "Save timeout", 
-          description: "Submission taking too long. Data may have been stored. Check dashboard.", 
-          variant: "destructive" 
-        });
-      }
-    }, 10000);
-
     try {
       let finalImageUrl = formData.imageUrl;
 
       if (pendingFile) {
-        try {
-          const url = await uploadToCloudinary(pendingFile);
-          if (url) {
-            finalImageUrl = url;
-          }
-        } catch (err) {
-          // silent fail
-        }
+        const url = await uploadToCloudinary(pendingFile);
+        if (url) finalImageUrl = url;
       }
 
       if (!finalImageUrl && !formData.imageUrl) {
@@ -204,13 +182,11 @@ function NewTurfForm() {
 
       setDoc(turfRef, dataToSave, { merge: true })
         .then(() => {
-          clearTimeout(watchdogId);
           toast({ title: editId ? "Intel Synchronized" : "Arena Deployed" });
           setIsSaving(false);
           window.location.href = "/studio";
         })
         .catch(async (err: any) => {
-          clearTimeout(watchdogId);
           setIsSaving(false);
           errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: turfRef.path,
@@ -221,11 +197,10 @@ function NewTurfForm() {
         });
       
     } catch (err: any) {
-      clearTimeout(watchdogId);
       setIsSaving(false);
       toast({ 
         title: "Deployment Halted", 
-        description: err.message || "Circuit interrupted.",
+        description: "Circuit interrupted.",
         variant: "destructive" 
       });
     }
@@ -272,7 +247,6 @@ function NewTurfForm() {
       <form onSubmit={handleSubmit} className="space-y-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           <div className="lg:col-span-8 space-y-10">
-            {/* Core Identity */}
             <Card className="bg-card border-border rounded-[24px] overflow-hidden">
               <CardHeader className="p-8 pb-0">
                 <CardTitle className="text-xl font-black italic flex items-center gap-3 uppercase text-white"><Settings2 className="h-5 w-5 text-primary" /> Arena Intelligence</CardTitle>
@@ -339,7 +313,7 @@ function NewTurfForm() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Area in Mysuru*</Label>
-                    <Input placeholder="e.g. Vijayanagar" value={formData.area} onChange={e => setFormData({...formData, area: e.target.value})} required />
+                    <Input placeholder="e.g. Vijaynagar" value={formData.area} onChange={e => setFormData({...formData, area: e.target.value})} required />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Surface Type</Label>
@@ -359,7 +333,6 @@ function NewTurfForm() {
               </CardContent>
             </Card>
 
-            {/* Narrative AI */}
             <Card className="bg-card border-border rounded-[24px] overflow-hidden">
               <CardHeader className="p-8 pb-0 flex flex-row items-center justify-between">
                 <CardTitle className="text-xl font-black italic flex items-center gap-3 uppercase text-white"><Sparkles className="h-5 w-5 text-primary" /> Strategy Narrative</CardTitle>
@@ -373,7 +346,6 @@ function NewTurfForm() {
               </CardContent>
             </Card>
 
-            {/* Rules */}
             <Card className="bg-card border-border rounded-[24px] overflow-hidden">
               <CardHeader className="p-8 pb-0">
                 <CardTitle className="text-xl font-black italic flex items-center gap-3 uppercase text-white"><ShieldCheck className="h-5 w-5 text-primary" /> Arena Regulations</CardTitle>
@@ -385,7 +357,6 @@ function NewTurfForm() {
           </div>
 
           <div className="lg:col-span-4 space-y-10">
-            {/* Financial Deck */}
             <Card className="bg-card border-border rounded-[24px] overflow-hidden">
               <CardHeader className="p-6 pb-0">
                 <CardTitle className="text-lg font-black italic flex items-center gap-3 uppercase text-white"><IndianRupee className="h-4 w-4 text-primary" /> Pricing Strategy</CardTitle>
@@ -400,12 +371,10 @@ function NewTurfForm() {
                     onChange={e => setFormData({...formData, price: e.target.value})} 
                     required
                   />
-                  <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Example: ₹900/hr or "Ask before booking"</p>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Ops Deck */}
             <Card className="bg-card border-border rounded-[24px] overflow-hidden">
               <CardHeader className="p-6 pb-0">
                 <CardTitle className="text-lg font-black italic flex items-center gap-3 uppercase text-white"><Clock className="h-4 w-4 text-primary" /> Operational Intel</CardTitle>
@@ -446,7 +415,6 @@ function NewTurfForm() {
               </CardContent>
             </Card>
 
-            {/* Facility Hub */}
             <Card className="bg-card border-border rounded-[24px] overflow-hidden">
               <CardHeader className="p-6 pb-0">
                 <CardTitle className="text-lg font-black italic flex items-center gap-3 uppercase text-white"><Layout className="h-4 w-4 text-primary" /> Amenities</CardTitle>
@@ -483,7 +451,6 @@ function NewTurfForm() {
               </CardContent>
             </Card>
 
-            {/* Thumbnail */}
             <Card className="bg-card border-border rounded-[24px] overflow-hidden">
               <CardHeader className="p-6 pb-0">
                 <CardTitle className="text-lg font-black italic flex items-center gap-3 uppercase text-white"><ImageIcon className="h-4 w-4 text-primary" /> Media</CardTitle>
@@ -493,7 +460,6 @@ function NewTurfForm() {
                   className="relative aspect-video rounded-xl border-2 border-dashed border-border bg-[#1A1A1A] hover:border-primary/50 cursor-pointer overflow-hidden flex flex-col items-center justify-center transition-all group"
                   onClick={() => mainInputRef.current?.click()}
                 >
-                  {isSaving && pendingFile && <Loader2 className="h-6 w-6 animate-spin text-primary absolute z-10" />}
                   {(previewUrl || formData.imageUrl) ? (
                     <img src={previewUrl || formData.imageUrl} className="w-full h-full object-cover group-hover:opacity-50 transition-opacity" alt="Main" loading="lazy" />
                   ) : (

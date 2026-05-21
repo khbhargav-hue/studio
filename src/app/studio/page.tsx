@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { getAuth } from 'firebase/auth';
-import { collection, query, orderBy, doc, deleteDoc, updateDoc, getDocs, addDoc, serverTimestamp, getDoc, setDoc } from 'firebase/firestore';
+import { collection, query, orderBy, doc, deleteDoc, updateDoc, getDocs, addDoc, serverTimestamp, getDoc, setDoc, limit } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -50,17 +50,17 @@ export default function StudioDashboard() {
 
   const turfsQuery = useMemoFirebase(() => {
     if (!db) return null;
-    return query(collection(db, 'turfs'), orderBy("updatedAt", "desc"));
+    return query(collection(db, 'turfs'), orderBy("updatedAt", "desc"), limit(12));
   }, [db]);
   
   const teamsQuery = useMemoFirebase(() => {
     if (!db) return null;
-    return query(collection(db, 'teams'), orderBy('createdAt', 'desc'));
+    return query(collection(db, 'teams'), orderBy('createdAt', 'desc'), limit(15));
   }, [db]);
   
   const challengesQuery = useMemoFirebase(() => {
     if (!db) return null;
-    return query(collection(db, 'challenges'), orderBy('createdAt', 'desc'));
+    return query(collection(db, 'challenges'), orderBy('createdAt', 'desc'), limit(15));
   }, [db]);
 
   const { data: turfs, loading: turfsLoading } = useCollection(turfsQuery);
@@ -75,8 +75,7 @@ export default function StudioDashboard() {
   const handleClearCache = () => {
     localStorage.clear();
     sessionStorage.clear();
-    // @ts-ignore
-    window.location.reload(true);
+    window.location.reload();
   };
 
   const handleSeedData = () => {
@@ -91,9 +90,6 @@ export default function StudioDashboard() {
             updatedAt: serverTimestamp()
           });
         });
-        alert("4 Mysuru turfs added!");
-      } else {
-        alert("Turfs already exist: " + snap.size);
       }
     });
   };
@@ -195,9 +191,7 @@ export default function StudioDashboard() {
                           <Link href={`/studio/new?id=${turf.id}`}><Edit2 className="h-3 w-3" /></Link>
                         </Button>
                         <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-destructive" onClick={() => {
-                          if (confirm("Redact this arena node?")) {
-                            deleteDoc(doc(db, 'turfs', turf.id));
-                          }
+                          deleteDoc(doc(db, 'turfs', turf.id));
                         }}>
                           <Trash2 className="h-3 w-3" />
                         </Button>

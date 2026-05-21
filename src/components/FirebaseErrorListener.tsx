@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect } from 'react';
@@ -10,14 +11,6 @@ export function FirebaseErrorListener() {
 
   useEffect(() => {
     const handlePermissionError = (error: FirestorePermissionError) => {
-      // Log the full error object for debugging
-      console.error('Firebase Permission Error:', error);
-      
-      // If the error has a context property, log it specifically
-      if (error.context) {
-        console.error('Permission Error Context Detail:', JSON.stringify(error.context, null, 2));
-      }
-
       toast({
         variant: 'destructive',
         title: 'Access Denied',

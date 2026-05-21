@@ -1,8 +1,9 @@
+
 'use client';
 
 import { useEffect, useState } from "react";
 import { Navbar } from "@/components/navbar";
-import { Footer } from "@/components/footer";
+import { Footer } from "@/components/footer"
 import { MobileNav } from "@/components/mobile-nav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUser, useAuth, useFirestore, useDoc, useMemoFirebase } from "@/firebase";
 import { GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut } from "firebase/auth";
-import { doc, setDoc, serverTimestamp, updateDoc } from "firebase/firestore";
+import { doc, setDoc, serverTimestamp, updateDoc, getDoc } from "firebase/firestore";
 import { 
   UserCircle, 
   LogOut, 
@@ -25,10 +26,8 @@ import {
   Activity,
   Star,
   Gift,
-  Share2,
   Settings2,
   Save,
-  Clock,
   Swords,
   AlertCircle,
   ExternalLink,
@@ -54,6 +53,7 @@ export default function ProfilePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [authError, setAuthError] = useState<React.ReactNode | null>(null);
   const [copied, setCopied] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   
   const userProfileRef = useMemoFirebase(() => {
     if (!db || !user) return null;
@@ -72,6 +72,25 @@ export default function ProfilePage() {
   });
 
   useEffect(() => {
+    const authInstance = getAuth();
+    const currentUser = authInstance.currentUser;
+    if (!currentUser || !db) return;
+    
+    getDoc(doc(db, "users", currentUser.uid)).then(snap => {
+      if (snap.exists()) {
+        setIsAdmin(snap.data().role === "admin");
+      } else {
+        setDoc(doc(db, "users", currentUser.uid), {
+          name: currentUser.displayName || "Player",
+          email: currentUser.email,
+          role: "user",
+          createdAt: serverTimestamp()
+        });
+      }
+    });
+  }, [user, db]);
+
+  useEffect(() => {
     if (profile) {
       setFormData({
         skillLevel: profile.skillLevel || "Intermediate",
@@ -84,27 +103,10 @@ export default function ProfilePage() {
     }
   }, [profile]);
 
-  useEffect(() => {
-    if (user && db && !profile && !userLoading) {
-      const ref = doc(db, "users", user.uid);
-      setDoc(ref, {
-        uid: user.uid,
-        displayName: user.displayName,
-        photoURL: user.photoURL,
-        rewardPoints: REWARD_POINTS.SIGNUP,
-        status: "online",
-        referralCode: `TURF-${user.uid.slice(0, 6).toUpperCase()}`,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      }, { merge: true });
-    }
-  }, [user, db, profile, userLoading]);
-
   const copyHostname = () => {
     if (typeof window !== 'undefined') {
       navigator.clipboard.writeText(window.location.hostname);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
     }
   };
 
@@ -189,7 +191,6 @@ export default function ProfilePage() {
           </div>
         );
       } else {
-        console.error("Auth process interrupted:", error);
         toast({ title: "Identification Failed", variant: "destructive" });
       }
     } finally {
@@ -245,7 +246,6 @@ export default function ProfilePage() {
             </div>
           ) : (
             <div className="space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-700">
-              {/* Profile Header */}
               <section className="bg-card border border-white/5 rounded-[3rem] p-10 flex flex-col md:flex-row items-center gap-10 shadow-2xl">
                 <div className="h-32 w-32 rounded-[2.5rem] border-4 border-primary/20 p-1 overflow-hidden bg-white/5 shrink-0 relative">
                   {user.photoURL ? (
@@ -266,7 +266,6 @@ export default function ProfilePage() {
                 </div>
               </section>
 
-              {/* Rewards Hub */}
               <section className="bg-primary/5 border border-primary/20 rounded-[3rem] p-12 relative overflow-hidden shadow-2xl">
                 <div className="absolute top-0 right-0 p-12 opacity-[0.03] pointer-events-none">
                   <Trophy className="h-64 w-64 text-primary" />
@@ -299,7 +298,6 @@ export default function ProfilePage() {
                 </div>
               </section>
 
-              {/* Tactical Identity Form */}
               <section className="bg-card border border-white/5 rounded-[3rem] p-12 space-y-12 shadow-2xl">
                  <div className="flex items-center gap-4">
                     <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/20">
@@ -332,7 +330,7 @@ export default function ProfilePage() {
                        </div>
                        <div className="space-y-3">
                           <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Area in Mysuru</Label>
-                          <Input placeholder="e.g. Vijayanagar" className="h-16 bg-white/5 border-white/10 rounded-2xl text-lg italic font-bold text-white" value={formData.area} onChange={e => setFormData({...formData, area: e.target.value})} />
+                          <Input placeholder="e.g. Vijaynagar" className="h-16 bg-white/5 border-white/10 rounded-2xl text-lg italic font-bold text-white" value={formData.area} onChange={e => setFormData({...formData, area: e.target.value})} />
                        </div>
                     </div>
 

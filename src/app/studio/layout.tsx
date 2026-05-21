@@ -1,25 +1,25 @@
+
 'use client';
 
 import { ReactNode, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useUser, useAuth } from '@/firebase';
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { 
-  LayoutDashboard, 
+  BarChart3,
   LogOut, 
   Loader2, 
   Trophy, 
   Users, 
   Zap, 
-  Waves, 
-  Globe,
-  TrendingUp,
-  UserCheck
+  Megaphone,
+  MessageSquare
 } from 'lucide-react';
 import Link from 'next/link';
 import { signOut } from 'firebase/auth';
 import { TurfistaLogo } from '@/components/brand-logo';
+import { cn } from "@/lib/utils";
 
 const ADMIN_EMAIL = 'khbhargav@gmail.com';
 
@@ -27,6 +27,7 @@ export default function StudioLayout({ children }: { children: ReactNode }) {
   const { user, loading } = useUser();
   const auth = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
@@ -59,14 +60,12 @@ export default function StudioLayout({ children }: { children: ReactNode }) {
   if (!isAuthorized) return null;
 
   const MENU_ITEMS = [
-    { label: "Dashboard", icon: LayoutDashboard, href: "/studio" },
-    { label: "Turfs", icon: Zap, href: "/studio" }, // Dashboard has turf list
+    { label: "Dashboard", icon: BarChart3, href: "/studio" },
+    { label: "Venues", icon: Zap, href: "/studio" },
     { label: "Teams", icon: Users, href: "/studio" },
     { label: "Challenges", icon: Trophy, href: "/studio" },
-    { label: "Coaching", icon: UserCheck, href: "/studio" },
-    { label: "Pools", icon: Waves, href: "/studio" },
-    { label: "SEO", icon: Globe, href: "/studio/branding" },
-    { label: "Ads", icon: TrendingUp, href: "/studio/media" }, // Reusing media path for ads for now
+    { label: "Messages", icon: MessageSquare, href: "/messages" },
+    { label: "Ads", icon: Megaphone, href: "/studio/media" },
   ];
 
   return (
@@ -76,18 +75,29 @@ export default function StudioLayout({ children }: { children: ReactNode }) {
           <SidebarHeader className="h-[64px] px-6 flex items-center border-b border-border">
             <Link href="/"><TurfistaLogo size="sm" /></Link>
           </SidebarHeader>
-          <SidebarContent className="p-4 space-y-1">
+          <SidebarContent className="p-0 space-y-0 pt-4">
             <SidebarMenu>
-              {MENU_ITEMS.map((item) => (
-                <SidebarMenuItem key={item.label}>
-                  <SidebarMenuButton asChild className="h-11 rounded-[10px] text-muted hover:bg-surface hover:text-primary transition-all">
-                    <Link href={item.href}>
-                      <item.icon className="h-4 w-4 mr-3" />
-                      <span className="text-[11px] font-black uppercase tracking-widest">{item.label}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {MENU_ITEMS.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <SidebarMenuItem key={item.label}>
+                    <SidebarMenuButton 
+                      asChild 
+                      className={cn(
+                        "h-12 w-full justify-start rounded-none pl-5 transition-all duration-200",
+                        isActive 
+                          ? "bg-[#1A1A1A] text-primary border-l-[3px] border-primary" 
+                          : "text-[#888] border-l-0 hover:bg-[#111] hover:text-white"
+                      )}
+                    >
+                      <Link href={item.href}>
+                        <item.icon className={cn("h-4 w-4 mr-4", isActive ? "text-primary" : "text-[#888]")} />
+                        <span className="text-[13px] font-black uppercase tracking-widest">{item.label}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarContent>
           <SidebarFooter className="p-4 border-t border-border">

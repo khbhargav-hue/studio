@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
@@ -15,7 +16,7 @@ import {
   UserCircle
 } from "lucide-react"
 import { useFirestore } from "@/firebase"
-import { collection, getDocs } from "firebase/firestore"
+import { collection, getDocs, query, limit } from "firebase/firestore"
 import { cn } from "@/lib/utils"
 import { SkeletonCard } from "@/components/Skeleton"
 
@@ -28,7 +29,7 @@ export default function PlayersPage() {
   useEffect(() => {
     if (!db) return
     
-    getDocs(collection(db, "users")).then(snap => {
+    getDocs(query(collection(db, "users"), limit(20))).then(snap => {
       const data = snap.docs.map(d => ({ id: d.id, ...d.data() }))
       setPlayers(data)
       setLoading(false)
@@ -84,7 +85,14 @@ export default function PlayersPage() {
                 <div className="flex items-start gap-4 mb-6">
                   <div className="h-14 w-14 rounded-full bg-[#1A1A1A] border border-[#222] overflow-hidden shrink-0 flex items-center justify-center">
                     {player.photoURL ? (
-                      <img src={player.photoURL} alt={player.displayName} className="h-full w-full object-cover" loading="lazy" />
+                      <img 
+                        src={player.photoURL} 
+                        alt={player.displayName} 
+                        className="h-full w-full object-cover" 
+                        loading="lazy" 
+                        decoding="async"
+                        onError={(e) => { (e.target as any).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='%231A1A1A'/%3E%3Ctext x='50%25' y='50%25' fill='%23444' text-anchor='middle' font-size='20'%3E👤%3C/text%3E%3C/svg%3E" }}
+                      />
                     ) : (
                       <UserCircle className="h-8 w-8 text-white/10" />
                     )}

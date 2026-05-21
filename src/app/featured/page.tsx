@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo } from "react";
@@ -15,7 +16,7 @@ export default function FeaturedPage() {
   
   const featuredQuery = useMemoFirebase(() => {
     if (!db) return null;
-    return query(collection(db, "turfs"), limit(20));
+    return query(collection(db, "turfs"), limit(12));
   }, [db]);
 
   const { data: rawTurfs, loading } = useCollection(featuredQuery);

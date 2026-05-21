@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useMemo } from "react"
@@ -21,7 +22,7 @@ export default function ArenasPage() {
 
   const turfsQuery = useMemoFirebase(() => {
     if (!db) return null
-    return query(collection(db, "turfs"), limit(50))
+    return query(collection(db, "turfs"), limit(12))
   }, [db])
 
   const { data: turfs, loading } = useCollection(turfsQuery)

@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Footer } from '@/components/footer';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, serverTimestamp, addDoc } from 'firebase/firestore';
+import { collection, getDocs, query, limit } from 'firebase/firestore';
 import { Star, MessageCircle, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -28,7 +28,7 @@ export default function TurfsPage() {
   const fetchTurfs = async () => {
     setLoading(true);
     try {
-      const snap = await getDocs(collection(db, "turfs"));
+      const snap = await getDocs(query(collection(db, "turfs"), limit(12)));
       setTurfs(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     } catch (err) {
       console.error("Registry fetch error", err);
@@ -79,7 +79,7 @@ export default function TurfsPage() {
 
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[12px]">
-            {[...Array(3)].map((_, i) => <SkeletonCard key={i} />)}
+            {[...Array(6)].map((_, i) => <SkeletonCard key={i} />)}
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[12px]">

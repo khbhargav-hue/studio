@@ -14,7 +14,7 @@ import {
 import { getAuth } from "firebase/auth"
 import { db } from "@/lib/firebase"
 import { useUser } from "@/firebase"
-import { collection, doc, updateDoc, increment, onSnapshot, getDocs, getDoc, setDoc, serverTimestamp } from "firebase/firestore"
+import { collection, doc, updateDoc, increment, onSnapshot, getDocs, getDoc, setDoc, serverTimestamp, query, orderBy, limit } from "firebase/firestore"
 import { cn } from "@/lib/utils"
 import { SkeletonCard } from "@/components/Skeleton"
 import PostCard from "@/components/PostCard"
@@ -66,17 +66,19 @@ export default function SocialWallPage() {
 
   useEffect(() => {
     if (!db) return;
+    
+    const postsQuery = query(
+      collection(db, "posts"), 
+      orderBy("createdAt", "desc"), 
+      limit(15)
+    );
+
     const unsub = onSnapshot(
-      collection(db, "posts"),
+      postsQuery,
       (snapshot) => {
         const list: any[] = [];
         snapshot.forEach((doc) => {
           list.push({ id: doc.id, ...doc.data() });
-        });
-        list.sort((a: any, b: any) => {
-          const at = a.createdAt?.seconds || 0;
-          const bt = b.createdAt?.seconds || 0;
-          return bt - at;
         });
         setPosts(list);
         setLoading(false);
@@ -87,14 +89,14 @@ export default function SocialWallPage() {
       }
     );
     return () => unsub();
-  }, []);
+  }, [db]);
 
   useEffect(() => {
     if (!db) return;
-    getDocs(collection(db, "ads")).then(snap => {
+    getDocs(query(collection(db, "ads"), limit(10))).then(snap => {
       setAds(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter((a: any) => a.isActive));
     });
-  }, []);
+  }, [db]);
 
   const handleLike = (postId: string) => {
     if (likedPosts.includes(postId)) return;
@@ -152,7 +154,7 @@ export default function SocialWallPage() {
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 rounded-full bg-[#1A1A1A] overflow-hidden flex items-center justify-center border border-[#222] shrink-0">
               {user?.photoURL ? (
-                <img src={user.photoURL} className="h-full w-full object-cover" alt="Me" loading="lazy" />
+                <img src={user.photoURL} className="h-full w-full object-cover" alt="Me" loading="lazy" decoding="async" />
               ) : (
                 <UserCircle className="h-5 w-5 text-white/20" />
               )}
@@ -183,8 +185,6 @@ export default function SocialWallPage() {
         >
           Test Firestore Write ⚡
         </button>
-
-        <div style={{color:"red",fontSize:12}}>Posts count: {posts.length}</div>
 
         {loading ? (
           <div className="space-y-3">
@@ -230,13 +230,26 @@ function AdBanner({ ad }: { ad: any }) {
     window.open(ad.targetUrl, '_blank');
   };
 
+  const displayImage = ad.imageUrl?.includes('cloudinary.com') 
+    ? `${ad.imageUrl}?w=400&q=60&f=webp` 
+    : (ad.imageUrl || "https://picsum.photos/seed/ad/800/200");
+
   return (
     <div className="bg-[#111] border border-[#222] rounded-xl overflow-hidden mb-3 relative">
       <div className="absolute top-3 right-4 z-10">
         <span className="text-[9px] font-bold text-white/40 uppercase tracking-widest">Sponsored</span>
       </div>
       <div className="relative w-full h-[120px]" onClick={handleAdClick} style={{ cursor: 'pointer' }}>
-        <img src={ad.imageUrl || "https://picsum.photos/seed/ad/800/200"} className="w-full h-full object-cover opacity-60" alt={ad.title} loading="lazy" />
+        <img 
+          src={displayImage} 
+          className="w-full h-full object-cover opacity-60" 
+          alt={ad.title} 
+          loading="lazy" 
+          decoding="async"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='200'%3E%3Crect width='400' height='200' fill='%231A1A1A'/%3E%3Ctext x='50%25' y='50%25' fill='%23444' text-anchor='middle' font-size='40'%3E⚽%3C/text%3E%3C/svg%3E";
+          }}
+        />
         <div className="absolute inset-0 bg-gradient-to-t from-[#111] to-transparent" />
       </div>
       <div className="p-4 pt-0">

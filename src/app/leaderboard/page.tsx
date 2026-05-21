@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Navbar } from "@/components/navbar";
@@ -15,7 +16,7 @@ export default function LeaderboardPage() {
 
   const leadersQuery = useMemoFirebase(() => {
     if (!db) return null;
-    return query(collection(db, "users"), orderBy("rewardPoints", "desc"), limit(50));
+    return query(collection(db, "users"), orderBy("rewardPoints", "desc"), limit(20));
   }, [db]);
 
   const { data: leaders, loading } = useCollection(leadersQuery);
@@ -65,7 +66,14 @@ export default function LeaderboardPage() {
 
                     <div className="h-12 w-12 rounded-full overflow-hidden border border-white/10 bg-white/5 flex items-center justify-center">
                       {leader.photoURL ? (
-                        <img src={leader.photoURL} alt={leader.displayName} className="h-full w-full object-cover" />
+                        <img 
+                          src={leader.photoURL} 
+                          alt={leader.displayName} 
+                          className="h-full w-full object-cover" 
+                          loading="lazy"
+                          decoding="async"
+                          onError={(e) => { (e.target as any).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='%231A1A1A'/%3E%3Ctext x='50%25' y='50%25' fill='%23444' text-anchor='middle' font-size='20'%3E👤%3C/text%3E%3C/svg%3E" }}
+                        />
                       ) : (
                         <UserCircle className="h-6 w-6 text-white/10" />
                       )}

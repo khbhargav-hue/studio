@@ -81,7 +81,6 @@ export default function PostCard({ post, currentUser, isAdmin, onDelete, onLike,
 
   return (
     <div className="bg-[#111] border border-[#222] rounded-xl p-4 mb-3 transition-all hover:border-primary/20 group">
-      {/* Top Row: Avatar & Identity */}
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-3">
           <div className="h-9 w-9 rounded-full bg-[#1A1A1A] border border-[#222] p-0.5 overflow-hidden shrink-0">
@@ -126,12 +125,10 @@ export default function PostCard({ post, currentUser, isAdmin, onDelete, onLike,
         </div>
       </div>
 
-      {/* Message Body */}
       <div className="mb-4">
         <p className="text-[#F5F5F5] text-[15px] leading-normal font-medium italic">"{post.text}"</p>
       </div>
 
-      {/* Players Needed Badge */}
       {post.playersNeeded > 0 && (
         <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-lg px-3 py-1.5 text-[13px] font-black text-primary italic mb-4">
           <Users className="h-3.5 w-3.5" />
@@ -139,7 +136,6 @@ export default function PostCard({ post, currentUser, isAdmin, onDelete, onLike,
         </div>
       )}
 
-      {/* Action Footer */}
       <div className="flex items-center justify-between border-t border-white/5 pt-4">
         <div className="flex items-center gap-6">
           <button 
@@ -174,7 +170,6 @@ export default function PostCard({ post, currentUser, isAdmin, onDelete, onLike,
         </button>
       </div>
 
-      {/* Reply Input Node */}
       {isReplying && (
         <div className="mt-4 pt-4 border-t border-white/5 animate-in slide-in-from-top-2 duration-200">
           <div className="flex gap-2">
@@ -207,7 +202,6 @@ export default function PostCard({ post, currentUser, isAdmin, onDelete, onLike,
         </div>
       )}
 
-      {/* Edit Dialog */}
       <Dialog open={isEditOpen} onOpenChange={setEditOpen}>
         <DialogContent className="bg-[#111] border-white/5 rounded-2xl max-w-sm">
           <DialogHeader>

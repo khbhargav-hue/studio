@@ -32,7 +32,9 @@ import {
   Globe,
   Star
 } from "lucide-react"
-import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/firebase"
+import { db } from "@/lib/firebase"
+import { getAuth } from "firebase/auth"
+import { useUser, useDoc, useMemoFirebase } from "@/firebase"
 import { collection, query, getDocs, addDoc, doc, serverTimestamp, orderBy, getDoc, setDoc } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
@@ -42,7 +44,6 @@ const CATEGORIES = ["Sports Brand", "Equipment", "Academy", "Local Business"]
 const TIERS = ["Gold", "Silver", "Bronze"]
 
 export default function SponsorsPage() {
-  const db = useFirestore()
   const { user } = useUser()
   const { toast } = useToast()
   
@@ -53,15 +54,17 @@ export default function SponsorsPage() {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    if (!user || !db) return;
+    const auth = getAuth();
+    const currentUser = auth.currentUser;
+    if (!currentUser || !db) return;
     
-    getDoc(doc(db, "users", user.uid)).then(snap => {
+    getDoc(doc(db, "users", currentUser.uid)).then(snap => {
       if (snap.exists()) {
         setIsAdmin(snap.data().role === "admin");
       } else {
-        setDoc(doc(db, "users", user.uid), {
-          name: user.displayName || "Player",
-          email: user.email,
+        setDoc(doc(db, "users", currentUser.uid), {
+          name: currentUser.displayName || "Player",
+          email: currentUser.email,
           role: "user",
           createdAt: serverTimestamp()
         });

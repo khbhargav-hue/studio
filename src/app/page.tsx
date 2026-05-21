@@ -11,7 +11,8 @@ import {
   UserCircle,
   ExternalLink
 } from "lucide-react"
-import { db, auth } from "@/lib/firebase"
+import { getAuth } from "firebase/auth"
+import { db } from "@/lib/firebase"
 import { useUser } from "@/firebase"
 import { collection, doc, updateDoc, increment, onSnapshot, getDocs, getDoc, setDoc, serverTimestamp } from "firebase/firestore"
 import { cn } from "@/lib/utils"
@@ -38,12 +39,23 @@ export default function SocialWallPage() {
   const [isAdmin, setIsAdmin] = React.useState(false);
 
   useEffect(() => {
-    if (!auth.currentUser) return;
-    getDoc(doc(db, "users", auth.currentUser.uid))
-      .then(snap => {
-        if (snap.data()?.role === "admin") setIsAdmin(true);
-      });
-  }, []);
+    const auth = getAuth();
+    const currentUser = auth.currentUser;
+    if (!currentUser || !db) return;
+    
+    getDoc(doc(db, "users", currentUser.uid)).then(snap => {
+      if (snap.exists()) {
+        setIsAdmin(snap.data().role === "admin");
+      } else {
+        setDoc(doc(db, "users", currentUser.uid), {
+          name: currentUser.displayName || "Player",
+          email: currentUser.email,
+          role: "user",
+          createdAt: serverTimestamp()
+        });
+      }
+    });
+  }, [user, db]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {

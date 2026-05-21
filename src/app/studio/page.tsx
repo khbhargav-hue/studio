@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { getAuth } from 'firebase/auth';
 import { collection, query, orderBy, doc, deleteDoc, updateDoc, getDocs, addDoc, serverTimestamp, getDoc, setDoc } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,15 +30,17 @@ export default function StudioDashboard() {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    if (!user || !db) return;
+    const auth = getAuth();
+    const currentUser = auth.currentUser;
+    if (!currentUser || !db) return;
     
-    getDoc(doc(db, "users", user.uid)).then(snap => {
+    getDoc(doc(db, "users", currentUser.uid)).then(snap => {
       if (snap.exists()) {
         setIsAdmin(snap.data().role === "admin");
       } else {
-        setDoc(doc(db, "users", user.uid), {
-          name: user.displayName || "Player",
-          email: user.email,
+        setDoc(doc(db, "users", currentUser.uid), {
+          name: currentUser.displayName || "Player",
+          email: currentUser.email,
           role: "user",
           createdAt: serverTimestamp()
         });
@@ -45,9 +48,20 @@ export default function StudioDashboard() {
     });
   }, [user, db]);
 
-  const turfsQuery = useMemoFirebase(() => query(collection(db, 'turfs'), orderBy("updatedAt", "desc")), [db]);
-  const teamsQuery = useMemoFirebase(() => query(collection(db, 'teams'), orderBy('createdAt', 'desc')), [db]);
-  const challengesQuery = useMemoFirebase(() => query(collection(db, 'challenges'), orderBy('createdAt', 'desc')), [db]);
+  const turfsQuery = useMemoFirebase(() => {
+    if (!db) return null;
+    return query(collection(db, 'turfs'), orderBy("updatedAt", "desc"));
+  }, [db]);
+  
+  const teamsQuery = useMemoFirebase(() => {
+    if (!db) return null;
+    return query(collection(db, 'teams'), orderBy('createdAt', 'desc'));
+  }, [db]);
+  
+  const challengesQuery = useMemoFirebase(() => {
+    if (!db) return null;
+    return query(collection(db, 'challenges'), orderBy('createdAt', 'desc'));
+  }, [db]);
 
   const { data: turfs, loading: turfsLoading } = useCollection(turfsQuery);
   const { data: teams } = useCollection(teamsQuery);
@@ -61,7 +75,8 @@ export default function StudioDashboard() {
   const handleClearCache = () => {
     localStorage.clear();
     sessionStorage.clear();
-    window.location.reload();
+    // @ts-ignore
+    window.location.reload(true);
   };
 
   const handleSeedData = () => {

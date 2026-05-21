@@ -29,13 +29,14 @@ import {
   Share2,
   Edit2
 } from "lucide-react"
-import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/firebase"
+import { db } from "@/lib/firebase"
+import { getAuth } from "firebase/auth"
+import { useUser, useDoc, useMemoFirebase } from "@/firebase"
 import { collection, query, orderBy, addDoc, doc, serverTimestamp, updateDoc, increment, deleteDoc, arrayUnion, onSnapshot, getDoc, setDoc } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 
 export default function MatchesPage() {
-  const db = useFirestore()
   const { user } = useUser()
   const { toast } = useToast()
   const [isPosting, setIsPosting] = useState(false)
@@ -46,15 +47,17 @@ export default function MatchesPage() {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    if (!user || !db) return;
+    const auth = getAuth();
+    const currentUser = auth.currentUser;
+    if (!currentUser || !db) return;
     
-    getDoc(doc(db, "users", user.uid)).then(snap => {
+    getDoc(doc(db, "users", currentUser.uid)).then(snap => {
       if (snap.exists()) {
         setIsAdmin(snap.data().role === "admin");
       } else {
-        setDoc(doc(db, "users", user.uid), {
-          name: user.displayName || "Player",
-          email: user.email,
+        setDoc(doc(db, "users", currentUser.uid), {
+          name: currentUser.displayName || "Player",
+          email: currentUser.email,
           role: "user",
           createdAt: serverTimestamp()
         });
@@ -267,7 +270,6 @@ export default function MatchesPage() {
 }
 
 function MatchCard({ request, isAdmin, onEdit }: { request: any, isAdmin: boolean, onEdit: () => void }) {
-  const db = useFirestore()
   const { user } = useUser()
   const { toast } = useToast()
   

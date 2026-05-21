@@ -71,8 +71,8 @@ export function BottomNav() {
             >
               <span className="text-[20px]">{item.icon}</span>
               <span className="text-[11px] font-black uppercase tracking-widest">{item.label}</span>
-              {item.badge ? (
-                <div className="absolute -top-1 -right-2 bg-red-600 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center border border-[#111]">
+              {item.badge && item.badge > 0 ? (
+                <div className="absolute -top-1 -right-2 bg-red-600 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center border border-[#111] animate-in zoom-in duration-300">
                   {item.badge > 9 ? '9+' : item.badge}
                 </div>
               ) : null}

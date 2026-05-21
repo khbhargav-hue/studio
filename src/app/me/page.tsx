@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useUser, useAuth, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut } from "firebase/auth";
 import { collection, query, where, deleteDoc, doc, setDoc, serverTimestamp } from "firebase/firestore";
-import { UserCircle, LogOut, LayoutGrid, Zap, MessageSquare, ChevronRight } from "lucide-react";
+import { UserCircle, LogOut, LayoutGrid, Zap, MessageSquare, ChevronRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import PostCard from "@/components/PostCard";
@@ -48,12 +48,15 @@ export default function MePage() {
     provider.addScope("email");
     provider.addScope("profile");
 
+    // Detect mobile device automatically for redirect protocol
     const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
 
     try {
       if (isMobile) {
-        signInWithRedirect(auth, provider);
+        // iOS Safari and Android Chrome require redirect to bypass popup blockers
+        await signInWithRedirect(auth, provider);
       } else {
+        // Desktop browsers handle popups seamlessly
         const result = await signInWithPopup(auth, provider);
         const userResult = result.user;
         
@@ -68,10 +71,15 @@ export default function MePage() {
         toast({ title: "Identity Verified", description: "Welcome back to the Mysuru circuit." });
       }
     } catch (err: any) {
-      if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
-        toast({ title: "Auth Failed", description: err.message, variant: "destructive" });
+      // Handle cancelled actions silently
+      if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
+        setIsSigningIn(false);
+        return;
       }
+      
+      toast({ title: "Auth Failed", description: err.message, variant: "destructive" });
     } finally {
+      // For mobile, we stay in signing-in state until redirect occurs
       if (!isMobile) setIsSigningIn(false);
     }
   };
@@ -116,7 +124,7 @@ export default function MePage() {
           disabled={isSigningIn}
           className="w-full max-w-sm h-14 bg-[#AAFF00] text-[#0A0A0A] font-black uppercase tracking-widest rounded-xl shadow-xl shadow-[#AAFF00]/10"
         >
-          {isSigningIn ? <span className="animate-pulse">VERIFYING...</span> : "Sign in with Google"}
+          {isSigningIn ? <Loader2 className="h-5 w-5 animate-spin" /> : "Sign in with Google"}
         </Button>
       </div>
     );

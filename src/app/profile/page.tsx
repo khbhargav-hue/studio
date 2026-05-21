@@ -148,7 +148,7 @@ export default function ProfilePage() {
     
     try {
       if (isMobile) {
-        signInWithRedirect(auth, provider);
+        await signInWithRedirect(auth, provider);
       } else {
         const result = await signInWithPopup(auth, provider);
         const userResult = result.user;
@@ -164,6 +164,7 @@ export default function ProfilePage() {
         toast({ title: "Identity Verified", description: "Welcome back to the Mysuru circuit." });
       }
     } catch (error: any) {
+      // Catch cancelled actions silently
       if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
         setIsSigningIn(false);
         return;
@@ -202,7 +203,7 @@ export default function ProfilePage() {
                     className="h-9 bg-white/10 border-white/10 text-white text-[9px] font-black uppercase tracking-widest rounded-lg flex-1"
                     onClick={() => window.open("https://console.firebase.google.com/", "_blank")}
                   >
-                    Console <ExternalLink className="ml-1 h-3 w-3" />
+                    Console <ExternalLink className="ml-1.5 h-3 w-3" />
                   </Button>
                   <Button 
                     variant="outline" 
@@ -210,7 +211,7 @@ export default function ProfilePage() {
                     className="h-9 border-white/10 text-white/40 text-[9px] font-black uppercase tracking-widest rounded-lg flex-1"
                     onClick={() => setAuthError(null)}
                   >
-                    <RefreshCw className="ml-1 h-3 w-3" /> Retry
+                    <RefreshCw className="ml-1.5 h-3 w-3" /> Retry
                   </Button>
                 </div>
               </div>

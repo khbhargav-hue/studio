@@ -59,12 +59,15 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
     provider.addScope("email");
     provider.addScope("profile");
 
+    // Detect mobile device automatically for redirect protocol
     const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
     
     try {
       if (isMobile) {
-        signInWithRedirect(auth, provider);
+        // Mobile browsers (Safari/Chrome) and WhatsApp in-app browser require Redirect
+        await signInWithRedirect(auth, provider);
       } else {
+        // Desktop environments favor the seamless Popup
         const result = await signInWithPopup(auth, provider);
         const user = result.user;
         
@@ -80,6 +83,7 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
         if (onOpenChange) onOpenChange(false);
       }
     } catch (err: any) {
+      // Handle cancelled actions silently
       if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
         setIsLoading(false);
         return;
@@ -130,6 +134,7 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
         toast({ title: "Authentication Failed", description: err.message, variant: "destructive" });
       }
     } finally {
+      // For mobile, setIsLoading remains true until the page redirects
       if (!isMobile) setIsLoading(false);
     }
   };

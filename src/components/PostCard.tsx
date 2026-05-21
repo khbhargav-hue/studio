@@ -2,12 +2,12 @@
 'use client';
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
-import { Trash2, Heart, MessageCircle, Share2, Users, Send, X, Edit2 } from "lucide-react";
+import { Trash2, Heart, MessageCircle, Share2, Users, Edit2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { doc, deleteDoc, getFirestore, addDoc, collection, serverTimestamp, updateDoc, setDoc, increment } from "firebase/firestore";
+import { doc, deleteDoc, getFirestore, serverTimestamp, updateDoc, setDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
-import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import {
   Dialog,
@@ -37,8 +37,7 @@ const optimizeUrl = (url: string) => {
 
 export default function PostCard({ post, currentUser, isAdmin, onLike, hasLiked }: PostCardProps) {
   const { toast } = useToast();
-  const [isReplying, setIsReplying] = useState(false);
-  const [replyText, setReplyText] = useState("");
+  const router = useRouter();
   const [isEditOpen, setEditOpen] = useState(false);
   const [editText, setEditText] = useState(post.text);
   
@@ -56,59 +55,37 @@ export default function PostCard({ post, currentUser, isAdmin, onLike, hasLiked 
       .catch(() => {});
   };
 
-  const handleReply = (postId: string, text: string) => {
-    if (!text.trim()) return;
-    if (!auth.currentUser || !post.postedBy?.uid) return;
+  const handleReply = () => {
+    if (!auth.currentUser || !post.postedBy?.uid) {
+      toast({ title: "Identification Required", description: "Verify identity to send signals.", variant: "destructive" });
+      return;
+    }
     
-    if (auth.currentUser.uid === post.postedBy.uid) {
+    const me = auth.currentUser;
+    if (me.uid === post.postedBy.uid) {
       toast({ title: "Self-Signal Detected", description: "You cannot message yourself.", variant: "destructive" });
       return;
     }
 
-    const dbInstance = getFirestore();
-    const myUid = auth.currentUser.uid;
-    const targetUid = post.postedBy.uid;
-    const convoId = [myUid, targetUid].sort().join("_");
+    const convoId = [me.uid, post.postedBy.uid].sort().join("_");
     
-    const convoRef = doc(dbInstance, "conversations", convoId);
-    const msgRef = collection(dbInstance, "conversations", convoId, "messages");
-
-    const metadata = {
-      participants: [myUid, targetUid],
+    setDoc(doc(db, "conversations", convoId), {
+      participants: [me.uid, post.postedBy.uid],
       participantNames: {
-        [myUid]: auth.currentUser.displayName || "Player",
-        [targetUid]: post.postedBy.name || "Player"
+        [me.uid]: me.displayName || "Athlete",
+        [post.postedBy.uid]: post.postedBy.name || "Athlete"
       },
       participantPhotos: {
-        [myUid]: auth.currentUser.photoURL || "",
-        [targetUid]: post.postedBy.photo || post.postedBy.photoURL || ""
+        [me.uid]: me.photoURL || "",
+        [post.postedBy.uid]: post.postedBy.photo || post.postedBy.photoURL || ""
       },
-      lastMessage: text,
+      lastMessage: "",
       lastMessageTime: serverTimestamp(),
-      unreadCount: {
-        [targetUid]: increment(1),
-        [myUid]: 0
-      },
-      relatedPostId: postId,
-      updatedAt: serverTimestamp(),
+      unreadCount: { [me.uid]: 0, [post.postedBy.uid]: 0 },
+      relatedPostId: post.id,
       createdAt: serverTimestamp()
-    };
-
-    setDoc(convoRef, metadata, { merge: true }).then(() => {
-      addDoc(msgRef, {
-        text: text,
-        senderId: myUid,
-        senderName: auth.currentUser.displayName || "Player",
-        senderPhoto: auth.currentUser.photoURL || "",
-        read: false,
-        createdAt: serverTimestamp()
-      }).then(() => {
-        setReplyText("");
-        setIsReplying(false);
-        toast({ title: "Signal Transmitted 📡", description: `Direct link established with ${post.postedBy.name}` });
-      });
-    }).catch(e => {
-      toast({ title: "Transmission Failed", description: e.message, variant: "destructive" });
+    }, { merge: true }).then(() => {
+      router.push("/messages/" + convoId);
     });
   };
 
@@ -196,11 +173,8 @@ export default function PostCard({ post, currentUser, isAdmin, onLike, hasLiked 
             <span className="text-[13px] font-black uppercase tracking-widest">{post.likes || 0}</span>
           </button>
           <button 
-            onClick={() => setIsReplying(!isReplying)}
-            className={cn(
-              "flex items-center gap-2 transition-colors",
-              isReplying ? "text-primary" : "text-white/40 hover:text-primary"
-            )}
+            onClick={handleReply}
+            className="flex items-center gap-2 text-white/40 hover:text-primary transition-colors"
           >
             <MessageCircle className="h-4 w-4" />
             <span className="text-[13px] font-black uppercase tracking-widest">Message</span>
@@ -215,39 +189,6 @@ export default function PostCard({ post, currentUser, isAdmin, onLike, hasLiked 
           <span className="text-[13px] font-black uppercase tracking-widest">Share</span>
         </button>
       </div>
-
-      {isReplying && (
-        <div className="mt-4 pt-4 border-t border-white/5 animate-in slide-in-from-top-2 duration-200">
-          <div className="flex gap-2">
-            <Input 
-              placeholder="Send private message..." 
-              className="h-10 bg-white/5 border-white/10 text-white text-xs italic"
-              value={replyText}
-              onChange={(e) => setReplyText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleReply(post.id, replyText);
-              }}
-              autoFocus
-            />
-            <button 
-              className="h-10 px-4 bg-primary text-black rounded-lg font-black uppercase text-[10px]"
-              onClick={() => handleReply(post.id, replyText)}
-            >
-              <Send className="h-4 w-4" />
-            </button>
-            <button 
-              className="h-10 w-10 p-0 text-white/20 hover:text-white flex items-center justify-center"
-              onClick={() => {
-                setIsReplying(false);
-                setReplyText("");
-              }}
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-          <p className="text-[9px] font-bold text-white/20 uppercase tracking-widest mt-2 px-1">Reply starts a direct tactical link</p>
-        </div>
-      )}
 
       <Dialog open={isEditOpen} onOpenChange={setEditOpen}>
         <DialogContent className="bg-[#111] border-white/5 rounded-2xl max-w-sm">
@@ -270,3 +211,4 @@ export default function PostCard({ post, currentUser, isAdmin, onLike, hasLiked 
     </div>
   );
 }
+

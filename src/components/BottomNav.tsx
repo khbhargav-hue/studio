@@ -38,7 +38,7 @@ export function BottomNav() {
     { label: "Feed", href: "/", icon: "🏠" },
     { label: "Turfs", href: "/turfs", icon: "⚽" },
     { label: "Post", href: "#", icon: "➕" },
-    { label: "Signals", href: "/messages", icon: "⚡", badge: totalUnread },
+    { label: "Matches", href: "/matches", icon: "🏟️", badge: totalUnread },
     { label: "Me", href: "/profile", icon: "👤" },
   ];
 

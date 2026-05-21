@@ -1,10 +1,11 @@
 import { initializeApp, getApps } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, enableIndexedDbPersistence } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
 /**
  * Unified Firebase Identity Node
  * Centralized configuration for the Turfista Mysuru Network.
+ * Optimized for offline circuit stability.
  */
 const firebaseConfig = {
   apiKey: "AIzaSyD7J3fG4GXUehnNyGRZ_a2ZeFU4cBnSAIQ",
@@ -22,4 +23,17 @@ const app = getApps().length === 0
 
 export const db = getFirestore(app);
 export const auth = getAuth(app);
+
+// Enable Offline Circuit Persistence
+if (typeof window !== 'undefined') {
+  enableIndexedDbPersistence(db)
+    .catch((err) => {
+      if (err.code === "failed-precondition") {
+        console.log("Multiple tabs open");
+      } else if (err.code === "unimplemented") {
+        console.log("Browser does not support offline");
+      }
+    });
+}
+
 export default app;

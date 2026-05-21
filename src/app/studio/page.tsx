@@ -1,7 +1,8 @@
 'use client';
 
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, doc, deleteDoc, updateDoc, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
+import React, { useState, useEffect } from 'react';
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { collection, query, orderBy, doc, deleteDoc, updateDoc, getDocs, addDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,7 +15,7 @@ import {
   TableHeader, 
   TableRow 
 } from '@/components/ui/table';
-import { Edit2, Trash2, Plus, Zap, Users, Trophy, UserCheck, Database, LayoutDashboard } from 'lucide-react';
+import { Edit2, Trash2, Plus, Zap, Users, Trophy, UserCheck, Database, LayoutDashboard, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from "@/lib/utils";
@@ -22,7 +23,18 @@ import { mysuuruTurfs } from '@/lib/seed-circuit';
 
 export default function StudioDashboard() {
   const db = useFirestore();
+  const { user } = useUser();
   const { toast } = useToast();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Administrative Role Verification
+  useEffect(() => {
+    if (!user || !db) return;
+    getDoc(doc(db, "users", user.uid))
+      .then(snap => {
+        if (snap.data()?.role === "admin") setIsAdmin(true);
+      });
+  }, [user, db]);
 
   const turfsQuery = useMemoFirebase(() => query(collection(db, 'turfs'), orderBy("updatedAt", "desc")), [db]);
   const teamsQuery = useMemoFirebase(() => query(collection(db, 'teams'), orderBy('createdAt', 'desc')), [db]);
@@ -35,6 +47,17 @@ export default function StudioDashboard() {
   const toggleStatus = (coll: string, id: string, field: string, val: boolean) => {
     updateDoc(doc(db, coll, id), { [field]: !val, updatedAt: serverTimestamp() })
       .then(() => toast({ title: "Circuit node updated" }));
+  };
+
+  const handleClearCache = () => {
+    // 1. Clear localStorage
+    localStorage.clear();
+    
+    // 2. Clear sessionStorage  
+    sessionStorage.clear();
+    
+    // 3. Force reload fresh from server
+    window.location.reload();
   };
 
   const handleSeedData = () => {
@@ -64,6 +87,25 @@ export default function StudioDashboard() {
           <p className="text-[#888] text-[10px] font-black uppercase tracking-widest mt-2">Mysuru Sports Circuit Node: 🟢 Stable</p>
         </div>
         <div className="flex flex-wrap gap-3">
+          {isAdmin && (
+            <button 
+              onClick={handleClearCache}
+              style={{
+                background: 'transparent',
+                border: '1px solid #FF4444',
+                color: '#FF4444',
+                borderRadius: '10px',
+                padding: '10px 20px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '900',
+                textTransform: 'uppercase',
+                letterSpacing: '0.1em'
+              }}
+            >
+              🗑️ Clear Cache
+            </button>
+          )}
           <Button 
             onClick={handleSeedData}
             variant="outline"

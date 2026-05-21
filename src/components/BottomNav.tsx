@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { PostModal } from "./PostModal";
 import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
@@ -13,6 +13,12 @@ export function BottomNav() {
   const { user } = useUser();
   const db = useFirestore();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [hasMounted, setHasMounted] = useState(false);
+
+  // Hydration Guard: Defer rendering until client-side mount
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
 
   const convosQuery = useMemoFirebase(() => {
     if (!db || !user) return null;
@@ -29,7 +35,9 @@ export function BottomNav() {
     return convos.reduce((acc, convo: any) => acc + (convo.unreadCount?.[user.uid] || 0), 0);
   }, [convos, user]);
 
-  // Hook validation: Ensure early returns for route visibility occur AFTER all hook initializations
+  // Ensure hooks are initialized before any early returns
+  if (!hasMounted) return null;
+
   if (pathname.startsWith('/studio') || pathname.startsWith('/admin')) {
     return null;
   }

@@ -1,6 +1,6 @@
 import { initializeApp, getApps } from "firebase/app";
 import { getFirestore, enableIndexedDbPersistence } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
+import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth";
 
 /**
  * Unified Firebase Identity Node
@@ -24,6 +24,9 @@ const app = getApps().length === 0
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 
+// Enforce session persistence for mobile stability
+setPersistence(auth, browserLocalPersistence);
+
 // Enable Offline Circuit Persistence
 if (typeof window !== 'undefined') {
   enableIndexedDbPersistence(db)
@@ -36,4 +39,5 @@ if (typeof window !== 'undefined') {
     });
 }
 
+export { auth };
 export default app;

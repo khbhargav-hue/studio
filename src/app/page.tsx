@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState, useEffect, useMemo } from "react"
@@ -12,7 +13,7 @@ import {
 } from "lucide-react"
 import { db, auth } from "@/lib/firebase"
 import { useUser } from "@/firebase"
-import { collection, doc, updateDoc, increment, onSnapshot, getDocs, getDoc } from "firebase/firestore"
+import { collection, doc, updateDoc, increment, onSnapshot, getDocs, getDoc, setDoc, serverTimestamp } from "firebase/firestore"
 import { cn } from "@/lib/utils"
 import { SkeletonCard } from "@/components/Skeleton"
 import PostCard from "@/components/PostCard"
@@ -37,11 +38,21 @@ export default function SocialWallPage() {
   const [isAdmin, setIsAdmin] = React.useState(false);
 
   useEffect(() => {
-    if (!auth.currentUser) return;
-    getDoc(doc(db, "users", auth.currentUser.uid))
-      .then(snap => {
-        if (snap.data()?.role === "admin") setIsAdmin(true);
-      });
+    const userNode = auth.currentUser;
+    if (!userNode) return;
+    
+    getDoc(doc(db, "users", userNode.uid)).then(snap => {
+      if (snap.exists()) {
+        setIsAdmin(snap.data().role === "admin");
+      } else {
+        setDoc(doc(db, "users", userNode.uid), {
+          name: userNode.displayName || "Player",
+          email: userNode.email,
+          role: "user",
+          createdAt: serverTimestamp()
+        });
+      }
+    });
   }, [user]);
 
   useEffect(() => {
@@ -51,7 +62,6 @@ export default function SocialWallPage() {
     }
   }, []);
 
-  // Simplified Real-Time Listener Node
   useEffect(() => {
     if (!db) return;
     const unsub = onSnapshot(
@@ -61,7 +71,6 @@ export default function SocialWallPage() {
         snapshot.forEach((doc) => {
           list.push({ id: doc.id, ...doc.data() });
         });
-        // Tactical Client-Side Chronological Sort
         list.sort((a: any, b: any) => {
           const at = a.createdAt?.seconds || 0;
           const bt = b.createdAt?.seconds || 0;
@@ -154,7 +163,6 @@ export default function SocialWallPage() {
           </div>
         </div>
 
-        {/* Tactical Test Button */}
         <button 
           onClick={() => {
             import("firebase/firestore").then(({ addDoc, collection, serverTimestamp }) => {

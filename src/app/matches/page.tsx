@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect } from "react"
@@ -29,7 +30,7 @@ import {
   Edit2
 } from "lucide-react"
 import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/firebase"
-import { collection, query, orderBy, addDoc, doc, serverTimestamp, updateDoc, increment, deleteDoc, arrayUnion, onSnapshot } from "firebase/firestore"
+import { collection, query, orderBy, addDoc, doc, serverTimestamp, updateDoc, increment, deleteDoc, arrayUnion, onSnapshot, getDoc, setDoc } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 
@@ -42,6 +43,24 @@ export default function MatchesPage() {
   const [requests, setRequests] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [editingMatch, setEditingMatch] = useState<any>(null)
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    if (!user || !db) return;
+    
+    getDoc(doc(db, "users", user.uid)).then(snap => {
+      if (snap.exists()) {
+        setIsAdmin(snap.data().role === "admin");
+      } else {
+        setDoc(doc(db, "users", user.uid), {
+          name: user.displayName || "Player",
+          email: user.email,
+          role: "user",
+          createdAt: serverTimestamp()
+        });
+      }
+    });
+  }, [user, db]);
 
   const initialFormState = {
     game: "Football",
@@ -53,12 +72,6 @@ export default function MatchesPage() {
   }
 
   const [newRequest, setNewRequest] = useState(initialFormState)
-
-  const profileRef = useMemoFirebase(() => {
-    if (!db || !user) return null;
-    return doc(db, "users", user.uid);
-  }, [db, user]);
-  const { data: profile } = useDoc(profileRef);
 
   useEffect(() => {
     if (!db) return;
@@ -233,7 +246,7 @@ export default function MatchesPage() {
               <MatchCard 
                 key={request.id} 
                 request={request} 
-                isAdmin={profile?.role === 'admin'}
+                isAdmin={isAdmin}
                 onEdit={() => handleEdit(request)}
               />
             ))}

@@ -1,8 +1,9 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query, orderBy, doc, deleteDoc, updateDoc, getDocs, addDoc, serverTimestamp, getDoc } from 'firebase/firestore';
+import { collection, query, orderBy, doc, deleteDoc, updateDoc, getDocs, addDoc, serverTimestamp, getDoc, setDoc } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -27,13 +28,21 @@ export default function StudioDashboard() {
   const { toast } = useToast();
   const [isAdmin, setIsAdmin] = useState(false);
 
-  // Administrative Role Verification
   useEffect(() => {
     if (!user || !db) return;
-    getDoc(doc(db, "users", user.uid))
-      .then(snap => {
-        if (snap.data()?.role === "admin") setIsAdmin(true);
-      });
+    
+    getDoc(doc(db, "users", user.uid)).then(snap => {
+      if (snap.exists()) {
+        setIsAdmin(snap.data().role === "admin");
+      } else {
+        setDoc(doc(db, "users", user.uid), {
+          name: user.displayName || "Player",
+          email: user.email,
+          role: "user",
+          createdAt: serverTimestamp()
+        });
+      }
+    });
   }, [user, db]);
 
   const turfsQuery = useMemoFirebase(() => query(collection(db, 'turfs'), orderBy("updatedAt", "desc")), [db]);
@@ -50,13 +59,8 @@ export default function StudioDashboard() {
   };
 
   const handleClearCache = () => {
-    // 1. Clear localStorage
     localStorage.clear();
-    
-    // 2. Clear sessionStorage  
     sessionStorage.clear();
-    
-    // 3. Force reload fresh from server
     window.location.reload();
   };
 

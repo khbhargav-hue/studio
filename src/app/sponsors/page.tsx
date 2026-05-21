@@ -33,7 +33,7 @@ import {
   Star
 } from "lucide-react"
 import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/firebase"
-import { collection, query, getDocs, addDoc, doc, serverTimestamp, orderBy } from "firebase/firestore"
+import { collection, query, getDocs, addDoc, doc, serverTimestamp, orderBy, getDoc, setDoc } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 import Image from "next/image"
@@ -50,6 +50,24 @@ export default function SponsorsPage() {
   const [loading, setLoading] = useState(true)
   const [showDialog, setShowDialog] = useState(false)
   const [isAdding, setIsAdding] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    if (!user || !db) return;
+    
+    getDoc(doc(db, "users", user.uid)).then(snap => {
+      if (snap.exists()) {
+        setIsAdmin(snap.data().role === "admin");
+      } else {
+        setDoc(doc(db, "users", user.uid), {
+          name: user.displayName || "Player",
+          email: user.email,
+          role: "user",
+          createdAt: serverTimestamp()
+        });
+      }
+    });
+  }, [user, db]);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -59,14 +77,6 @@ export default function SponsorsPage() {
     category: "Sports Brand",
     tier: "Bronze"
   })
-
-  // Admin Verification Node
-  const profileRef = useMemoFirebase(() => {
-    if (!db || !user) return null
-    return doc(db, "users", user.uid)
-  }, [db, user])
-  const { data: profile } = useDoc(profileRef)
-  const isAdmin = profile?.role === 'admin'
 
   const fetchSponsors = async () => {
     if (!db) return

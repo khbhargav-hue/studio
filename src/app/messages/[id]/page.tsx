@@ -3,7 +3,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Navbar } from "@/components/navbar";
 import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase } from "@/firebase";
 import { collection, query, orderBy, limit, addDoc, serverTimestamp, doc, updateDoc } from "firebase/firestore";
 import { ArrowLeft, Send, UserCircle, Loader2 } from "lucide-react";

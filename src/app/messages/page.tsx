@@ -2,7 +2,6 @@
 'use client';
 
 import { Navbar } from "@/components/navbar";
-import { Footer } from "@/components/footer";
 import { MobileNav } from "@/components/mobile-nav";
 import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
 import { collection, query, where, orderBy, limit } from "firebase/firestore";
@@ -22,7 +21,7 @@ export default function ConversationsPage() {
       collection(db, "conversations"),
       where("participants", "array-contains", user.uid),
       orderBy("lastMessageTime", "desc"),
-      limit(20)
+      limit(15)
     );
   }, [db, user]);
 
@@ -38,7 +37,7 @@ export default function ConversationsPage() {
             <MessageSquare className="h-3 w-3" /> DIRECT SIGNALS
           </div>
           <h1 className="text-4xl md:text-5xl font-black italic tracking-tighter uppercase leading-none text-white">
-            Tactical <span className="text-primary">Links.</span>
+            Direct <span className="text-primary">Links.</span>
           </h1>
         </header>
 
@@ -47,7 +46,7 @@ export default function ConversationsPage() {
             {[...Array(5)].map((_, i) => <SkeletonCard key={i} />)}
           </div>
         ) : convos && convos.length > 0 ? (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {convos.map((convo: any) => {
               const otherUid = convo.participants.find((id: string) => id !== user?.uid);
               const otherName = convo.participantNames?.[otherUid] || "Athlete Node";
@@ -65,32 +64,38 @@ export default function ConversationsPage() {
                 >
                   <div className="flex items-center gap-4">
                     <div className="relative shrink-0">
-                      <div className="h-12 w-12 rounded-full bg-[#1A1A1A] border border-[#222] overflow-hidden flex items-center justify-center p-0.5">
+                      <div className="h-10 w-10 rounded-full bg-[#1A1A1A] border border-[#222] overflow-hidden flex items-center justify-center p-0.5">
                         {otherPhoto ? (
-                          <img src={otherPhoto} alt={otherName} className="h-full w-full object-cover rounded-full" />
+                          <img 
+                            src={otherPhoto + "?w=100&h=100&c=fill"} 
+                            alt={otherName} 
+                            className="h-full w-full object-cover rounded-full" 
+                            loading="lazy"
+                            decoding="async"
+                          />
                         ) : (
-                          <UserCircle className="h-8 w-8 text-white/10" />
+                          <UserCircle className="h-6 w-6 text-white/10" />
                         )}
                       </div>
                       {unread > 0 && (
-                        <div className="absolute -top-1 -right-1 h-5 w-5 bg-primary text-black text-[9px] font-black rounded-full flex items-center justify-center border-2 border-[#111]">
+                        <div className="absolute -top-1 -right-1 h-5 w-5 bg-red-600 text-white text-[9px] font-black rounded-full flex items-center justify-center border-2 border-[#111]">
                           {unread}
                         </div>
                       )}
                     </div>
                     
                     <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-baseline mb-1">
-                        <h3 className="text-sm font-black uppercase italic text-white truncate group-hover:text-primary transition-colors">
+                      <div className="flex justify-between items-baseline mb-0.5">
+                        <h3 className="text-[14px] font-bold text-white uppercase tracking-tight truncate group-hover:text-primary transition-colors">
                           {otherName}
                         </h3>
-                        <span className="text-[10px] font-bold text-white/20 uppercase tracking-widest">{time}</span>
+                        <span className="text-[11px] font-medium text-white/40 uppercase tracking-widest">{time}</span>
                       </div>
                       <p className={cn(
                         "text-[13px] truncate italic",
                         unread > 0 ? "text-white font-bold" : "text-[#888] font-medium"
                       )}>
-                        {convo.lastMessage}
+                        {convo.lastMessage || "Establish link..."}
                       </p>
                     </div>
                     

@@ -53,7 +53,6 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
     setPersistence(auth, browserLocalPersistence)
       .then(() => signInWithPopup(auth, provider))
       .then((result) => {
-        console.log("LOGIN_SUCCESS", result.user.uid);
         if (onOpenChange) onOpenChange(false);
         toast({ title: "Identity Verified" });
         return setDoc(
@@ -61,7 +60,7 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
           {
             name: result.user.displayName,
             email: result.user.email,
-            photo: result.user.photoURL,
+            photoURL: result.user.photoURL,
             role: "user",
             updatedAt: serverTimestamp()
           },
@@ -69,19 +68,9 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
         );
       })
       .catch((err) => {
-        console.log("LOGIN_FAIL", err.code);
         if (err.code === "auth/popup-blocked") {
           alert("Popup blocked. Please open Turfista in Chrome browser and try again.");
-          setError(
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-primary font-black text-[10px] uppercase tracking-tighter">
-                <AlertCircle className="h-4 w-4" /> Popup Blocked
-              </div>
-              <p className="text-[10px] leading-relaxed text-white">
-                Tactical protocol interrupted. Please enable popups or <span className="text-primary font-bold">Open in Chrome browser</span> to complete verification.
-              </p>
-            </div>
-          );
+          setError("Popup blocked. Use Chrome.");
         } else if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
           alert("Login failed: " + err.message);
         }
@@ -154,8 +143,8 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
         </DialogHeader>
 
         {error && (
-          <div className="bg-white/5 border border-white/10 rounded-[20px] p-6 mb-8 animate-in zoom-in-95 duration-200">
-            <div className="text-xs font-medium">{error}</div>
+          <div className="bg-white/5 border border-white/10 rounded-[20px] p-6 mb-8">
+            <div className="text-xs font-medium text-white">{error}</div>
             <Button variant="ghost" size="sm" onClick={() => setError(null)} className="mt-4 w-full text-[10px] uppercase font-black text-white/40"><RefreshCw className="h-3 w-3 mr-2" /> Retry</Button>
           </div>
         )}
@@ -236,10 +225,6 @@ export function AuthModal({ children, open, onOpenChange }: AuthModalProps) {
         >
           <Chrome className="h-4 w-4 mr-3 text-primary" /> Identify with Google
         </Button>
-
-        <p className="text-center text-[9px] font-bold text-white/20 uppercase tracking-tighter mt-10 italic">
-          By continuing, you accept the Turfista Tactical Protocols.
-        </p>
       </DialogContent>
     </Dialog>
   );

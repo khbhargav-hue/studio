@@ -10,7 +10,6 @@ import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 /**
  * FirebaseClientProvider (Root Identity Hub)
  * Centralized source of truth for the Turfista session state.
- * Standardized on onAuthStateChanged as the primary session authority.
  */
 export function FirebaseClientProvider({ children }: { children: ReactNode }) {
   const { app, db, auth, storage } = useMemo(() => initializeFirebase(), []);
@@ -27,12 +26,12 @@ export function FirebaseClientProvider({ children }: { children: ReactNode }) {
         setDoc(doc(db, "users", user.uid), {
           name: user.displayName,
           email: user.email,
-          photo: user.photoURL,
+          photoURL: user.photoURL,
           role: "user",
           updatedAt: serverTimestamp()
         }, { merge: true })
-        .then(() => console.log("LOGIN_SUCCESS", user.email))
-        .catch(err => console.log("REGISTRY_SYNC_FAIL", err.code));
+        .then(() => console.log("SYNC_SUCCESS", user.email))
+        .catch(err => console.log("SYNC_FAIL", err.code));
       }
     });
 

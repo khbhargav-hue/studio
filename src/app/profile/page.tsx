@@ -93,14 +93,13 @@ export default function ProfilePage() {
     setPersistence(auth, browserLocalPersistence)
       .then(() => signInWithPopup(auth, provider))
       .then((result) => {
-        console.log("LOGIN_SUCCESS", result.user.uid);
         toast({ title: "Identity Verified" });
         return setDoc(
           doc(db, "users", result.user.uid),
           {
             name: result.user.displayName,
             email: result.user.email,
-            photo: result.user.photoURL,
+            photoURL: result.user.photoURL,
             role: "user",
             updatedAt: serverTimestamp()
           },
@@ -108,7 +107,6 @@ export default function ProfilePage() {
         );
       })
       .catch((err) => {
-        console.log("LOGIN_FAIL", err.code);
         if (err.code === "auth/popup-blocked") {
           alert("Popup blocked. Please open Turfista in Chrome browser and try again.");
           setAuthError("Popup blocked. Open in Chrome browser.");

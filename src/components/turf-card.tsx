@@ -11,15 +11,17 @@ interface TurfCardProps {
 
 const ERROR_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='200'%3E%3Crect width='400' height='200' fill='%231A1A1A'/%3E%3Ctext x='50%25' y='50%25' fill='%23444' text-anchor='middle' font-size='40'%3E⚽%3C/text%3E%3C/svg%3E";
 
-const optimizeUrl = (url: string) => {
-  if (!url) return url;
+const optimizeUrl = (url: string | null | undefined) => {
+  if (!url) return null;
   return url.includes('cloudinary.com') ? `${url}?w=400&q=60&f=webp` : url;
 };
 
 export function TurfCard({ turf }: TurfCardProps) {
   const phone = turf.contactNumber?.replace(/\D/g, "") || "";
   const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(`Hi! I want to book ${turf.name}`)}`;
-  const displayImage = optimizeUrl(turf.imageUrl || "");
+  
+  // Tactical Fix: Fallback to ERROR_IMAGE if optimizeUrl returns null or undefined
+  const displayImage = optimizeUrl(turf.imageUrl) || ERROR_IMAGE;
   
   const price = turf.courtPricing?.["5A Side"] || turf.pricePerHour || "Call";
   const amenitiesList = Array.isArray(turf.amenities) ? turf.amenities.join(" · ") : "";

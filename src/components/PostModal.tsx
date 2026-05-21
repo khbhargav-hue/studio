@@ -8,13 +8,6 @@ import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 const SPORTS = [
@@ -23,11 +16,6 @@ const SPORTS = [
   { id: "Pickleball", label: "Pickleball 🎾" },
   { id: "Badminton", label: "Badminton 🏸" },
   { id: "Swimming", label: "Swimming 🏊" },
-];
-
-const AREAS = [
-  "Vijayanagar", "Yadavagiri", "JP Nagar", "Bogadi", "Hebbal", 
-  "Saraswathipuram", "Kuvempunagar", "Nazarbad", "Other"
 ];
 
 const PLAYER_COUNTS = [1, 2, 3, 5, 10];
@@ -41,7 +29,7 @@ export function PostModal({ isOpen, onClose }: PostModalProps) {
   const { toast } = useToast();
   const [text, setText] = useState("");
   const [sport, setSport] = useState("Football");
-  const [area, setArea] = useState("Vijayanagar");
+  const [area, setArea] = useState("");
   const [time, setTime] = useState("18:00");
   const [playersNeeded, setPlayersNeeded] = useState(1);
 
@@ -51,16 +39,22 @@ export function PostModal({ isOpen, onClose }: PostModalProps) {
   const resetForm = () => {
     setText("");
     setSport("Football");
-    setArea("Vijayanagar");
+    setArea("");
     setTime("18:00");
     setPlayersNeeded(1);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (!auth.currentUser) {
         toast({ title: "Identity Required", description: "Please login to post a match.", variant: "destructive" });
         return;
+    }
+
+    if (!area) {
+      alert("Please select your area");
+      return;
     }
 
     addDoc(collection(db, "posts"), {
@@ -81,7 +75,7 @@ export function PostModal({ isOpen, onClose }: PostModalProps) {
       resetForm();
       toast({ title: "Signal Broadcasted 🚀" });
     }).catch(e => {
-       toast({ title: "Transmission Failed", description: e.message, variant: "destructive" });
+       alert(e.message);
     });
   };
 
@@ -110,7 +104,7 @@ export function PostModal({ isOpen, onClose }: PostModalProps) {
 
             <div className="flex justify-between items-start mb-3">
               <div>
-                <h2 className="text-base font-bold italic uppercase tracking-tighter text-white leading-none">
+                <h2 className="text-[16px] font-bold italic uppercase tracking-tighter text-white leading-none">
                   Post a Match <span className="text-[#AAFF00]">⚡</span>
                 </h2>
                 <p className="text-[10px] font-black uppercase tracking-[0.4em] text-[#888888] mt-1">WHAT'S YOUR GAME?</p>
@@ -120,16 +114,16 @@ export function PostModal({ isOpen, onClose }: PostModalProps) {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-3">
+            <form onSubmit={handleSubmit} className="space-y-[12px]">
               <div className="space-y-2">
-                <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1">
+                <div className="flex gap-[6px] overflow-x-auto no-scrollbar pb-1">
                   {SPORTS.map((s) => (
                     <button
                       key={s.id}
                       type="button"
                       onClick={() => setSport(s.id)}
                       className={cn(
-                        "flex-none py-[7px] px-3 rounded-full text-xs font-bold border transition-all duration-200 active:scale-95",
+                        "flex-none py-[7px] px-[12px] rounded-full text-[12px] font-bold border transition-all duration-200 active:scale-95",
                         sport === s.id
                           ? "bg-[#AAFF00] text-[#0A0A0A] border-[#AAFF00] shadow-[0_0_20px_rgba(170,255,0,0.2)]"
                           : "bg-[#1A1A1A] text-[#F5F5F5]/40 border-[#333333] hover:border-[#AAFF00]/30"
@@ -144,7 +138,7 @@ export function PostModal({ isOpen, onClose }: PostModalProps) {
               <div className="space-y-1">
                 <Textarea
                   placeholder="Need 4 more players for a friendly match!"
-                  className="bg-[#1A1A1A] border-[#333333] rounded-xl p-2.5 text-white h-[70px] min-h-[70px] text-[13px] focus:border-[#AAFF00]/50 italic leading-relaxed resize-none"
+                  className="bg-[#1A1A1A] border-[#333333] rounded-xl p-[10px] text-white h-[70px] min-h-[70px] text-[13px] focus:border-[#AAFF00]/50 italic leading-relaxed resize-none"
                   value={text}
                   onChange={(e) => setText(e.target.value.slice(0, 150))}
                   maxLength={150}
@@ -160,19 +154,27 @@ export function PostModal({ isOpen, onClose }: PostModalProps) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-[8px]">
                 <div className="space-y-1">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-[#888888] ml-1">Location Hub</Label>
-                  <Select value={area} onValueChange={setArea}>
-                    <SelectTrigger className="h-9 py-2 px-2.5 bg-[#1A1A1A] border-[#333333] text-white rounded-lg italic font-bold text-xs">
-                      <SelectValue placeholder="Select Area" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-[#111] border-[#333333] text-white">
-                      {AREAS.map((a) => (
-                        <SelectItem key={a} value={a} className="font-bold italic text-xs">{a}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <select 
+                    value={area} 
+                    onChange={(e) => setArea(e.target.value)}
+                    required
+                    className="w-full h-9 bg-[#1A1A1A] border border-[#333333] rounded-lg px-[10px] py-[8px] text-white font-bold text-[12px] focus:outline-none focus:border-[#AAFF00]/50 italic appearance-none"
+                  >
+                    <option value="">Select area...</option>
+                    <option value="Vijayanagar">Vijayanagar</option>
+                    <option value="Yadavagiri">Yadavagiri</option>
+                    <option value="JP Nagar">JP Nagar</option>
+                    <option value="Bogadi">Bogadi</option>
+                    <option value="Hebbal">Hebbal</option>
+                    <option value="Saraswathipuram">Saraswathipuram</option>
+                    <option value="Kuvempunagar">Kuvempunagar</option>
+                    <option value="Nazarbad">Nazarbad</option>
+                    <option value="Mysuru Central">Mysuru Central</option>
+                    <option value="Other">Other</option>
+                  </select>
                 </div>
                 <div className="space-y-1">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-[#888888] ml-1">Kick-off Time</Label>
@@ -180,7 +182,7 @@ export function PostModal({ isOpen, onClose }: PostModalProps) {
                     <Clock className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/20 z-10" />
                     <input
                       type="time"
-                      className="w-full h-9 bg-[#1A1A1A] border border-[#333333] rounded-lg pl-8 pr-2.5 py-2 text-white font-bold text-xs focus:outline-none focus:border-[#AAFF00]/50"
+                      className="w-full h-9 bg-[#1A1A1A] border border-[#333333] rounded-lg pl-8 pr-[10px] py-[8px] text-white font-bold text-[12px] focus:outline-none focus:border-[#AAFF00]/50"
                       value={time}
                       onChange={(e) => setTime(e.target.value)}
                     />
@@ -190,14 +192,14 @@ export function PostModal({ isOpen, onClose }: PostModalProps) {
 
               <div className="space-y-1.5">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-[#888888] ml-1">Players Needed</Label>
-                <div className="flex gap-1.5">
+                <div className="flex gap-[6px]">
                   {PLAYER_COUNTS.map((count) => (
                     <button
                       key={count}
                       type="button"
                       onClick={() => setPlayersNeeded(count)}
                       className={cn(
-                        "w-11 h-9 rounded-lg border font-black italic text-[13px] transition-all active:scale-95",
+                        "w-[44px] h-[36px] rounded-lg border font-black italic text-[13px] transition-all active:scale-95",
                         playersNeeded === count
                           ? "bg-[#AAFF00] text-black border-[#AAFF00]"
                           : "bg-[#1A1A1A] text-white/40 border-[#333333] hover:border-[#AAFF00]/30"
@@ -212,7 +214,7 @@ export function PostModal({ isOpen, onClose }: PostModalProps) {
               <div className="pt-1.5 space-y-2">
                 <button
                   type="submit"
-                  className="w-full p-[13px] h-auto bg-[#AAFF00] text-[#0A0A0A] text-sm font-black uppercase tracking-widest rounded-[10px] shadow-xl shadow-[#AAFF00]/10 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                  className="w-full p-[13px] h-auto bg-[#AAFF00] text-[#0A0A0A] text-[14px] font-black uppercase tracking-widest rounded-[10px] shadow-xl shadow-[#AAFF00]/10 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
                 >
                   ⚡ Post to Mysuru Circuit
                 </button>

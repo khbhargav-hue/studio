@@ -1,6 +1,7 @@
+
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import React, { useState, useEffect, useMemo } from "react"
 import { Footer } from "@/components/footer"
 import { MobileNav } from "@/components/mobile-nav"
 import { Button } from "@/components/ui/button"
@@ -10,9 +11,9 @@ import {
   UserCircle,
   ExternalLink
 } from "lucide-react"
-import { db } from "@/lib/firebase"
+import { db, auth } from "@/lib/firebase"
 import { useUser } from "@/firebase"
-import { collection, doc, updateDoc, increment, onSnapshot, getDocs } from "firebase/firestore"
+import { collection, doc, updateDoc, increment, onSnapshot, getDocs, getDoc } from "firebase/firestore"
 import { cn } from "@/lib/utils"
 import { SkeletonCard } from "@/components/Skeleton"
 import PostCard from "@/components/PostCard"
@@ -34,6 +35,15 @@ export default function SocialWallPage() {
   const [showModal, setShowModal] = useState(false)
   const [activeFilter, setActiveFilter] = useState("all")
   const [likedPosts, setLikedPosts] = useState<string[]>([])
+  const [isAdmin, setIsAdmin] = React.useState(false);
+
+  useEffect(() => {
+    if (!auth.currentUser) return;
+    getDoc(doc(db, "users", auth.currentUser.uid))
+      .then(snap => {
+        if (snap.data()?.role === "admin") setIsAdmin(true);
+      });
+  }, [user]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -176,6 +186,7 @@ export default function SocialWallPage() {
                   key={item.data.id} 
                   post={item.data} 
                   currentUser={user}
+                  isAdmin={isAdmin}
                   onDelete={() => {}} 
                   onLike={() => handleLike(item.data.id)}
                   hasLiked={likedPosts.includes(item.data.id)}

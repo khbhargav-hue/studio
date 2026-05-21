@@ -1,36 +1,56 @@
+
 'use client';
 
 import { useState } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { Trash2, Heart, MessageCircle, Share2, MapPin, Users, Send, X } from "lucide-react";
+import { Trash2, Heart, MessageCircle, Share2, MapPin, Users, Send, X, Edit2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { doc, deleteDoc, getFirestore, addDoc, collection, serverTimestamp } from "firebase/firestore";
-import { auth } from "@/lib/firebase";
+import { doc, deleteDoc, getFirestore, addDoc, collection, serverTimestamp, updateDoc } from "firebase/firestore";
+import { auth, db } from "@/lib/firebase";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Textarea } from "./ui/textarea";
 
 interface PostCardProps {
   post: any;
   currentUser: any;
+  isAdmin?: boolean;
   onDelete: () => void;
   onLike: () => void;
   hasLiked: boolean;
 }
 
-export default function PostCard({ post, currentUser, onDelete, onLike, hasLiked }: PostCardProps) {
+export default function PostCard({ post, currentUser, isAdmin, onDelete, onLike, hasLiked }: PostCardProps) {
   const [isReplying, setIsReplying] = useState(false);
   const [replyText, setReplyText] = useState("");
+  const [isEditOpen, setEditOpen] = useState(false);
+  const [editText, setEditText] = useState(post.text);
   
   const isOwner = currentUser?.uid === post.postedBy?.uid;
+  const canManage = isAdmin === true || isOwner;
+
   const timeAgo = post.createdAt?.seconds 
     ? formatDistanceToNow(new Date(post.createdAt.seconds * 1000)) + " ago" 
     : "Recently";
 
   const handleDelete = (postId: string) => {
-    const db = getFirestore();
-    deleteDoc(doc(db, "posts", postId))
+    const dbInstance = getFirestore();
+    deleteDoc(doc(dbInstance, "posts", postId))
       .then(() => console.log("deleted"))
       .catch(e => alert("Delete failed: " + e.message));
+  };
+
+  const handleSaveEdit = () => {
+    updateDoc(doc(db, "posts", post.id), { text: editText })
+      .then(() => setEditOpen(false))
+      .catch(e => alert("Update failed: " + e.message));
   };
 
   const handleReply = (postId: string, text: string) => {
@@ -40,7 +60,6 @@ export default function PostCard({ post, currentUser, onDelete, onLike, hasLiked
       return;
     }
 
-    const db = getFirestore();
     addDoc(collection(db, "posts", postId, "replies"), {
       text: text,
       postedBy: {
@@ -86,14 +105,23 @@ export default function PostCard({ post, currentUser, onDelete, onLike, hasLiked
           <span className="bg-primary/10 text-primary text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border border-primary/20">
             {post.sport}
           </span>
-          {isOwner && (
-            <button 
-              onClick={() => handleDelete(post.id)} 
-              className="p-1.5 text-destructive/40 hover:text-destructive transition-colors" 
-              title="Retract Signal"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
+          {canManage && (
+            <div className="flex gap-1">
+              <button 
+                onClick={() => setEditOpen(true)} 
+                className="p-1.5 text-white/20 hover:text-primary transition-colors" 
+                title="Edit Signal"
+              >
+                <Edit2 className="h-4 w-4" />
+              </button>
+              <button 
+                onClick={() => handleDelete(post.id)} 
+                className="p-1.5 text-destructive/40 hover:text-destructive transition-colors" 
+                title="Retract Signal"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -181,6 +209,26 @@ export default function PostCard({ post, currentUser, onDelete, onLike, hasLiked
           </div>
         </div>
       )}
+
+      {/* Edit Dialog */}
+      <Dialog open={isEditOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="bg-[#111] border-white/5 rounded-2xl max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-white font-black italic uppercase tracking-tighter">Edit Signal</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <Textarea 
+              value={editText} 
+              onChange={(e) => setEditText(e.target.value)}
+              className="bg-white/5 border-white/10 text-white italic min-h-[100px]"
+            />
+          </div>
+          <DialogFooter className="flex gap-2">
+            <Button variant="outline" onClick={() => setEditOpen(false)} className="flex-1 border-white/10 text-white font-black uppercase text-[10px]">Abort</Button>
+            <Button onClick={handleSaveEdit} className="flex-1 bg-primary text-black font-black uppercase text-[10px]">Sync Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

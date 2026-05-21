@@ -1,4 +1,3 @@
-
 "use client"
 
 import Link from "next/link"
@@ -39,8 +38,6 @@ export function Footer() {
             <nav className="flex flex-col gap-4 text-[14px] font-medium text-muted">
               <Link href="/about" className="hover:text-foreground">About Us</Link>
               <Link href="/contact" className="hover:text-foreground">Contact</Link>
-              <Link href="/partner" className="hover:text-foreground">Partner Program</Link>
-              <Link href="/login" className="hover:text-foreground">Admin Portal</Link>
             </nav>
           </div>
 

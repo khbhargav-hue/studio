@@ -1,9 +1,13 @@
 'use client';
 
+import { useState } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { Trash2, Heart, MessageCircle, Share2, MapPin, Users } from "lucide-react";
+import { Trash2, Heart, MessageCircle, Share2, MapPin, Users, Send, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { doc, deleteDoc, getFirestore } from "firebase/firestore";
+import { doc, deleteDoc, getFirestore, addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { auth } from "@/lib/firebase";
+import { Input } from "./ui/input";
+import { Button } from "./ui/button";
 
 interface PostCardProps {
   post: any;
@@ -14,6 +18,9 @@ interface PostCardProps {
 }
 
 export default function PostCard({ post, currentUser, onDelete, onLike, hasLiked }: PostCardProps) {
+  const [isReplying, setIsReplying] = useState(false);
+  const [replyText, setReplyText] = useState("");
+  
   const isOwner = currentUser?.uid === post.postedBy?.uid;
   const timeAgo = post.createdAt?.seconds 
     ? formatDistanceToNow(new Date(post.createdAt.seconds * 1000)) + " ago" 
@@ -24,6 +31,28 @@ export default function PostCard({ post, currentUser, onDelete, onLike, hasLiked
     deleteDoc(doc(db, "posts", postId))
       .then(() => console.log("deleted"))
       .catch(e => alert("Delete failed: " + e.message));
+  };
+
+  const handleReply = (postId: string, text: string) => {
+    if (!text.trim()) return;
+    if (!auth.currentUser) {
+      alert("Please sign in to reply.");
+      return;
+    }
+
+    const db = getFirestore();
+    addDoc(collection(db, "posts", postId, "replies"), {
+      text: text,
+      postedBy: {
+        uid: auth.currentUser.uid,
+        name: auth.currentUser.displayName || "Player",
+        photo: auth.currentUser.photoURL || ""
+      },
+      createdAt: serverTimestamp()
+    }).then(() => {
+      setReplyText("");
+      setIsReplying(false);
+    }).catch(e => alert(e.message));
   };
 
   const handleWhatsAppShare = () => {
@@ -96,7 +125,13 @@ export default function PostCard({ post, currentUser, onDelete, onLike, hasLiked
             <Heart className={cn("h-4 w-4", hasLiked && "fill-current")} />
             <span className="text-[13px] font-black uppercase tracking-widest">{post.likes || 0}</span>
           </button>
-          <button className="flex items-center gap-2 text-white/40 hover:text-primary transition-colors">
+          <button 
+            onClick={() => setIsReplying(!isReplying)}
+            className={cn(
+              "flex items-center gap-2 transition-colors",
+              isReplying ? "text-primary" : "text-white/40 hover:text-primary"
+            )}
+          >
             <MessageCircle className="h-4 w-4" />
             <span className="text-[13px] font-black uppercase tracking-widest">Reply</span>
           </button>
@@ -110,6 +145,42 @@ export default function PostCard({ post, currentUser, onDelete, onLike, hasLiked
           <span className="text-[13px] font-black uppercase tracking-widest">Share</span>
         </button>
       </div>
+
+      {/* Reply Input Node */}
+      {isReplying && (
+        <div className="mt-4 pt-4 border-t border-white/5 animate-in slide-in-from-top-2 duration-200">
+          <div className="flex gap-2">
+            <Input 
+              placeholder="Type your response..." 
+              className="h-10 bg-white/5 border-white/10 text-white text-xs italic"
+              value={replyText}
+              onChange={(e) => setReplyText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleReply(post.id, replyText);
+              }}
+              autoFocus
+            />
+            <Button 
+              size="sm" 
+              className="h-10 px-4 bg-primary text-black"
+              onClick={() => handleReply(post.id, replyText)}
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-10 w-10 p-0 text-white/20 hover:text-white"
+              onClick={() => {
+                setIsReplying(false);
+                setReplyText("");
+              }}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

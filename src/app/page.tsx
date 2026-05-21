@@ -38,22 +38,12 @@ export default function SocialWallPage() {
   const [isAdmin, setIsAdmin] = React.useState(false);
 
   useEffect(() => {
-    const userNode = auth.currentUser;
-    if (!userNode) return;
-    
-    getDoc(doc(db, "users", userNode.uid)).then(snap => {
-      if (snap.exists()) {
-        setIsAdmin(snap.data().role === "admin");
-      } else {
-        setDoc(doc(db, "users", userNode.uid), {
-          name: userNode.displayName || "Player",
-          email: userNode.email,
-          role: "user",
-          createdAt: serverTimestamp()
-        });
-      }
-    });
-  }, [user]);
+    if (!auth.currentUser) return;
+    getDoc(doc(db, "users", auth.currentUser.uid))
+      .then(snap => {
+        if (snap.data()?.role === "admin") setIsAdmin(true);
+      });
+  }, []);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -80,6 +70,7 @@ export default function SocialWallPage() {
         setLoading(false);
       },
       (err) => {
+        console.error(err);
         setLoading(false);  
       }
     );
@@ -181,6 +172,8 @@ export default function SocialWallPage() {
           Test Firestore Write ⚡
         </button>
 
+        <div style={{color:"red",fontSize:12}}>Posts count: {posts.length}</div>
+
         {loading ? (
           <div className="space-y-3">
             {[...Array(4)].map((_, i) => <SkeletonCard key={i} />)}
@@ -204,14 +197,11 @@ export default function SocialWallPage() {
             ))}
           </div>
         ) : (
-          <>
-            <div style={{color:"red",fontSize:12}}>Posts count: {posts.length}</div>
-            <div className="py-32 text-center border border-dashed border-[#222] rounded-2xl bg-[#111]/30">
-              <Zap className="h-12 w-12 text-white/5 mx-auto mb-4" />
-              <h3 className="text-xl font-black uppercase italic text-white/10">No signals detected</h3>
-              <p className="text-white/20 text-xs mt-2 italic">Try adjusting your sport filter or broadcast a new plan.</p>
-            </div>
-          </>
+          <div className="py-32 text-center border border-dashed border-[#222] rounded-2xl bg-[#111]/30">
+            <Zap className="h-12 w-12 text-white/5 mx-auto mb-4" />
+            <h3 className="text-xl font-black uppercase italic text-white/10">No signals detected</h3>
+            <p className="text-white/20 text-xs mt-2 italic">Try adjusting your sport filter or broadcast a new plan.</p>
+          </div>
         )}
       </main>
 
